@@ -42,7 +42,9 @@ func NewStore() (*Store, error) {
 
 // openDB opens the IndexedDB connection and ensures object store exists
 func (s *Store) openDB() error {
-	req := jsbridge.IDBOpen("webclaw", 1)
+	// Use version 3 to force upgrade and ensure object stores exist
+	// (handles case where DB was created without proper initialization)
+	req := jsbridge.IDBOpen("webclaw", 3)
 
 	// Handle upgrade needed
 	req.Set("onupgradeneeded", js.FuncOf(func(this js.Value, args []js.Value) interface{} {

@@ -30,8 +30,8 @@ type KeyStore struct {
 
 // NewKeyStore creates a new keystore using IndexedDB
 func NewKeyStore() (*KeyStore, error) {
-	// Open IndexedDB connection
-	req := jsbridge.IDBOpen("webclaw", 1)
+	// Open IndexedDB connection with version 3 to force upgrade if needed
+	req := jsbridge.IDBOpen("webclaw", 3)
 
 	// Handle upgrade to create keystore object store
 	upgradeCh := make(chan js.Value, 1)
