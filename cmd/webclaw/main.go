@@ -585,12 +585,21 @@ func registerProviderAndNotify(providerName, apiKey string) {
 
 	// Dispatch event with updated provider list
 	availableProviders := globalRouter.AvailableProviders()
+
+	// Create JS array from Go slice
+	providersJS := js.Global().Get("Array").New(len(availableProviders))
+	for i, p := range availableProviders {
+		providersJS.SetIndex(i, p)
+	}
+
+	// Create detail object
+	detail := js.Global().Get("Object").New()
+	detail.Set("providers", providersJS)
+	detail.Set("count", len(availableProviders))
+
+	// Dispatch the event
 	js.Global().Call("dispatchEvent",
-		js.Global().Get("CustomEvent").New("webclaw:providers-ready",
-			map[string]interface{}{
-				"providers": availableProviders,
-				"count":     len(availableProviders),
-			}))
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready", detail))
 
 	js.Global().Get("console").Call("log", "webclaw: providers ready, count:", len(availableProviders))
 }
@@ -655,12 +664,21 @@ func loadProviderKeysAsync(router *provider.Router) {
 
 	// Dispatch event with available provider list to notify UI
 	availableProviders := router.AvailableProviders()
+
+	// Create JS array from Go slice
+	providersJS := js.Global().Get("Array").New(len(availableProviders))
+	for i, p := range availableProviders {
+		providersJS.SetIndex(i, p)
+	}
+
+	// Create detail object
+	detail := js.Global().Get("Object").New()
+	detail.Set("providers", providersJS)
+	detail.Set("count", len(availableProviders))
+
+	// Dispatch the event
 	js.Global().Call("dispatchEvent",
-		js.Global().Get("CustomEvent").New("webclaw:providers-ready",
-			map[string]interface{}{
-				"providers": availableProviders,
-				"count":     len(availableProviders),
-			}))
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready", detail))
 
 	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete, providers:", len(availableProviders))
 }
