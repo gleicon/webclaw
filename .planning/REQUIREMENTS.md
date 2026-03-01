@@ -9,9 +9,9 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 ### Build
 
-- [ ] **BUILD-01**: Project compiles with `GOOS=js GOARCH=wasm go build` producing a `.wasm` binary
+- [x] **BUILD-01**: Project compiles with `GOOS=js GOARCH=wasm go build` producing a `.wasm` binary
 - [ ] **BUILD-02**: Host page (`index.html` + `webclaw-host.js`) loads and instantiates the WASM module
-- [ ] **BUILD-03**: WASM imports expose `jsFetch` and `jsIndexedDB` bridges from JS to Go via `syscall/js`
+- [x] **BUILD-03**: WASM imports expose `jsFetch` and `jsIndexedDB` bridges from JS to Go via `syscall/js`
 - [ ] **BUILD-04**: Build produces a brotli-compressed WASM artifact for distribution
 
 ### Config
@@ -122,9 +122,9 @@ Deferred to next milestone after v1 is dogfooded.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 1 | Pending |
+| BUILD-01 | Phase 1 | Complete (01-01) |
 | BUILD-02 | Phase 1 | Pending |
-| BUILD-03 | Phase 1 | Pending |
+| BUILD-03 | Phase 1 | Complete (01-01) |
 | BUILD-04 | Phase 1 | Pending |
 | CONF-01 | Phase 2 | Pending |
 | CONF-02 | Phase 2 | Pending |
@@ -170,4 +170,4 @@ Deferred to next milestone after v1 is dogfooded.
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after roadmap creation*
+*Last updated: 2026-02-28 after 01-01 execution (BUILD-01, BUILD-03 complete)*

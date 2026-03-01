@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Opening `index.html` in a browser loads and instantiates the WASM module (no console errors)
   3. The `jsFetch` and `jsIndexedDB` bridges are callable from Go via `syscall/js` (verified by a round-trip smoke test)
   4. A brotli-compressed artifact is produced and loadable by the host page
-**Plans**: TBD
+**Plans**: 01-01 (Go module + jsbridge + WASM binary) — COMPLETE
 
 ### Phase 2: Configuration and Identity
 **Goal**: The agent has a persistent identity, secure configuration, and encrypted API keys before any LLM call is made
@@ -73,7 +73,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. WASM Pipeline | 0/TBD | Not started | - |
+| 1. WASM Pipeline | 1/TBD | In progress | - |
 | 2. Configuration and Identity | 0/TBD | Not started | - |
 | 3. Intelligence Core | 0/TBD | Not started | - |
 | 4. Tools and Webchat UI | 0/TBD | Not started | - |

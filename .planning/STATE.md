@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 1 of 4 (WASM Pipeline)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-28 — Roadmap created; phases derived from requirements
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-28 — Plan 01-01 complete (Go module + jsbridge + WASM binary)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 12 min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-wasm-pipeline | 1 | 12 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 01-01 (12 min)
+- Trend: baseline established
 
 *Updated after each plan completion*
 
@@ -45,6 +45,9 @@ Recent decisions affecting current work:
 - Full Go WASM over TinyGo: reflect and encoding/json required; ~5MB compressed size is acceptable
 - No net/http in WASM: all HTTP via syscall/js fetch() bridge — must be reflected in every provider implementation
 - Rebuild core cleanly (not fork PicoClaw): design around browser constraints from day one
+- [01-01] syscall/js allowed in cmd/webclaw/main.go (boundary layer), restricted to internal/jsbridge elsewhere
+- [01-01] static/wasm_exec.js excluded from git — generated from GOROOT at build time to avoid Go version lock
+- [01-01] Phase 1 indexedDBOpen is smoke-test stub; full IndexedDB ops deferred to Phases 2-3
 
 ### Pending Todos
 
@@ -57,5 +60,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Roadmap written; ready to run /gsd:plan-phase 1
+Stopped at: Completed 01-wasm-pipeline/01-01-PLAN.md — Go module + jsbridge + WASM binary
 Resume file: None
