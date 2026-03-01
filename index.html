@@ -399,6 +399,14 @@
       return;
     }
 
+    // Build saved keys summary section
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'mb-4 p-3 bg-gray-800 rounded-lg';
+    summaryDiv.innerHTML = '<h3 class="text-xs font-semibold text-gray-300 mb-2">Saved Keys</h3><div id="saved-keys-list" class="flex flex-wrap gap-2"></div>';
+    apiKeysContainer.appendChild(summaryDiv);
+
+    const savedKeysList = summaryDiv.querySelector('#saved-keys-list');
+
     // Build rows for each provider
     API_PROVIDERS.forEach(function(provider) {
       const row = document.createElement('div');
@@ -436,6 +444,8 @@
               statusSpan.textContent = 'Saved';
               saveBtn.textContent = 'Save';
               saveBtn.disabled = false;
+              // Refresh saved keys list
+              refreshSavedKeysList();
               setTimeout(function() {
                 statusSpan.textContent = '';
               }, 2000);
@@ -463,6 +473,12 @@
           .then(function(hasKey) {
             if (hasKey) {
               statusSpan.textContent = 'Key saved';
+              // Add to saved keys list
+              const keyBadge = document.createElement('span');
+              keyBadge.className = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300';
+              keyBadge.textContent = provider.name;
+              keyBadge.id = 'saved-key-badge-' + provider.id;
+              savedKeysList.appendChild(keyBadge);
             }
           })
           .catch(function(err) {
@@ -470,6 +486,28 @@
           });
       }
     });
+
+    // Function to refresh saved keys list
+    function refreshSavedKeysList() {
+      savedKeysList.innerHTML = '';
+      API_PROVIDERS.forEach(function(provider) {
+        if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
+          window.webclaw.keystore.hasKey(provider.id)
+            .then(function(hasKey) {
+              if (hasKey) {
+                const keyBadge = document.createElement('span');
+                keyBadge.className = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300';
+                keyBadge.textContent = provider.name;
+                keyBadge.id = 'saved-key-badge-' + provider.id;
+                savedKeysList.appendChild(keyBadge);
+              }
+            })
+            .catch(function(err) {
+              console.warn('Failed to refresh key status for', provider.id, err);
+            });
+        }
+      });
+    }
   }
 
   // Config export/import

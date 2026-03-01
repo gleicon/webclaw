@@ -29,10 +29,10 @@ func SetGlobalAgentLoop(loop *AgentLoop) {
 // WorkerBridge provides the interface between WASM and the Web Worker
 // Callbacks are set by worker.js and called by the agent loop
 type WorkerBridge struct {
-	onToken      func(token string)
-	onComplete   func(result js.Value)
-	onError      func(err error)
-	onToolEvent  func(name, status, summary, full string)
+	onToken     func(token string)
+	onComplete  func(result js.Value)
+	onError     func(err error)
+	onToolEvent func(name, status, summary, full string)
 
 	// Track active streams for cancellation
 	activeStreams map[string]context.CancelFunc
@@ -224,8 +224,8 @@ func handleAbortStream() {
 
 // generateStreamID creates a unique stream identifier
 func generateStreamID() string {
-	// Simple timestamp-based ID
-	return js.Global().Get("Date").New().Call("now").String()
+	// Simple timestamp-based ID using Date.now() static method
+	return js.Global().Get("Date").Call("now").String()
 }
 
 // EmitToken sends a token to the UI via the worker callback
