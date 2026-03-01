@@ -13,6 +13,12 @@ import (
 // Startup-registered functions are never Released.
 var liveCallbacks []js.Func
 
+// RegisterCallback registers a js.Func to prevent garbage collection.
+// Exported for use by other packages that need to register JS callbacks.
+func RegisterCallback(fn js.Func) {
+	liveCallbacks = append(liveCallbacks, fn)
+}
+
 // Init registers the jsFetch and jsIndexedDB bridges on window.webclaw
 // and fires the "webclaw:ready" CustomEvent. Called once from main().
 func Init() {

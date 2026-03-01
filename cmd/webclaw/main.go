@@ -15,6 +15,9 @@ import (
 func main() {
 	jsbridge.Init()
 
+	// Register export/import bridge
+	registerExportImportBridge()
+
 	// Initialize configuration
 	if err := initializeConfig(); err != nil {
 		js.Global().Get("console").Call("error", "webclaw: config initialization failed:", err.Error())
@@ -33,6 +36,7 @@ func main() {
 		// Don't exit - we can still run without identity for now
 	}
 
+	js.Global().Get("console").Call("log", "webclaw: export/import ready")
 	js.Global().Get("console").Call("log", "webclaw: WASM ready")
 	<-make(chan struct{}) // block forever — Go runtime exits when main() returns
 }
@@ -134,4 +138,154 @@ func initializeIdentity() error {
 	}
 
 	return nil
+}
+
+// registerExportImportBridge registers the export/import JavaScript bridge
+func registerExportImportBridge() {
+	webclaw := js.Global().Get("webclaw")
+	if webclaw.IsUndefined() || webclaw.IsNull() {
+		return // jsbridge.Init() not called yet
+	}
+
+	exportImport := js.Global().Get("Object").New()
+
+	// Export function: webclaw.exportImport.exportConfig()
+	exportFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		promiseCtor := js.Global().Get("Promise")
+		return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
+			resolve := resolveReject[0]
+			reject := resolveReject[1]
+
+			go func() {
+				// Get config and export
+				storage, err := config.NewStorage()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+				defer storage.Close()
+
+				cfg, err := storage.GetConfig()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				idStore, err := identity.NewStore()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+				defer idStore.Close()
+
+				// Create identity provider wrapper
+				idProvider := &identityFileProvider{store: idStore}
+
+				data, err := config.ExportAll(cfg, idProvider, nil) // No keystore for now
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				jsonBytes, err := config.ExportToJSON(data)
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				// Trigger download
+				jsbridge.TriggerDownload("webclaw-config.json", jsonBytes)
+				resolve.Invoke(js.Undefined())
+			}()
+
+			return nil
+		}))
+	})
+	jsbridge.RegisterCallback(exportFn)
+	exportImport.Set("exportConfig", exportFn)
+
+	// Import function: webclaw.exportImport.importConfig(jsonContent)
+	importFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 1 {
+			return js.Undefined()
+		}
+		jsonContent := args[0].String()
+
+		promiseCtor := js.Global().Get("Promise")
+		return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
+			resolve := resolveReject[0]
+			reject := resolveReject[1]
+
+			go func() {
+				data, err := config.ImportFromJSON([]byte(jsonContent))
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				storage, err := config.NewStorage()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+				defer storage.Close()
+
+				idStore, err := identity.NewStore()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+				defer idStore.Close()
+
+				// Create identity importer wrapper
+				idImporter := &identityFileImporter{store: idStore}
+
+				if err := config.ImportAll(data, storage, idImporter); err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				resolve.Invoke(js.Undefined())
+			}()
+
+			return nil
+		}))
+	})
+	jsbridge.RegisterCallback(importFn)
+	exportImport.Set("importConfig", importFn)
+
+	webclaw.Set("exportImport", exportImport)
+}
+
+// identityFileProvider wraps identity.Store to implement config.IdentityFileProvider
+type identityFileProvider struct {
+	store *identity.Store
+}
+
+func (p *identityFileProvider) List() ([]string, error) {
+	return p.store.List()
+}
+
+func (p *identityFileProvider) GetContent(filename string) (string, error) {
+	file, err := p.store.Get(filename)
+	if err != nil {
+		return "", err
+	}
+	if file == nil {
+		return "", nil
+	}
+	return file.Content, nil
+}
+
+// identityFileImporter wraps identity.Store to implement config.IdentityFileImporter
+type identityFileImporter struct {
+	store *identity.Store
+}
+
+func (i *identityFileImporter) PutContent(filename string, content string) error {
+	file := &identity.IdentityFile{
+		Filename: filename,
+		Content:  content,
+	}
+	return i.store.Put(file)
 }
