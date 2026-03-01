@@ -43,7 +43,9 @@ type AgentLoop struct {
 
 	// workerBridge emits tool events to the UI via postMessage.
 	// Using an interface avoids import cycle since worker_bridge.go imports agent.
-	workerBridge interface{ EmitToolEvent(string, string, string, string) }
+	workerBridge interface {
+		EmitToolEvent(string, string, string, string)
+	}
 }
 
 // SetRouter wires the real provider router so getProvider() returns a real LLM,
@@ -62,7 +64,9 @@ func (al *AgentLoop) SetToolRegistry(r *tools.Registry) {
 // SetWorkerBridge wires the worker bridge so EmitToolEvent calls from the dispatch
 // loop reach the UI. Call this in main.go after constructing both AgentLoop and
 // the WorkerBridge instance returned by InitWorkerBridge.
-func (al *AgentLoop) SetWorkerBridge(wb interface{ EmitToolEvent(string, string, string, string) }) {
+func (al *AgentLoop) SetWorkerBridge(wb interface {
+	EmitToolEvent(string, string, string, string)
+}) {
 	al.workerBridge = wb
 }
 
@@ -287,6 +291,11 @@ type providerAdapter struct {
 }
 
 func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+	// Check if provider is available before attempting API call
+	if !pa.router.HasProvider(pa.name) {
+		return fmt.Errorf("provider '%s' not available - no API key configured. Please add your API key in Settings", pa.name)
+	}
+
 	// Convert agent []Message to provider []Message
 	provMsgs := make([]provider.Message, len(messages))
 	for i, m := range messages {
@@ -312,7 +321,7 @@ func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callb
 	return nil
 }
 
-func (pa *providerAdapter) GetName() string { return pa.name }
+func (pa *providerAdapter) GetName() string  { return pa.name }
 func (pa *providerAdapter) GetModel() string { return pa.model }
 
 // SetAssembler sets the context assembler for conversation management
