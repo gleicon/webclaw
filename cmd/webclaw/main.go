@@ -7,6 +7,7 @@ import (
 	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/config"
+	"github.com/gleicon/webclaw/internal/identity"
 	"github.com/gleicon/webclaw/internal/jsbridge"
 	"github.com/gleicon/webclaw/internal/keystore"
 )
@@ -24,6 +25,12 @@ func main() {
 	if err := initializeKeystore(); err != nil {
 		js.Global().Get("console").Call("error", "webclaw: keystore initialization failed:", err.Error())
 		// Don't exit - we can still run without keystore for now
+	}
+
+	// Initialize identity files
+	if err := initializeIdentity(); err != nil {
+		js.Global().Get("console").Call("error", "webclaw: identity initialization failed:", err.Error())
+		// Don't exit - we can still run without identity for now
 	}
 
 	js.Global().Get("console").Call("log", "webclaw: WASM ready")
@@ -84,6 +91,46 @@ func initializeConfig() error {
 					"identity": cfg.Identity.Name,
 				}))
 		js.Global().Get("console").Call("log", "webclaw: config loaded")
+	}
+
+	return nil
+}
+
+func initializeIdentity() error {
+	store, err := identity.NewStore()
+	if err != nil {
+		return fmt.Errorf("failed to create identity store: %w", err)
+	}
+	defer store.Close()
+
+	// Check if any identity files exist
+	files, err := store.List()
+	if err != nil {
+		return fmt.Errorf("failed to list identity files: %w", err)
+	}
+
+	if len(files) == 0 {
+		// First run - create default identity files
+		if err := store.LoadDefaults(); err != nil {
+			return fmt.Errorf("failed to load default identity files: %w", err)
+		}
+
+		js.Global().Call("dispatchEvent",
+			js.Global().Get("CustomEvent").New("webclaw:identity-ready",
+				map[string]interface{}{
+					"filesCreated": 6,
+					"event":        "first-run",
+				}))
+		js.Global().Get("console").Call("log", "webclaw: created default identity files (first run)")
+	} else {
+		// Identity files exist
+		js.Global().Call("dispatchEvent",
+			js.Global().Get("CustomEvent").New("webclaw:identity-ready",
+				map[string]interface{}{
+					"filesLoaded": len(files),
+					"event":       "loaded",
+				}))
+		js.Global().Get("console").Call("log", "webclaw: identity files loaded")
 	}
 
 	return nil
