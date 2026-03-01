@@ -23,10 +23,10 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 ### Identity
 
-- [ ] **IDNT-01**: Agent loads identity files from IndexedDB virtual filesystem (IDENTITY.md, SOUL.md, USER.md, AGENTS.md, TOOLS.md, HEARTBEAT.md)
-- [ ] **IDNT-02**: Identity files are injected into agent system prompt each turn, capped at bootstrapMaxChars per file (default 20K) and bootstrapTotalMaxChars total (default 150K)
+- [x] **IDNT-01**: Agent loads identity files from IndexedDB virtual filesystem (IDENTITY.md, SOUL.md, USER.md, AGENTS.md, TOOLS.md, HEARTBEAT.md)
+- [x] **IDNT-02**: Identity files are injected into agent system prompt each turn, capped at bootstrapMaxChars per file (default 20K) and bootstrapTotalMaxChars total (default 150K)
 - [ ] **IDNT-03**: User can edit identity files through the browser UI
-- [ ] **IDNT-04**: Default identity files are pre-loaded on first run
+- [x] **IDNT-04**: Default identity files are pre-loaded on first run
 
 ### Providers
 
