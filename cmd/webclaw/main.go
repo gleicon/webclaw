@@ -607,5 +607,14 @@ func loadProviderKeysAsync(router *provider.Router) {
 		keystore.ClearKey(apiKey)
 	}
 
-	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete")
+	// Dispatch event with available provider list to notify UI
+	availableProviders := router.AvailableProviders()
+	js.Global().Call("dispatchEvent",
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready",
+			map[string]interface{}{
+				"providers": availableProviders,
+				"count":     len(availableProviders),
+			}))
+
+	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete, providers:", len(availableProviders))
 }
