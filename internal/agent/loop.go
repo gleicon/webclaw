@@ -263,15 +263,24 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 }
 
 // getProvider returns a provider instance based on configuration.
-// When a real router is configured (via SetRouter), returns a providerAdapter
-// wrapping that router. Falls back to mockProvider when no router is set
-// (allows tests and development without API keys).
+// When a real router is configured (via SetRouter) and has providers registered,
+// returns a providerAdapter wrapping that router. Falls back to mockProvider when
+// no router is set or no providers are available (allows tests and guides users).
 func (al *AgentLoop) getProvider() (Provider, error) {
 	if al.router != nil {
-		return &providerAdapter{
-			router: al.router,
-			name:   al.providerName,
-			model:  al.model,
+		// Check if any providers are registered
+		availableProviders := al.router.AvailableProviders()
+		if len(availableProviders) > 0 {
+			return &providerAdapter{
+				router: al.router,
+				name:   al.providerName,
+				model:  al.model,
+			}, nil
+		}
+		// Router exists but no providers configured - use mock with helpful message
+		return &noProvidersMock{
+			name:  al.providerName,
+			model: al.model,
 		}, nil
 	}
 	// Fallback: mock provider when no router configured
@@ -371,6 +380,34 @@ func (mp *mockProvider) GetName() string {
 
 func (mp *mockProvider) GetModel() string {
 	return mp.model
+}
+
+// noProvidersMock is returned when the router exists but has no providers configured.
+// It streams a helpful message guiding the user to add API keys in Settings.
+type noProvidersMock struct {
+	name  string
+	model string
+}
+
+func (np *noProvidersMock) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+	mockResponse := "[Mock] No AI providers configured. Please add your API key in the Settings tab to enable live AI responses."
+
+	// Stream the message as a single token
+	tok := provider.Token{
+		Text:         mockResponse,
+		FinishReason: "stop",
+	}
+	callback(tok)
+
+	return nil
+}
+
+func (np *noProvidersMock) GetName() string {
+	return "mock-no-providers"
+}
+
+func (np *noProvidersMock) GetModel() string {
+	return np.model
 }
 
 // splitIntoWords splits a string into words for token simulation
