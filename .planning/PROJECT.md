@@ -57,20 +57,21 @@ WebClaw's insight: the browser is not a limitation — it's an advantage (instan
 
 ## Constraints
 
-- **Tech stack**: TinyGo → WASM for core; standard Go for bridge binary; TypeScript for plugin SDK
-- **WASM size**: <2MB uncompressed, <800KB brotli-compressed — non-negotiable for instant load
-- **WASM memory**: <8MB linear memory for core runtime
-- **Build pipeline**: tinygo build → wasm-opt -O3 → brotli; tsdown for TS SDK; standard go build for bridge
-- **Security**: API keys never in JS plaintext; bridge binds 127.0.0.1 only; strict CSP
+- **Tech stack**: Full Go (`GOOS=js GOARCH=wasm`) for WASM core — not TinyGo; standard Go for bridge binary; TypeScript for plugin SDK
+- **WASM size**: ~5-15MB uncompressed, ~3-5MB brotli — acceptable tradeoff for full Go runtime (reflect, encoding/json, goroutines)
+- **HTTP in WASM**: `net/http` unavailable in browser Go; all outbound calls go through `syscall/js` fetch() interop
+- **Build pipeline**: `GOOS=js GOARCH=wasm go build` → wasm-opt → brotli; standard `go build` for bridge
+- **Security**: API keys never in JS plaintext (encrypted via Web Crypto AES-GCM, decrypted inside WASM); bridge binds 127.0.0.1 only; strict CSP
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| TinyGo over AssemblyScript/Rust | Go codebase compatible with PicoClaw patterns; team familiarity | — Pending |
-| IndexedDB over localStorage | Capacity (localStorage ~5MB limit); structured storage; async API | — Pending |
+| Full Go WASM over TinyGo | TinyGo lacks `reflect` and `encoding/json` — essential for config parsing and agent flexibility. Binary size tradeoff (~5MB compressed) is acceptable. | ✓ Good |
+| Rebuild core cleanly (not fork PicoClaw) | PicoClaw's structs are shaped around its channel SDKs and design assumptions. Clean rebuild lets us design around browser constraints from day one, informed by PicoClaw's patterns without inheriting its baggage. | ✓ Good |
+| Bridge interface: REST + WebSocket | REST for simple ops (file read, secrets) — curl-testable and easy to debug. WebSocket for streaming (shell exec, live output). Separation of concerns. | ✓ Good |
+| IndexedDB over localStorage | Capacity (localStorage ~5MB limit); structured storage; async API fits WASM async model | — Pending |
 | BM25 instead of FTS5 | No SQLite in browser by default; BM25 achieves comparable results for <10K doc corpus | — Pending |
-| Bridge as separate binary | Clean separation of browser vs local capabilities; bridge optional for pure-browser mode | — Pending |
 | JS/TS plugin SDK over Node.js compatibility | Browser environment requires native JS APIs; attempting Node.js compat adds too much complexity | — Pending |
 
 ---
