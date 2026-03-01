@@ -121,6 +121,49 @@ func (c *Conversation) ClearMessages() {
 	c.UpdatedAt = time.Now()
 }
 
+// estimateTokens returns an estimate of token count using chars/4 heuristic
+func estimateTokens(content string) int {
+	return len(content) / 4
+}
+
+// GetTokenCount returns the estimated total token count for all messages
+func (c *Conversation) GetTokenCount() int {
+	total := 0
+	for _, msg := range c.Messages {
+		total += estimateTokens(msg.Content)
+	}
+	return total
+}
+
+// NeedsSummarization checks if summarization should be triggered
+// Returns true if message count >= MaxMessages OR token count >= MaxTokenPct of model capacity
+func (c *Conversation) NeedsSummarization() bool {
+	// Check message count threshold
+	if len(c.Messages) >= c.MaxMessages {
+		return true
+	}
+
+	// Check token percentage threshold
+	if c.ModelMaxTokens > 0 {
+		tokenCount := c.GetTokenCount()
+		maxAllowedTokens := int(float64(c.ModelMaxTokens) * c.MaxTokenPct)
+		if tokenCount >= maxAllowedTokens {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetContextUsage returns current usage stats for monitoring
+func (c *Conversation) GetContextUsage() (messages int, tokens int, tokenPct float64) {
+	tokens = c.GetTokenCount()
+	if c.ModelMaxTokens > 0 {
+		tokenPct = float64(tokens) / float64(c.ModelMaxTokens)
+	}
+	return len(c.Messages), tokens, tokenPct
+}
+
 // SetThresholds allows dynamic threshold configuration
 func (c *Conversation) SetThresholds(maxMessages int, maxTokenPct float64, modelMaxTokens int) {
 	c.MaxMessages = maxMessages
