@@ -13,22 +13,7 @@ WebClaw is built in four phases, each delivering a complete, verifiable capabili
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: WASM Pipeline** - Build pipeline that compiles, loads, and distributes the WASM binary in a browser tab
-- [-] **Phase 2: Configuration and Identity** - Agent configuration with secure key storage and identity file system (1 plan complete)
-- [ ] **Phase 3: Intelligence Core** - LLM provider routing, agent loop, and hybrid memory system
-- [ ] **Phase 4: Tools and Webchat UI** - Browser tool profile and complete webchat interface for developer dogfooding
-
-## Phase Details
-
-### Phase 1: WASM Pipeline
-**Goal**: The WASM binary compiles, loads in a browser tab, and is ready for distribution
-**Depends on**: Nothing (first phase)
-**Requirements**: BUILD-01, BUILD-02, BUILD-03, BUILD-04
-**Success Criteria** (what must be TRUE):
-  1. Running `GOOS=js GOARCH=wasm go build` produces a valid `.wasm` binary without error
-  2. Opening `index.html` in a browser loads and instantiates the WASM module (no console errors)
-  3. The `jsFetch` and `jsIndexedDB` bridges are callable from Go via `syscall/js` (verified by a round-trip smoke test)
-  4. A brotli-compressed artifact is produced and loadable by the host page
-**Plans**: 01-01 (Go module + jsbridge + WASM binary) — COMPLETE, 01-02 (Host page + build pipeline + tests) — COMPLETE
+- [-] **Phase 2: Configuration and Identity** - Agent configuration with secure key storage and identity file system (2 plans complete, 1 remaining)
 
 ### Phase 2: Configuration and Identity
 **Goal**: The agent has a persistent identity, secure configuration, and encrypted API keys before any LLM call is made
@@ -40,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. On first run, the agent prompts for a passphrase; subsequent runs require it to decrypt stored API keys
   4. API keys are never readable as plaintext in the browser DevTools JavaScript console or memory inspector
   5. Default identity files (IDENTITY.md, SOUL.md, USER.md, AGENTS.md, TOOLS.md, HEARTBEAT.md) are loaded from IndexedDB and user can edit them in the browser
-**Plans**: 02-01 (Config struct + IndexedDB persistence + first-run) — COMPLETE, 02-02 TBD, 02-03 TBD
+**Plans**: 02-01 (Config struct + IndexedDB persistence + first-run) — COMPLETE, 02-02 (Web Crypto bridge + Encrypted key storage) — COMPLETE, 02-03 (Identity file system) — TBD
 
 ### Phase 3: Intelligence Core
 **Goal**: The agent can hold a conversation with an LLM provider, manage its context window, and persist and recall memories
@@ -74,6 +59,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. WASM Pipeline | 2/2 | ✅ Complete | 2026-02-28 |
-| 2. Configuration and Identity | 1/TBD | In Progress | - |
+| 2. Configuration and Identity | 2/3 | In Progress | - |
 | 3. Intelligence Core | 0/TBD | Not started | - |
 | 4. Tools and Webchat UI | 0/TBD | Not started | - |

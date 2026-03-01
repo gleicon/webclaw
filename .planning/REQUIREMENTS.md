@@ -38,9 +38,9 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 ### Security
 
-- [ ] **SEC-01**: API keys are encrypted with AES-256-GCM via Web Crypto API before storage in IndexedDB
-- [ ] **SEC-02**: Key decryption happens inside WASM linear memory — keys never exist as plaintext in JavaScript
-- [ ] **SEC-03**: Passphrase-derived encryption key (PBKDF2) — user sets a passphrase on first run
+- [x] **SEC-01**: API keys are encrypted with AES-256-GCM via Web Crypto API before storage in IndexedDB
+- [x] **SEC-02**: Key decryption happens inside WASM linear memory — keys never exist as plaintext in JavaScript
+- [x] **SEC-03**: Passphrase-derived encryption key (PBKDF2) — user sets a passphrase on first run
 
 ### Agent Loop
 
