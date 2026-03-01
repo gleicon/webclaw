@@ -8,6 +8,14 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
+
+	// Test endpoint for jsFetch smoke test
+	mux.HandleFunc("/api/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("WebClaw jsFetch test response - OK"))
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".wasm.br") {
 			w.Header().Set("Content-Type", "application/wasm")

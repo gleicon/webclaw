@@ -12,7 +12,7 @@ WebClaw is built in four phases, each delivering a complete, verifiable capabili
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: WASM Pipeline** - Build pipeline that compiles, loads, and distributes the WASM binary in a browser tab
+- [x] **Phase 1: WASM Pipeline** - Build pipeline that compiles, loads, and distributes the WASM binary in a browser tab
 - [ ] **Phase 2: Configuration and Identity** - Agent configuration with secure key storage and identity file system
 - [ ] **Phase 3: Intelligence Core** - LLM provider routing, agent loop, and hybrid memory system
 - [ ] **Phase 4: Tools and Webchat UI** - Browser tool profile and complete webchat interface for developer dogfooding
@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Opening `index.html` in a browser loads and instantiates the WASM module (no console errors)
   3. The `jsFetch` and `jsIndexedDB` bridges are callable from Go via `syscall/js` (verified by a round-trip smoke test)
   4. A brotli-compressed artifact is produced and loadable by the host page
-**Plans**: 01-01 (Go module + jsbridge + WASM binary) — COMPLETE
+**Plans**: 01-01 (Go module + jsbridge + WASM binary) — COMPLETE, 01-02 (Host page + build pipeline + tests) — COMPLETE
 
 ### Phase 2: Configuration and Identity
 **Goal**: The agent has a persistent identity, secure configuration, and encrypted API keys before any LLM call is made
@@ -73,7 +73,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. WASM Pipeline | 1/TBD | In progress | - |
+| 1. WASM Pipeline | 2/2 | ✅ Complete | 2026-02-28 |
 | 2. Configuration and Identity | 0/TBD | Not started | - |
 | 3. Intelligence Core | 0/TBD | Not started | - |
 | 4. Tools and Webchat UI | 0/TBD | Not started | - |

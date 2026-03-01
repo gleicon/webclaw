@@ -1,3 +1,4 @@
 dist/webclaw.wasm
 dist/webclaw.wasm.br
 static/wasm_exec.js
+test/node_modules/
