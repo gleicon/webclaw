@@ -8,6 +8,8 @@ import (
 	"strings"
 	"syscall/js"
 	"time"
+
+	"github.com/gleicon/webclaw/internal/provider"
 )
 
 // Summarizer handles conversation summarization via LLM calls
@@ -64,8 +66,8 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummarizeRequest) (*Summ
 
 	// Call provider for summary
 	var summary strings.Builder
-	err := s.provider.Stream(ctx, messages, func(token string) {
-		summary.WriteString(token)
+	err := s.provider.Stream(ctx, messages, func(tok provider.Token) {
+		summary.WriteString(tok.Text)
 	})
 
 	if err != nil {
@@ -185,8 +187,8 @@ func (s *Summarizer) SummarizeWithProgressiveWindow(ctx context.Context, sw *Sli
 
 	// Call provider for summary
 	var summary strings.Builder
-	err := s.provider.Stream(ctx, messages, func(token string) {
-		summary.WriteString(token)
+	err := s.provider.Stream(ctx, messages, func(tok provider.Token) {
+		summary.WriteString(tok.Text)
 	})
 
 	if err != nil {
@@ -215,7 +217,7 @@ func CreateMockSummarizer() *Summarizer {
 // mockSummarizerProvider is a mock provider that returns deterministic summaries
 type mockSummarizerProvider struct{}
 
-func (mp *mockSummarizerProvider) Stream(ctx context.Context, messages []Message, callback func(token string)) error {
+func (mp *mockSummarizerProvider) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
 	// Extract the conversation content from the prompt
 	var conversationContent string
 	for _, msg := range messages {
@@ -235,12 +237,16 @@ func (mp *mockSummarizerProvider) Stream(ctx context.Context, messages []Message
 
 	// Stream the summary word by word
 	words := strings.Fields(summary)
-	for _, word := range words {
+	for i, word := range words {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			callback(word + " ")
+			tok := provider.Token{Text: word + " "}
+			if i == len(words)-1 {
+				tok.FinishReason = "stop"
+			}
+			callback(tok)
 			// Small artificial delay to simulate streaming
 			time.Sleep(10 * time.Millisecond)
 		}
@@ -292,8 +298,8 @@ Key facts:`, conversation.String())
 	}
 
 	var result strings.Builder
-	err := s.provider.Stream(ctx, extractionMessages, func(token string) {
-		result.WriteString(token)
+	err := s.provider.Stream(ctx, extractionMessages, func(tok provider.Token) {
+		result.WriteString(tok.Text)
 	})
 
 	if err != nil {

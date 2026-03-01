@@ -14,7 +14,11 @@ import (
 // Token represents a streaming token from the LLM
 type Token struct {
 	Text         string
-	FinishReason string // "stop", "length", "content_filter", ""
+	FinishReason string // "stop", "length", "content_filter", "error", "tool_use"
+	// When FinishReason == "tool_use", these fields are populated:
+	ToolName  string
+	ToolInput map[string]interface{}
+	ToolUseID string
 }
 
 // Message represents a chat message

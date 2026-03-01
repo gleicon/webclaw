@@ -6,25 +6,21 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/gleicon/webclaw/internal/memory"
 )
 
-// MemoryLoopInterface defines the memory operations the tools need from the agent loop.
-// Using an interface instead of *agent.AgentLoop avoids an import cycle
-// (agent imports tools, tools cannot import agent).
-type MemoryLoopInterface interface {
+// MemoryAgent is the interface that AgentLoop must satisfy for memory tool operations.
+// Using an interface rather than *AgentLoop avoids a circular import between
+// internal/tools and internal/agent.
+type MemoryAgent interface {
 	StoreFact(content string, metadata map[string]interface{}) error
-	SearchMemory(query string, limit int) ([]MemorySearchResultIface, error)
+	SearchMemory(query string, limit int) ([]*memory.MemorySearchResult, error)
 }
 
-// MemorySearchResultIface is the minimal interface for memory search results.
-// This avoids importing the memory package directly.
-type MemorySearchResultIface interface {
-	GetScore() float64
-	GetContent() string
-}
-
-// NewMemoryStoreTool creates a tool that stores facts in the agent's memory.
-func NewMemoryStoreTool(loop MemoryLoopInterface) *Tool {
+// NewMemoryStoreTool creates a tool that stores a fact in memory.
+// loop is the AgentLoop instance used for memory operations (injected at registration time).
+func NewMemoryStoreTool(loop MemoryAgent) *Tool {
 	return &Tool{
 		Name:        "memory_store",
 		Description: "Store a fact or piece of information in memory",
@@ -45,7 +41,7 @@ func NewMemoryStoreTool(loop MemoryLoopInterface) *Tool {
 			if content == "" {
 				return &ToolResult{
 					Content:        "content parameter is required",
-					DisplayContent: "store failed: content parameter is required",
+					DisplayContent: "memory store failed: content parameter is required",
 					IsError:        true,
 					ToolName:       "memory_store",
 					Status:         "error",
@@ -60,8 +56,8 @@ func NewMemoryStoreTool(loop MemoryLoopInterface) *Tool {
 
 			if err := loop.StoreFact(content, metadata); err != nil {
 				return &ToolResult{
-					Content:        "failed to store fact: " + err.Error(),
-					DisplayContent: "store failed: " + err.Error(),
+					Content:        "failed to store memory: " + err.Error(),
+					DisplayContent: "memory store failed: " + err.Error(),
 					IsError:        true,
 					ToolName:       "memory_store",
 					Status:         "error",
@@ -69,14 +65,14 @@ func NewMemoryStoreTool(loop MemoryLoopInterface) *Tool {
 			}
 
 			// Display first 100 chars of content
-			displayContent := content
-			if len(displayContent) > 100 {
-				displayContent = displayContent[:100]
+			preview := content
+			if len(preview) > 100 {
+				preview = preview[:100] + "..."
 			}
 
 			return &ToolResult{
-				Content:        "Successfully stored: " + content,
-				DisplayContent: "Stored: " + displayContent,
+				Content:        "Stored: " + content,
+				DisplayContent: "Stored: " + preview,
 				IsError:        false,
 				ToolName:       "memory_store",
 				Status:         "done",
@@ -85,8 +81,9 @@ func NewMemoryStoreTool(loop MemoryLoopInterface) *Tool {
 	}
 }
 
-// NewMemorySearchTool creates a tool that searches the agent's memory.
-func NewMemorySearchTool(loop MemoryLoopInterface) *Tool {
+// NewMemorySearchTool creates a tool that searches memory for relevant facts.
+// loop is the AgentLoop instance used for memory operations (injected at registration time).
+func NewMemorySearchTool(loop MemoryAgent) *Tool {
 	return &Tool{
 		Name:        "memory_search",
 		Description: "Search memory for relevant facts or information",
@@ -107,26 +104,24 @@ func NewMemorySearchTool(loop MemoryLoopInterface) *Tool {
 			if query == "" {
 				return &ToolResult{
 					Content:        "query parameter is required",
-					DisplayContent: "search failed: query parameter is required",
+					DisplayContent: "memory search failed: query parameter is required",
 					IsError:        true,
 					ToolName:       "memory_search",
 					Status:         "error",
 				}, nil
 			}
 
-			// Extract optional limit (default 5)
+			// Default limit is 5
 			limit := 5
 			if l, ok := params["limit"].(float64); ok && l > 0 {
 				limit = int(l)
-			} else if l, ok := params["limit"].(int); ok && l > 0 {
-				limit = l
 			}
 
 			results, err := loop.SearchMemory(query, limit)
 			if err != nil {
 				return &ToolResult{
-					Content:        "search failed: " + err.Error(),
-					DisplayContent: "search failed: " + err.Error(),
+					Content:        "memory search failed: " + err.Error(),
+					DisplayContent: "memory search failed: " + err.Error(),
 					IsError:        true,
 					ToolName:       "memory_search",
 					Status:         "error",
@@ -143,9 +138,13 @@ func NewMemorySearchTool(loop MemoryLoopInterface) *Tool {
 				}, nil
 			}
 
+			// Format results
 			var sb strings.Builder
-			for _, r := range results {
-				sb.WriteString(fmt.Sprintf("Score: %.3f — %s\n", r.GetScore(), r.GetContent()))
+			for i, r := range results {
+				sb.WriteString(fmt.Sprintf("Score: %.3f — %s\n", r.Score, r.Document.Content))
+				if i < len(results)-1 {
+					sb.WriteString("\n")
+				}
 			}
 
 			return &ToolResult{

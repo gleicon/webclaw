@@ -211,6 +211,28 @@ func (wb *WorkerBridge) EmitToken(token string) {
 	}
 }
 
+// EmitToolEvent emits a tool event through the worker message channel.
+// Call BEFORE dispatch with status="running", AFTER with status="done" or "error".
+// toolName: name of the tool being invoked
+// status: "running", "done", or "error"
+// summary: short human-readable description for the UI activity panel
+// full: full content (may be long; used for LLM context)
+func (wb *WorkerBridge) EmitToolEvent(toolName, status, summary, full string) {
+	// Post tool event via JS postMessage so the worker thread receives it
+	event := js.Global().Get("Object").New()
+	event.Set("type", "tool_event")
+	event.Set("toolName", toolName)
+	event.Set("status", status)
+	event.Set("summary", summary)
+	event.Set("full", full)
+
+	// Use the global postMessage if available (Web Worker context)
+	postMessage := js.Global().Get("postMessage")
+	if !postMessage.IsUndefined() && !postMessage.IsNull() {
+		postMessage.Invoke(event)
+	}
+}
+
 // EmitComplete signals stream completion
 func (wb *WorkerBridge) EmitComplete(success bool, content string) {
 	if wb.onComplete != nil {
