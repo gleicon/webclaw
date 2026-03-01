@@ -24,7 +24,7 @@ func RegisterCallback(fn js.Func) {
 func Init() {
 	webclaw := js.Global().Get("Object").New()
 
-	fetchFn := js.FuncOf(fetch)
+	fetchFn := RegisterFetchCallback()
 	liveCallbacks = append(liveCallbacks, fetchFn)
 	webclaw.Set("jsFetch", fetchFn)
 
