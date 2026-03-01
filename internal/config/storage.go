@@ -12,7 +12,7 @@ import (
 
 const (
 	DBName      = "webclaw"
-	DBVersion   = 1
+	DBVersion   = 5 // Bumped to match identity/keystore
 	ConfigStore = "config"
 )
 
@@ -30,27 +30,38 @@ func NewStorage() (*Storage, error) {
 	return s, nil
 }
 
-// openDB opens the IndexedDB database and creates object stores if needed
+// openDB opens the IndexedDB database and creates ALL object stores
 func (s *Storage) openDB() error {
-	// For simplicity in Phase 2, we use a synchronous-like pattern
-	// In production, you'd want to handle upgrades properly
 	req := jsbridge.IDBOpen(DBName, DBVersion)
 
-	// Handle upgrade needed event
+	// Handle upgrade needed - create ALL stores for all packages
 	req.Set("onupgradeneeded", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		event := args[0]
 		db := event.Get("target").Get("result")
 
-		// Create config object store if it doesn't exist
-		storeNames := db.Get("objectStoreNames")
-		if !storeNames.Call("contains", ConfigStore).Bool() {
+		// Create config object store
+		if !db.Get("objectStoreNames").Call("contains", ConfigStore).Bool() {
 			db.Call("createObjectStore", ConfigStore, map[string]interface{}{"keyPath": "key"})
+		}
+
+		// Create identity object store (needed by identity package)
+		if !db.Get("objectStoreNames").Call("contains", "identity").Bool() {
+			db.Call("createObjectStore", "identity", map[string]interface{}{
+				"keyPath": "filename",
+			})
+		}
+
+		// Create keystore object store (needed by keystore package)
+		if !db.Get("objectStoreNames").Call("contains", "keystore").Bool() {
+			db.Call("createObjectStore", "keystore", map[string]interface{}{
+				"keyPath": "provider",
+			})
 		}
 
 		return nil
 	}))
 
-	// Wait for success/error (simplified - in production use proper async)
+	// Wait for success/error
 	successCh := make(chan js.Value, 1)
 	errorCh := make(chan error, 1)
 

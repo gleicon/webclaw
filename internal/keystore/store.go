@@ -30,11 +30,62 @@ type KeyStore struct {
 
 // NewKeyStore creates a new keystore using IndexedDB
 func NewKeyStore() (*KeyStore, error) {
-	db, err := jsbridge.OpenWebClawDB()
-	if err != nil {
+	// Use version 5 to force schema upgrade
+	req := jsbridge.IDBOpen("webclaw", 5)
+
+	dbCh := make(chan js.Value, 1)
+	errCh := make(chan error, 1)
+
+	// Handle upgrade - create ALL stores (identity, keystore, config)
+	req.Set("onupgradeneeded", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		event := args[0]
+		db := event.Get("target").Get("result")
+
+		// Create keystore object store
+		if !db.Get("objectStoreNames").Call("contains", "keystore").Bool() {
+			db.Call("createObjectStore", "keystore", map[string]interface{}{
+				"keyPath": "provider",
+			})
+		}
+
+		// Create identity object store (needed by other packages)
+		if !db.Get("objectStoreNames").Call("contains", "identity").Bool() {
+			db.Call("createObjectStore", "identity", map[string]interface{}{
+				"keyPath": "filename",
+			})
+		}
+
+		// Create config object store
+		if !db.Get("objectStoreNames").Call("contains", "config").Bool() {
+			db.Call("createObjectStore", "config", map[string]interface{}{
+				"keyPath": "key",
+			})
+		}
+
+		return nil
+	}))
+
+	req.Set("onsuccess", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		dbCh <- req.Get("result")
+		return nil
+	}))
+
+	req.Set("onerror", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		errCh <- fmt.Errorf("failed to open database: %v", req.Get("error"))
+		return nil
+	}))
+
+	req.Set("onblocked", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		errCh <- fmt.Errorf("database blocked - close other tabs")
+		return nil
+	}))
+
+	select {
+	case db := <-dbCh:
+		return &KeyStore{db: db}, nil
+	case err := <-errCh:
 		return nil, err
 	}
-	return &KeyStore{db: db}, nil
 }
 
 // StoreKey encrypts and stores an API key for a provider
