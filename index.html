@@ -123,6 +123,77 @@
   const importFileInput = document.getElementById('import-file-input');
 
   // ==========================================
+  // Provider Status Indicators
+  // ==========================================
+  let availableProviders = [];
+
+  window.addEventListener('webclaw:providers-ready', function(e) {
+    const detail = e.detail || {};
+    availableProviders = detail.providers || [];
+    const count = detail.count || 0;
+    console.log('[UI] Providers ready:', count, 'providers available');
+
+    // Update provider status indicators in settings
+    updateProviderStatusIndicators();
+  });
+
+  function updateProviderStatusIndicators() {
+    API_PROVIDERS.forEach(function(provider) {
+      const statusEl = document.getElementById('provider-status-' + provider.id);
+      if (statusEl) {
+        const isAvailable = availableProviders.includes(provider.id);
+        if (isAvailable) {
+          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
+          statusEl.className = 'text-xs text-green-400';
+        } else {
+          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
+          statusEl.className = 'text-xs text-red-400';
+        }
+      }
+    });
+
+    // Update demo mode indicator
+    updateDemoModeIndicator();
+  }
+
+  function updateDemoModeIndicator() {
+    const demoIndicator = document.getElementById('demo-mode-indicator');
+    if (demoIndicator) {
+      if (availableProviders.length === 0) {
+        demoIndicator.classList.remove('hidden');
+      } else {
+        demoIndicator.classList.add('hidden');
+      }
+    }
+  }
+
+  // ==========================================
+  // Error Toast Notifications
+  // ==========================================
+  function showErrorToast(message) {
+    // Remove existing toast if present
+    const existingToast = document.getElementById('error-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'error-toast';
+    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-900 text-red-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
+    toast.innerHTML = '<span class="text-red-400">⚠</span><span>' + message + '</span>';
+
+    document.body.appendChild(toast);
+
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, 5000);
+  }
+
+  // ==========================================
   // Tab Switching
   // ==========================================
   function switchTab(name) {
@@ -399,10 +470,17 @@
       return;
     }
 
+    // Demo mode indicator
+    const demoIndicator = document.createElement('div');
+    demoIndicator.id = 'demo-mode-indicator';
+    demoIndicator.className = 'hidden mb-4 p-3 bg-yellow-900/30 border border-yellow-700 rounded-lg';
+    demoIndicator.innerHTML = '<p class="text-sm text-yellow-200"><strong>Demo Mode</strong> — Enter an API key in Settings to enable live AI</p>';
+    apiKeysContainer.appendChild(demoIndicator);
+
     // Build saved keys summary section
     const summaryDiv = document.createElement('div');
     summaryDiv.className = 'mb-4 p-3 bg-gray-800 rounded-lg';
-    summaryDiv.innerHTML = '<h3 class="text-xs font-semibold text-gray-300 mb-2">Saved Keys</h3><div id="saved-keys-list" class="flex flex-wrap gap-2"></div>';
+    summaryDiv.innerHTML = '<h3 class="text-xs font-semibold text-gray-300 mb-2">Provider Status</h3><div id="saved-keys-list" class="flex flex-wrap gap-2"></div>';
     apiKeysContainer.appendChild(summaryDiv);
 
     const savedKeysList = summaryDiv.querySelector('#saved-keys-list');
@@ -410,7 +488,7 @@
     // Build rows for each provider
     API_PROVIDERS.forEach(function(provider) {
       const row = document.createElement('div');
-      row.className = 'flex items-center gap-3';
+      row.className = 'flex items-center gap-3 mb-3';
 
       const label = document.createElement('label');
       label.className = 'w-24 text-xs text-gray-400';
@@ -427,8 +505,16 @@
       saveBtn.textContent = 'Save';
 
       const statusSpan = document.createElement('span');
-      statusSpan.id = 'api-key-status-' + provider.id;
-      statusSpan.className = 'text-xs text-gray-500 w-16';
+      statusSpan.id = 'provider-status-' + provider.id;
+      statusSpan.className = 'text-xs text-gray-500 w-20';
+      statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
+
+      // Test connection button
+      const testBtn = document.createElement('button');
+      testBtn.id = 'test-btn-' + provider.id;
+      testBtn.className = 'hidden bg-gray-700 hover:bg-gray-600 text-gray-300 rounded px-2 py-2 text-xs font-medium';
+      testBtn.title = 'Test connection';
+      testBtn.innerHTML = '🧪';
 
       // Save handler
       saveBtn.addEventListener('click', function() {
@@ -441,29 +527,44 @@
           window.webclaw.keystore.setKey(provider.id, value)
             .then(function() {
               input.value = '';
-              statusSpan.textContent = 'Saved';
+              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Saved</span>';
+              statusSpan.className = 'text-xs text-green-400 w-20';
               saveBtn.textContent = 'Save';
               saveBtn.disabled = false;
+              // Show test button
+              testBtn.classList.remove('hidden');
               // Refresh saved keys list
               refreshSavedKeysList();
               setTimeout(function() {
-                statusSpan.textContent = '';
+                statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
               }, 2000);
             })
             .catch(function(err) {
-              statusSpan.textContent = 'Error';
+              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Error</span>';
+              statusSpan.className = 'text-xs text-red-400 w-20';
               saveBtn.textContent = 'Save';
               saveBtn.disabled = false;
               console.error('Failed to save key:', err);
+              showErrorToast('Failed to save API key: ' + (err.message || err));
             });
         } else {
           statusSpan.textContent = 'Not ready';
         }
       });
 
+      // Test connection handler
+      testBtn.addEventListener('click', function() {
+        if (!availableProviders.includes(provider.id)) {
+          showErrorToast('Please save ' + provider.name + ' API key first');
+          return;
+        }
+        testProviderConnection(provider.id);
+      });
+
       row.appendChild(label);
       row.appendChild(input);
       row.appendChild(saveBtn);
+      row.appendChild(testBtn);
       row.appendChild(statusSpan);
       apiKeysContainer.appendChild(row);
 
@@ -472,7 +573,10 @@
         window.webclaw.keystore.hasKey(provider.id)
           .then(function(hasKey) {
             if (hasKey) {
-              statusSpan.textContent = 'Key saved';
+              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
+              statusSpan.className = 'text-xs text-green-400 w-20';
+              // Show test button
+              testBtn.classList.remove('hidden');
               // Add to saved keys list
               const keyBadge = document.createElement('span');
               keyBadge.className = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300';
@@ -508,6 +612,76 @@
         }
       });
     }
+
+    // Initial demo mode check
+    updateDemoModeIndicator();
+  }
+
+  // ==========================================
+  // Test Provider Connection
+  // ==========================================
+  function testProviderConnection(providerId) {
+    const provider = API_PROVIDERS.find(function(p) { return p.id === providerId; });
+    if (!provider) return;
+
+    const testBtn = document.getElementById('test-btn-' + providerId);
+    if (testBtn) {
+      testBtn.disabled = true;
+      testBtn.innerHTML = '⏳';
+    }
+
+    // Use a cheap model for testing (haiku for Anthropic, gpt-3.5-turbo for OpenAI)
+    let testModel;
+    if (providerId === 'anthropic') {
+      testModel = 'claude-3-haiku-20240307';
+    } else if (providerId === 'openai') {
+      testModel = 'gpt-3.5-turbo';
+    } else {
+      testModel = 'openrouter/anthropic/claude-3-haiku-20240307';
+    }
+
+    console.log('[UI] Testing connection to', providerId, 'with model', testModel);
+
+    // Make a minimal test call
+    window.webclawHost.startStream({
+      provider: providerId,
+      model: testModel,
+      messages: [{ role: 'user', content: "Say 'test'" }],
+      onToken: function(token) {
+        // Token received - connection working
+      },
+      onComplete: function() {
+        if (testBtn) {
+          testBtn.disabled = false;
+          testBtn.innerHTML = '🧪';
+        }
+        showErrorToast('Connection to ' + provider.name + ' successful!');
+        // Change toast to success style
+        const toast = document.getElementById('error-toast');
+        if (toast) {
+          toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900 text-green-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
+          toast.innerHTML = '<span class="text-green-400">✓</span><span>Connection to ' + provider.name + ' successful!</span>';
+        }
+      },
+      onError: function(err) {
+        if (testBtn) {
+          testBtn.disabled = false;
+          testBtn.innerHTML = '🧪';
+        }
+
+        // Handle specific error types
+        const errorMsg = err && err.message ? err.message : String(err);
+        if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('invalid')) {
+          showErrorToast('Invalid API key for ' + provider.name + ' — please check and re-enter');
+        } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+          showErrorToast('Rate limited on ' + provider.name + ' — please wait a moment');
+        } else if (errorMsg.includes('missing') || errorMsg.includes('No provider')) {
+          showErrorToast('Please enter your ' + provider.name + ' API key in Settings');
+        } else {
+          showErrorToast('Connection failed: ' + errorMsg);
+        }
+      }
+    });
   }
 
   // Config export/import
