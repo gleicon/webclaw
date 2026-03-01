@@ -12,7 +12,6 @@ import (
 
 // ContextAssembler builds the complete context for LLM requests
 // Includes system prompt + identity files + conversation history
-// Uses the existing Conversation and Message types from conversation.go
 type ContextAssembler struct {
 	config        *config.Config
 	identityStore *identity.Store
@@ -54,25 +53,21 @@ func (ca *ContextAssembler) AssembleContext(userMessage string) ([]Message, erro
 	// Add system message first if available
 	if systemPrompt != "" {
 		systemMsg := Message{
-			ID:        generateMessageID(),
-			Role:      RoleSystem,
-			Content:   systemPrompt,
-			Timestamp: time.Now(),
-			Metadata:  map[string]interface{}{"source": "identity_bootstrap"},
+			Role:    string(RoleSystem),
+			Content: systemPrompt,
 		}
 		messages = append(messages, systemMsg)
 	}
 
-	// Add conversation history
-	messages = append(messages, allMessages...)
+	// Add conversation history (convert ConversationMessage to Message)
+	for _, cm := range allMessages {
+		messages = append(messages, cm.ToMessage())
+	}
 
 	// Add current user message
 	userMsg := Message{
-		ID:        generateMessageID(),
-		Role:      RoleUser,
-		Content:   userMessage,
-		Timestamp: time.Now(),
-		Metadata:  map[string]interface{}{},
+		Role:    string(RoleUser),
+		Content: userMessage,
 	}
 	messages = append(messages, userMsg)
 
@@ -89,14 +84,14 @@ func (ca *ContextAssembler) AssembleAndAdd(userMessage string) ([]Message, error
 	}
 
 	// Add user message to conversation history for future turns
-	ca.conversation.AddMessage(RoleUser, userMessage)
+	ca.conversation.AddUserMessage(userMessage)
 
 	return messages, nil
 }
 
 // AddAssistantResponse adds an assistant response to the conversation history
-func (ca *ContextAssembler) AddAssistantResponse(content string) Message {
-	return ca.conversation.AddMessage(RoleAssistant, content)
+func (ca *ContextAssembler) AddAssistantResponse(content string) ConversationMessage {
+	return ca.conversation.AddAssistantMessage(content)
 }
 
 // buildSystemPrompt assembles the system prompt from identity files
@@ -165,7 +160,7 @@ func (ca *ContextAssembler) EstimateTokens(userMessage string) int {
 	// History tokens
 	for _, msg := range ca.conversation.GetMessages() {
 		total += estimateTokens(msg.Content)
-		// Add overhead for role labels and formatting
+		// Add overhead for role labels
 		total += 4
 	}
 

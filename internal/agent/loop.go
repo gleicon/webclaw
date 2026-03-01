@@ -72,7 +72,7 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		// Need user message to assemble context
 		// This path is for when we have an assembler but no explicit messages
 		// The last message should be the user query
-		requestMessages = al.assembler.GetConversation().GetMessages()
+		requestMessages = al.assembler.GetConversation().GetMessagesForAPI()
 	}
 
 	// Check for context cancellation before starting

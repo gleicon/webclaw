@@ -13,16 +13,8 @@ const (
 	RoleSystem    Role = "system"
 	RoleUser      Role = "user"
 	RoleAssistant Role = "assistant"
+	RoleTool      Role = "tool"
 )
-
-// Message represents a single conversation turn
-type Message struct {
-	ID        string                 `json:"id"`
-	Role      Role                   `json:"role"`
-	Content   string                 `json:"content"`
-	Timestamp time.Time              `json:"timestamp"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-}
 
 // Summary represents a condensed conversation history
 type Summary struct {
@@ -32,11 +24,38 @@ type Summary struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// Message is the basic message format for API calls (OpenAI/Claude compatible)
+type Message struct {
+	Role    string `json:"role"` // "system", "user", "assistant", "tool"
+	Content string `json:"content"`
+	Name    string `json:"name,omitempty"` // For tool messages
+}
+
+// ConversationMessage extends Message with conversation management metadata
+// Note: Uses composition for API compatibility while adding tracking fields
+type ConversationMessage struct {
+	Role      string                 `json:"role"`
+	Content   string                 `json:"content"`
+	Name      string                 `json:"name,omitempty"`
+	ID        string                 `json:"id"`
+	Timestamp time.Time              `json:"timestamp"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// ToMessage converts a ConversationMessage to a basic Message for API calls
+func (cm ConversationMessage) ToMessage() Message {
+	return Message{
+		Role:    cm.Role,
+		Content: cm.Content,
+		Name:    cm.Name,
+	}
+}
+
 // Conversation manages the conversation state with automatic summarization
 // support. It maintains full messages and optionally a summary of older history.
 type Conversation struct {
 	ID        string                 `json:"id"`
-	Messages  []Message              `json:"messages"`
+	Messages  []ConversationMessage  `json:"messages"`
 	Summary   *Summary               `json:"summary,omitempty"`
 	CreatedAt time.Time              `json:"created_at"`
 	UpdatedAt time.Time              `json:"updated_at"`
@@ -53,7 +72,7 @@ func NewConversation(id string) *Conversation {
 	now := time.Now()
 	return &Conversation{
 		ID:             id,
-		Messages:       make([]Message, 0),
+		Messages:       make([]ConversationMessage, 0),
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		Metadata:       make(map[string]interface{}),
@@ -65,11 +84,11 @@ func NewConversation(id string) *Conversation {
 
 // AddMessage appends a new message to the conversation
 // Returns the added message for convenience
-func (c *Conversation) AddMessage(role Role, content string) Message {
-	msg := Message{
-		ID:        generateMessageID(),
-		Role:      role,
+func (c *Conversation) AddMessage(role Role, content string) ConversationMessage {
+	msg := ConversationMessage{
+		Role:      string(role),
 		Content:   content,
+		ID:        generateMessageID(),
 		Timestamp: time.Now(),
 		Metadata:  make(map[string]interface{}),
 	}
@@ -78,20 +97,49 @@ func (c *Conversation) AddMessage(role Role, content string) Message {
 	return msg
 }
 
+// AddAssistantMessage adds an assistant response to the conversation
+func (c *Conversation) AddAssistantMessage(content string) ConversationMessage {
+	return c.AddMessage(RoleAssistant, content)
+}
+
+// AddUserMessage adds a user message to the conversation
+func (c *Conversation) AddUserMessage(content string) ConversationMessage {
+	return c.AddMessage(RoleUser, content)
+}
+
 // GetMessages returns all messages in the conversation
-func (c *Conversation) GetMessages() []Message {
+func (c *Conversation) GetMessages() []ConversationMessage {
 	return c.Messages
 }
 
+// GetMessagesForAPI returns messages in basic Message format for API calls
+func (c *Conversation) GetMessagesForAPI() []Message {
+	result := make([]Message, len(c.Messages))
+	for i, msg := range c.Messages {
+		result[i] = msg.ToMessage()
+	}
+	return result
+}
+
 // GetRecentMessages returns the last n messages
-func (c *Conversation) GetRecentMessages(n int) []Message {
+func (c *Conversation) GetRecentMessages(n int) []ConversationMessage {
 	if n <= 0 {
-		return []Message{}
+		return []ConversationMessage{}
 	}
 	if n >= len(c.Messages) {
 		return c.Messages
 	}
 	return c.Messages[len(c.Messages)-n:]
+}
+
+// GetRecentMessagesForAPI returns the last n messages in basic format
+func (c *Conversation) GetRecentMessagesForAPI(n int) []Message {
+	recent := c.GetRecentMessages(n)
+	result := make([]Message, len(recent))
+	for i, msg := range recent {
+		result[i] = msg.ToMessage()
+	}
+	return result
 }
 
 // GetMessageCount returns the total number of messages
@@ -100,7 +148,7 @@ func (c *Conversation) GetMessageCount() int {
 }
 
 // GetMessageByID retrieves a specific message by ID
-func (c *Conversation) GetMessageByID(id string) *Message {
+func (c *Conversation) GetMessageByID(id string) *ConversationMessage {
 	for i := range c.Messages {
 		if c.Messages[i].ID == id {
 			return &c.Messages[i]
@@ -117,7 +165,7 @@ func (c *Conversation) SetSummary(summary *Summary) {
 
 // ClearMessages removes all messages (useful after summarization)
 func (c *Conversation) ClearMessages() {
-	c.Messages = make([]Message, 0)
+	c.Messages = make([]ConversationMessage, 0)
 	c.UpdatedAt = time.Now()
 }
 
