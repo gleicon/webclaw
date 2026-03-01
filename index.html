@@ -290,11 +290,25 @@
     const content = userInput.value.trim();
     if (!content) return;
 
-    // Parse model selector
+    // Parse model selector (vendor/model-id format)
     const modelValue = modelSelector.value;
     const slashIdx = modelValue.indexOf('/');
     const provider = slashIdx > 0 ? modelValue.substring(0, slashIdx) : 'anthropic';
     const model = slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
+
+    // Validate provider is available
+    if (availableProviders.length === 0) {
+      showErrorToast('Please enter your API key in Settings to enable live AI');
+      return;
+    }
+
+    // Check if selected provider is available
+    if (!availableProviders.includes(provider)) {
+      // Try to suggest alternative
+      const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+      showErrorToast('Please enter your ' + providerName + ' API key in Settings, or select a different model');
+      return;
+    }
 
     // Clear input and show user bubble
     userInput.value = '';
@@ -321,10 +335,11 @@
     // Add message to conversation history
     window.webclawHost.addMessage('user', content);
 
-    // Start stream
+    // Start stream with live provider routing
     window.webclawHost.startStream({
       provider: provider,
       model: model,
+      messages: [{ role: 'user', content: content }],
       onToken: function(token) {
         if (streamCursor && streamCursor.parentNode) {
           streamCursor.parentNode.removeChild(streamCursor);
@@ -346,8 +361,20 @@
         if (streamCursor && streamCursor.parentNode) {
           streamCursor.parentNode.removeChild(streamCursor);
         }
+
+        // Handle specific error cases
         const errorMessage = err && err.message ? err.message : 'Stream error';
-        appendErrorBubble(errorMessage);
+        let userMessage = errorMessage;
+
+        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid')) {
+          userMessage = 'Invalid API key - please check and re-enter in Settings';
+        } else if (errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('RateLimit')) {
+          userMessage = 'Rate limited - please wait a moment';
+        } else if (errorMessage.includes('No provider') || errorMessage.includes('not found')) {
+          userMessage = 'Please enter your API key in Settings to enable live AI';
+        }
+
+        appendErrorBubble(userMessage);
         resetStreamingState();
         scrollToBottom();
       }
