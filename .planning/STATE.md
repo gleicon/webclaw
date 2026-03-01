@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T19:37:38.303Z"
+last_updated: "2026-03-01T21:11:07.764Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 13
+  completed_plans: 11
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** A fully functional OpenClaw-compatible AI assistant that boots from a URL in a browser tab — zero install, instant distribution, no Node.js or server required.
-**Current focus:** Phase 3 - Intelligence Core (IN PROGRESS)
+**Current focus:** Phase 4 - Tools and Webchat UI (IN PROGRESS)
 
 ## Current Position
 
-Phase: 3 of 4 (Intelligence Core)
-Plan: 4 of 4 in current phase (COMPLETE)
-Status: **03-04 Complete - Memory System & Hybrid Search implemented**
-Last activity: 2026-03-01 — Plan 03-04 complete (Memory with Float32Array embeddings and hybrid search)
+Phase: 4 of 4 (Tools and Webchat UI)
+Plan: 1 of 3 in current phase (COMPLETE)
+Status: **04-01 Complete - Tool Registry, four browser tools, and agent loop tool dispatch**
+Last activity: 2026-03-01 — Plan 04-01 complete (Tool registry, web_fetch, web_search, memory tools, agent dispatch loop)
 
-Progress: [████████████░░░░] 75%
+Progress: [█████████████░░░] 81%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [████████████░░░░] 75%
 | Phase 02 P03 | 8 min | 4 tasks | 4 files |
 | Phase 02 P02 | 12 min | 4 tasks | 6 files |
 | Phase 02 P01 | 116s | 3 tasks | 4 files |
+| Phase 04-tools-and-webchat-ui P01 | 6 | 4 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [03-04] LRU eviction with multi-factor scoring: age, access count, and importance
 - [03-04] Created duplicate types in jsbridge to avoid import cycles with memory package
 - [03-04] Gzip compression for memory archival before deletion
+- [Phase 04-01]: MemoryAgent interface in tools package avoids circular import between tools and agent
+- [Phase 04-01]: Provider interface callback changed from func(string) to func(provider.Token) to carry tool_use metadata through the dispatch loop
+- [Phase 04-01]: providerAdapter bridges provider.Router channel-based stream to agent.Provider callback-based interface
 
 ### Pending Todos
 
@@ -102,8 +106,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 03-intelligence-core/03-04-PLAN.md — Memory System & Hybrid Search
-Resume file: .planning/phases/03-intelligence-core/03-04-SUMMARY.md
+Stopped at: Completed 04-tools-and-webchat-ui/04-01-PLAN.md — Tool Registry and Agent Dispatch Loop
+Resume file: .planning/phases/04-tools-and-webchat-ui/04-01-SUMMARY.md
 
 ### Phase 3 Progress
 

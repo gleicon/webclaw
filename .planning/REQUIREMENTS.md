@@ -59,12 +59,12 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 ### Tools
 
-- [ ] **TOOL-01**: Agent can invoke `web_fetch` — fetches a URL via JS fetch(), returns content to agent
-- [ ] **TOOL-02**: Agent can invoke `web_search` — queries a search provider (DuckDuckGo as default) and returns results
-- [ ] **TOOL-03**: Agent can invoke `memory_store` — stores a fact or document to memory
-- [ ] **TOOL-04**: Agent can invoke `memory_search` — recalls relevant memories for a query
-- [ ] **TOOL-05**: Tool registry allows registering tools with name, description, JSON schema parameters, and execute function
-- [ ] **TOOL-06**: Tool execution results have dual output: content fed back to LLM for next iteration, and display content for the UI
+- [x] **TOOL-01**: Agent can invoke `web_fetch` — fetches a URL via JS fetch(), returns content to agent
+- [x] **TOOL-02**: Agent can invoke `web_search` — queries a search provider (DuckDuckGo as default) and returns results
+- [x] **TOOL-03**: Agent can invoke `memory_store` — stores a fact or document to memory
+- [x] **TOOL-04**: Agent can invoke `memory_search` — recalls relevant memories for a query
+- [x] **TOOL-05**: Tool registry allows registering tools with name, description, JSON schema parameters, and execute function
+- [x] **TOOL-06**: Tool execution results have dual output: content fed back to LLM for next iteration, and display content for the UI
 
 ### Webchat UI
 
@@ -151,12 +151,12 @@ Deferred to next milestone after v1 is dogfooded.
 | MEM-03 | Phase 3 | Pending |
 | MEM-04 | Phase 3 | Pending |
 | MEM-05 | Phase 3 | Pending |
-| TOOL-01 | Phase 4 | Pending |
-| TOOL-02 | Phase 4 | Pending |
-| TOOL-03 | Phase 4 | Pending |
-| TOOL-04 | Phase 4 | Pending |
-| TOOL-05 | Phase 4 | Pending |
-| TOOL-06 | Phase 4 | Pending |
+| TOOL-01 | Phase 4 | Complete |
+| TOOL-02 | Phase 4 | Complete |
+| TOOL-03 | Phase 4 | Complete |
+| TOOL-04 | Phase 4 | Complete |
+| TOOL-05 | Phase 4 | Complete |
+| TOOL-06 | Phase 4 | Complete |
 | UI-01 | Phase 4 | Pending |
 | UI-02 | Phase 4 | Pending |
 | UI-03 | Phase 4 | Pending |
