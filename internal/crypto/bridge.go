@@ -20,7 +20,9 @@ func GenerateKey(length int) js.Value {
 		"name":   "AES-GCM",
 		"length": length,
 	}
-	usages := []string{"encrypt", "decrypt"}
+	usages := js.Global().Get("Array").New(2)
+	usages.SetIndex(0, "encrypt")
+	usages.SetIndex(1, "decrypt")
 	return subtleCrypto().Call("generateKey", algorithm, true, usages)
 }
 
@@ -34,7 +36,10 @@ func ImportKey(keyBytes []byte, extractable bool) js.Value {
 	algorithm := map[string]interface{}{
 		"name": "AES-GCM",
 	}
-	usages := []string{"encrypt", "decrypt"}
+
+	usages := js.Global().Get("Array").New(2)
+	usages.SetIndex(0, "encrypt")
+	usages.SetIndex(1, "decrypt")
 
 	return subtleCrypto().Call("importKey", "raw", keyData, algorithm, extractable, usages)
 }
@@ -67,7 +72,9 @@ func DeriveKey(baseKey js.Value, salt []byte, iterations int) js.Value {
 		"length": 256,
 	}
 
-	usages := []string{"encrypt", "decrypt"}
+	usages := js.Global().Get("Array").New(2)
+	usages.SetIndex(0, "encrypt")
+	usages.SetIndex(1, "decrypt")
 	return subtleCrypto().Call("deriveKey", deriveParams, baseKey, keyAlgorithm, false, usages)
 }
 
@@ -79,7 +86,11 @@ func ImportKeyPBKDF2(passphrase []byte) js.Value {
 	algorithm := map[string]interface{}{
 		"name": "PBKDF2",
 	}
-	usages := []string{"deriveKey"}
+
+	// Convert usages slice to JS array
+	usages := js.Global().Get("Array").New(1)
+	usages.SetIndex(0, "deriveKey")
+
 	return subtleCrypto().Call("importKey", "raw", passData, algorithm, false, usages)
 }
 
