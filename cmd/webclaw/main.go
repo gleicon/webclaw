@@ -42,9 +42,14 @@ func initializeConfig() error {
 		if err := storage.SetConfig(cfg); err != nil {
 			return fmt.Errorf("failed to save default config: %w", err)
 		}
+		// Dispatch event with config version and identity name only
+		// Full config can be retrieved via storage API
 		js.Global().Call("dispatchEvent",
 			js.Global().Get("CustomEvent").New("webclaw:first-run",
-				map[string]interface{}{"config": cfg}))
+				map[string]interface{}{
+					"version":  cfg.Version,
+					"identity": cfg.Identity.Name,
+				}))
 		js.Global().Get("console").Call("log", "webclaw: created default config (first run)")
 	} else {
 		// Config exists - load it
@@ -52,9 +57,13 @@ func initializeConfig() error {
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
+		// Dispatch event with basic info
 		js.Global().Call("dispatchEvent",
 			js.Global().Get("CustomEvent").New("webclaw:config-ready",
-				map[string]interface{}{"config": cfg}))
+				map[string]interface{}{
+					"version":  cfg.Version,
+					"identity": cfg.Identity.Name,
+				}))
 		js.Global().Get("console").Call("log", "webclaw: config loaded")
 	}
 

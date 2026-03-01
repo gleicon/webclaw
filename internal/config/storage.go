@@ -42,7 +42,8 @@ func (s *Storage) openDB() error {
 		db := event.Get("target").Get("result")
 
 		// Create config object store if it doesn't exist
-		if !db.Call("objectStoreNames", "contains").Invoke(ConfigStore).Bool() {
+		storeNames := db.Get("objectStoreNames")
+		if !storeNames.Call("contains", ConfigStore).Bool() {
 			db.Call("createObjectStore", ConfigStore, map[string]interface{}{"keyPath": "key"})
 		}
 
