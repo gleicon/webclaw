@@ -56,9 +56,12 @@
 
   <!-- Settings View (hidden) -->
   <div id="view-settings" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
-    <section id="api-keys-section">
+    <section>
       <h2 class="text-sm font-semibold text-gray-300 mb-3">API Keys</h2>
-      <!-- Built dynamically by buildSettingsUI() -->
+      <div id="api-keys-container" class="space-y-3">
+        <!-- Built dynamically by buildSettingsUI() -->
+        <p class="text-xs text-gray-500">Loading API key forms...</p>
+      </div>
     </section>
     <section>
       <h2 class="text-sm font-semibold text-gray-300 mb-3">Configuration</h2>
@@ -110,7 +113,7 @@
   const abortBtn = document.getElementById('abort-btn');
   const streamStatus = document.getElementById('stream-status');
   const toolEvents = document.getElementById('tool-events');
-  const apiKeysSection = document.getElementById('api-keys-section');
+  const apiKeysContainer = document.getElementById('api-keys-container');
   const identityFileList = document.getElementById('identity-file-list');
   const identityFilename = document.getElementById('identity-filename');
   const identitySaveBtn = document.getElementById('identity-save-btn');
@@ -388,14 +391,18 @@
 
   function buildSettingsUI() {
     // Clear existing content
-    while (apiKeysSection.children.length > 1) {
-      apiKeysSection.removeChild(apiKeysSection.lastChild);
+    apiKeysContainer.innerHTML = '';
+
+    // Check if webclaw APIs are available
+    if (!window.webclaw || !window.webclaw.keystore) {
+      apiKeysContainer.innerHTML = '<p class="text-xs text-gray-500">API key management not available. Please wait for WASM to initialize.</p>';
+      return;
     }
 
     // Build rows for each provider
     API_PROVIDERS.forEach(function(provider) {
       const row = document.createElement('div');
-      row.className = 'flex items-center gap-3 mb-3';
+      row.className = 'flex items-center gap-3';
 
       const label = document.createElement('label');
       label.className = 'w-24 text-xs text-gray-400';
@@ -420,19 +427,23 @@
         const value = input.value.trim();
         if (!value) return;
 
-        // Guard webclaw availability
         if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.setKey) {
+          saveBtn.textContent = 'Saving...';
+          saveBtn.disabled = true;
           window.webclaw.keystore.setKey(provider.id, value)
             .then(function() {
-              // Clear input immediately after passing to WASM
               input.value = '';
               statusSpan.textContent = 'Saved';
+              saveBtn.textContent = 'Save';
+              saveBtn.disabled = false;
               setTimeout(function() {
                 statusSpan.textContent = '';
               }, 2000);
             })
             .catch(function(err) {
               statusSpan.textContent = 'Error';
+              saveBtn.textContent = 'Save';
+              saveBtn.disabled = false;
               console.error('Failed to save key:', err);
             });
         } else {
@@ -444,7 +455,7 @@
       row.appendChild(input);
       row.appendChild(saveBtn);
       row.appendChild(statusSpan);
-      apiKeysSection.appendChild(row);
+      apiKeysContainer.appendChild(row);
 
       // Check if key already exists
       if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
@@ -454,8 +465,8 @@
               statusSpan.textContent = 'Key saved';
             }
           })
-          .catch(function() {
-            // Ignore errors
+          .catch(function(err) {
+            console.warn('Failed to check key status for', provider.id, err);
           });
       }
     });
@@ -545,18 +556,21 @@
     identitySaveBtn.classList.remove('hidden');
     identityEditor.value = 'Loading...';
 
-    if (window.webclaw && window.webclaw.identity && window.webclaw.identity.getFile) {
-      window.webclaw.identity.getFile(filename)
-        .then(function(content) {
-          identityEditor.value = content || '';
-        })
-        .catch(function(err) {
-          console.error('Failed to load file:', err);
-          identityEditor.value = '';
-        });
-    } else {
-      identityEditor.value = '';
+    // Check if webclaw.identity API is available
+    if (!window.webclaw || !window.webclaw.identity || !window.webclaw.identity.getFile) {
+      console.warn('[UI] webclaw.identity.getFile not available');
+      identityEditor.value = 'Error: Identity API not available. Please wait for WASM to initialize.';
+      return;
     }
+
+    window.webclaw.identity.getFile(filename)
+      .then(function(content) {
+        identityEditor.value = content || '';
+      })
+      .catch(function(err) {
+        console.error('[UI] Failed to load file:', err);
+        identityEditor.value = 'Error loading file: ' + (err && err.message ? err.message : String(err));
+      });
   }
 
   identitySaveBtn.addEventListener('click', function() {
@@ -564,24 +578,28 @@
 
     const content = identityEditor.value;
     identitySaveBtn.textContent = 'Saving...';
+    identitySaveBtn.disabled = true;
 
     if (window.webclaw && window.webclaw.identity && window.webclaw.identity.putFile) {
       window.webclaw.identity.putFile(activeIdentityFile, content)
         .then(function() {
           identitySaveBtn.textContent = 'Saved';
+          identitySaveBtn.disabled = false;
           setTimeout(function() {
             identitySaveBtn.textContent = 'Save';
           }, 1500);
         })
         .catch(function(err) {
-          console.error('Failed to save file:', err);
+          console.error('[UI] Failed to save file:', err);
           identitySaveBtn.textContent = 'Error';
+          identitySaveBtn.disabled = false;
           setTimeout(function() {
             identitySaveBtn.textContent = 'Save';
           }, 1500);
         });
     } else {
       identitySaveBtn.textContent = 'Not ready';
+      identitySaveBtn.disabled = false;
       setTimeout(function() {
         identitySaveBtn.textContent = 'Save';
       }, 1500);
@@ -592,7 +610,9 @@
   // WASM Ready Handler
   // ==========================================
   window.addEventListener('webclaw:host-ready', function() {
-    console.log('[UI] Host ready, initializing...');
+    console.log('[UI] Host ready, initializing UI components...');
+    console.log('[UI] webclaw APIs:', window.webclaw ? Object.keys(window.webclaw) : 'not available');
+
     buildSettingsUI();
     buildIdentityFileList();
 
