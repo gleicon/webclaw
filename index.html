@@ -2,10 +2,620 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>WebClaw — Developer Harness</title>
-</head>
-<body>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebClaw</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="static/wasm_exec.js"></script>
   <script src="static/webclaw-host.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+
+  <!-- Tab Bar -->
+  <nav class="flex border-b border-gray-700 bg-gray-900 shrink-0">
+    <button id="tab-chat"     class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400">Chat</button>
+    <button id="tab-settings" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Settings</button>
+    <button id="tab-identity" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Identity Files</button>
+  </nav>
+
+  <!-- Chat View: two-column layout -->
+  <div id="view-chat" class="flex flex-1 overflow-hidden">
+    <!-- Chat Column -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <!-- Model selector header -->
+      <div class="flex items-center gap-3 px-4 py-2 border-b border-gray-700 shrink-0">
+        <label class="text-xs text-gray-400">Model</label>
+        <select id="model-selector" class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
+          <option value="anthropic/claude-sonnet-4-5">Anthropic / claude-sonnet-4-5</option>
+          <option value="anthropic/claude-opus-4">Anthropic / claude-opus-4</option>
+          <option value="openai/gpt-4o">OpenAI / gpt-4o</option>
+          <option value="openrouter/anthropic/claude-sonnet-4-5">OpenRouter / claude-sonnet-4-5</option>
+        </select>
+        <span id="stream-status" class="text-xs text-gray-500 ml-auto"></span>
+      </div>
+      <!-- Message list -->
+      <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <!-- Input area -->
+      <div class="p-4 border-t border-gray-700 shrink-0">
+        <div class="flex gap-2 items-end">
+          <textarea id="user-input"
+            class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 resize-none focus:outline-none focus:border-indigo-500"
+            rows="3" placeholder="Type a message... (Enter to send, Shift+Enter for newline)"></textarea>
+          <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Send</button>
+          <button id="abort-btn" class="hidden bg-red-700 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Stop</button>
+        </div>
+      </div>
+    </div>
+    <!-- Tool Activity Panel — always visible on right -->
+    <div class="w-72 border-l border-gray-700 flex flex-col overflow-hidden shrink-0">
+      <div class="px-3 py-2 border-b border-gray-700 shrink-0">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tool Activity</h2>
+      </div>
+      <div id="tool-events" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Settings View (hidden) -->
+  <div id="view-settings" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
+    <section id="api-keys-section">
+      <h2 class="text-sm font-semibold text-gray-300 mb-3">API Keys</h2>
+      <!-- Built dynamically by buildSettingsUI() -->
+    </section>
+    <section>
+      <h2 class="text-sm font-semibold text-gray-300 mb-3">Configuration</h2>
+      <div class="flex gap-3">
+        <button id="export-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Export Config</button>
+        <button id="import-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Import Config</button>
+        <input id="import-file-input" type="file" accept=".json" class="hidden">
+      </div>
+    </section>
+  </div>
+
+  <!-- Identity Files View (hidden) -->
+  <div id="view-identity" class="hidden flex-1 overflow-hidden">
+    <!-- File list (left) -->
+    <div id="identity-file-list" class="w-48 border-r border-gray-700 overflow-y-auto p-2 space-y-1 shrink-0"></div>
+    <!-- Editor (right) -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="px-4 py-2 border-b border-gray-700 flex items-center justify-between shrink-0">
+        <span id="identity-filename" class="text-sm text-gray-400">Select a file</span>
+        <button id="identity-save-btn" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1 text-xs">Save</button>
+      </div>
+      <textarea id="identity-editor"
+        class="flex-1 bg-gray-900 text-gray-100 font-mono text-sm p-4 resize-none focus:outline-none"
+        placeholder="Select a file to edit..."></textarea>
+    </div>
+  </div>
+
+<script>
+(function() {
+  'use strict';
+
+  // State
+  let isStreaming = false;
+  let activeIdentityFile = null;
+  let agentBubble = null;
+  let streamCursor = null;
+
+  // DOM refs
+  const tabChat = document.getElementById('tab-chat');
+  const tabSettings = document.getElementById('tab-settings');
+  const tabIdentity = document.getElementById('tab-identity');
+  const viewChat = document.getElementById('view-chat');
+  const viewSettings = document.getElementById('view-settings');
+  const viewIdentity = document.getElementById('view-identity');
+  const modelSelector = document.getElementById('model-selector');
+  const messages = document.getElementById('messages');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const abortBtn = document.getElementById('abort-btn');
+  const streamStatus = document.getElementById('stream-status');
+  const toolEvents = document.getElementById('tool-events');
+  const apiKeysSection = document.getElementById('api-keys-section');
+  const identityFileList = document.getElementById('identity-file-list');
+  const identityFilename = document.getElementById('identity-filename');
+  const identitySaveBtn = document.getElementById('identity-save-btn');
+  const identityEditor = document.getElementById('identity-editor');
+  const exportConfigBtn = document.getElementById('export-config-btn');
+  const importConfigBtn = document.getElementById('import-config-btn');
+  const importFileInput = document.getElementById('import-file-input');
+
+  // ==========================================
+  // Tab Switching
+  // ==========================================
+  function switchTab(name) {
+    // Reset all tabs
+    tabChat.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
+    tabSettings.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
+    tabIdentity.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
+    viewChat.classList.add('hidden');
+    viewChat.classList.remove('flex');
+    viewSettings.classList.add('hidden');
+    viewIdentity.classList.add('hidden');
+    viewIdentity.classList.remove('flex');
+
+    // Activate selected tab
+    if (name === 'chat') {
+      tabChat.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
+      viewChat.classList.remove('hidden');
+      viewChat.classList.add('flex');
+    } else if (name === 'settings') {
+      tabSettings.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
+      viewSettings.classList.remove('hidden');
+    } else if (name === 'identity') {
+      tabIdentity.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
+      viewIdentity.classList.remove('hidden');
+      viewIdentity.classList.add('flex');
+      buildIdentityFileList();
+    }
+  }
+
+  tabChat.addEventListener('click', () => switchTab('chat'));
+  tabSettings.addEventListener('click', () => switchTab('settings'));
+  tabIdentity.addEventListener('click', () => switchTab('identity'));
+
+  // ==========================================
+  // Message Bubbles (DOM-safe, no string injection)
+  // ==========================================
+  function scrollToBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function appendUserBubble(content) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex justify-end';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'max-w-[70%] rounded-2xl rounded-tr-sm px-4 py-2 bg-indigo-600 text-white text-sm';
+    bubble.textContent = content;
+
+    wrapper.appendChild(bubble);
+    messages.appendChild(wrapper);
+    scrollToBottom();
+  }
+
+  function appendAgentBubble() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex justify-start';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
+
+    wrapper.appendChild(bubble);
+    messages.appendChild(wrapper);
+    scrollToBottom();
+
+    return bubble;
+  }
+
+  function appendErrorBubble(message) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex justify-start';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'max-w-[70%] rounded-2xl px-4 py-2 bg-red-900 text-red-200 text-sm';
+    bubble.textContent = message;
+
+    wrapper.appendChild(bubble);
+    messages.appendChild(wrapper);
+    scrollToBottom();
+  }
+
+  function createStreamingCursor() {
+    const cursor = document.createElement('span');
+    cursor.id = 'stream-cursor';
+    cursor.className = 'inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 align-middle';
+    return cursor;
+  }
+
+  // ==========================================
+  // Send Message Flow
+  // ==========================================
+  function sendMessage() {
+    if (isStreaming) return;
+
+    const content = userInput.value.trim();
+    if (!content) return;
+
+    // Parse model selector
+    const modelValue = modelSelector.value;
+    const slashIdx = modelValue.indexOf('/');
+    const provider = slashIdx > 0 ? modelValue.substring(0, slashIdx) : 'anthropic';
+    const model = slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
+
+    // Clear input and show user bubble
+    userInput.value = '';
+    appendUserBubble(content);
+
+    // Create agent bubble for streaming
+    agentBubble = appendAgentBubble();
+    streamCursor = createStreamingCursor();
+    agentBubble.appendChild(streamCursor);
+
+    // Set streaming state
+    isStreaming = true;
+    streamStatus.textContent = 'Streaming...';
+    sendBtn.classList.add('hidden');
+    abortBtn.classList.remove('hidden');
+
+    // Guard webclawHost availability
+    if (!window.webclawHost) {
+      appendErrorBubble('WebClaw host not initialized');
+      resetStreamingState();
+      return;
+    }
+
+    // Add message to conversation history
+    window.webclawHost.addMessage('user', content);
+
+    // Start stream
+    window.webclawHost.startStream({
+      provider: provider,
+      model: model,
+      onToken: function(token) {
+        if (streamCursor && streamCursor.parentNode) {
+          streamCursor.parentNode.removeChild(streamCursor);
+        }
+        if (agentBubble) {
+          agentBubble.textContent += token;
+          agentBubble.appendChild(streamCursor);
+        }
+        scrollToBottom();
+      },
+      onComplete: function(result) {
+        if (streamCursor && streamCursor.parentNode) {
+          streamCursor.parentNode.removeChild(streamCursor);
+        }
+        resetStreamingState();
+        scrollToBottom();
+      },
+      onError: function(err) {
+        if (streamCursor && streamCursor.parentNode) {
+          streamCursor.parentNode.removeChild(streamCursor);
+        }
+        const errorMessage = err && err.message ? err.message : 'Stream error';
+        appendErrorBubble(errorMessage);
+        resetStreamingState();
+        scrollToBottom();
+      }
+    });
+  }
+
+  function resetStreamingState() {
+    isStreaming = false;
+    streamStatus.textContent = '';
+    sendBtn.classList.remove('hidden');
+    abortBtn.classList.add('hidden');
+    agentBubble = null;
+    streamCursor = null;
+  }
+
+  function abortMessage() {
+    if (window.webclawHost) {
+      window.webclawHost.abortStream();
+    }
+  }
+
+  // Event handlers
+  userInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+  abortBtn.addEventListener('click', abortMessage);
+
+  // ==========================================
+  // Tool Event Panel
+  // ==========================================
+  window.addEventListener('webclaw:tool-event', function(e) {
+    const detail = e.detail || {};
+    const toolName = detail.toolName || 'Unknown';
+    const status = detail.status || 'running';
+    const summary = detail.summary || '';
+    const full = detail.full || '';
+
+    // Create card
+    const card = document.createElement('div');
+    card.className = 'bg-gray-800 rounded-lg p-2 text-xs';
+
+    // Header row
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between mb-1';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'font-mono text-indigo-400';
+    nameSpan.textContent = toolName;
+
+    const statusBadge = document.createElement('span');
+    if (status === 'running') {
+      statusBadge.className = 'text-yellow-400';
+      statusBadge.textContent = '● running';
+    } else if (status === 'done') {
+      statusBadge.className = 'text-green-400';
+      statusBadge.textContent = '● done';
+    } else {
+      statusBadge.className = 'text-red-400';
+      statusBadge.textContent = '● error';
+    }
+
+    header.appendChild(nameSpan);
+    header.appendChild(statusBadge);
+    card.appendChild(header);
+
+    // Summary paragraph
+    if (summary) {
+      const summaryP = document.createElement('p');
+      summaryP.className = 'text-gray-400';
+      summaryP.textContent = summary;
+      card.appendChild(summaryP);
+    }
+
+    // Expandable details
+    if (full) {
+      const details = document.createElement('details');
+      const summaryEl = document.createElement('summary');
+      summaryEl.className = 'text-gray-500 cursor-pointer hover:text-gray-300 mt-1';
+      summaryEl.textContent = 'Details';
+
+      const pre = document.createElement('pre');
+      pre.className = 'mt-2 p-2 bg-gray-900 rounded text-gray-500 overflow-x-auto';
+      pre.textContent = full;
+
+      details.appendChild(summaryEl);
+      details.appendChild(pre);
+      card.appendChild(details);
+    }
+
+    // Insert at top
+    toolEvents.insertBefore(card, toolEvents.firstChild);
+
+    // Trim to max 20 entries
+    while (toolEvents.children.length > 20) {
+      toolEvents.removeChild(toolEvents.lastChild);
+    }
+  });
+
+  // ==========================================
+  // Settings UI
+  // ==========================================
+  const API_PROVIDERS = [
+    { id: 'anthropic', name: 'Anthropic' },
+    { id: 'openai', name: 'OpenAI' },
+    { id: 'openrouter', name: 'OpenRouter' }
+  ];
+
+  function buildSettingsUI() {
+    // Clear existing content
+    while (apiKeysSection.children.length > 1) {
+      apiKeysSection.removeChild(apiKeysSection.lastChild);
+    }
+
+    // Build rows for each provider
+    API_PROVIDERS.forEach(function(provider) {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-3 mb-3';
+
+      const label = document.createElement('label');
+      label.className = 'w-24 text-xs text-gray-400';
+      label.textContent = provider.name;
+
+      const input = document.createElement('input');
+      input.type = 'password';
+      input.id = 'api-key-' + provider.id;
+      input.className = 'flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500';
+      input.placeholder = 'Enter API key...';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-2 text-xs font-medium';
+      saveBtn.textContent = 'Save';
+
+      const statusSpan = document.createElement('span');
+      statusSpan.id = 'api-key-status-' + provider.id;
+      statusSpan.className = 'text-xs text-gray-500 w-16';
+
+      // Save handler
+      saveBtn.addEventListener('click', function() {
+        const value = input.value.trim();
+        if (!value) return;
+
+        // Guard webclaw availability
+        if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.setKey) {
+          window.webclaw.keystore.setKey(provider.id, value)
+            .then(function() {
+              // Clear input immediately after passing to WASM
+              input.value = '';
+              statusSpan.textContent = 'Saved';
+              setTimeout(function() {
+                statusSpan.textContent = '';
+              }, 2000);
+            })
+            .catch(function(err) {
+              statusSpan.textContent = 'Error';
+              console.error('Failed to save key:', err);
+            });
+        } else {
+          statusSpan.textContent = 'Not ready';
+        }
+      });
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(saveBtn);
+      row.appendChild(statusSpan);
+      apiKeysSection.appendChild(row);
+
+      // Check if key already exists
+      if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
+        window.webclaw.keystore.hasKey(provider.id)
+          .then(function(hasKey) {
+            if (hasKey) {
+              statusSpan.textContent = 'Key saved';
+            }
+          })
+          .catch(function() {
+            // Ignore errors
+          });
+      }
+    });
+  }
+
+  // Config export/import
+  exportConfigBtn.addEventListener('click', function() {
+    if (window.webclaw && window.webclaw.exportImport && window.webclaw.exportImport.exportConfig) {
+      window.webclaw.exportImport.exportConfig()
+        .then(function() {
+          console.log('Config exported');
+        })
+        .catch(function(err) {
+          console.error('Export failed:', err);
+          alert('Export failed: ' + (err && err.message ? err.message : 'Unknown error'));
+        });
+    } else {
+      alert('Export not available');
+    }
+  });
+
+  importConfigBtn.addEventListener('click', function() {
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const content = event.target.result;
+      if (window.webclaw && window.webclaw.exportImport && window.webclaw.exportImport.importConfig) {
+        window.webclaw.exportImport.importConfig(content)
+          .then(function() {
+            console.log('Config imported');
+            alert('Config imported successfully');
+            // Rebuild settings UI to reflect new keys
+            buildSettingsUI();
+          })
+          .catch(function(err) {
+            console.error('Import failed:', err);
+            alert('Import failed: ' + (err && err.message ? err.message : 'Unknown error'));
+          });
+      } else {
+        alert('Import not available');
+      }
+    };
+    reader.readAsText(file);
+    importFileInput.value = '';
+  });
+
+  // ==========================================
+  // Identity Files UI
+  // ==========================================
+  const IDENTITY_FILES = ['IDENTITY.md', 'SOUL.md', 'USER.md', 'AGENTS.md', 'TOOLS.md', 'HEARTBEAT.md'];
+
+  function buildIdentityFileList() {
+    // Clear existing
+    identityFileList.innerHTML = '';
+
+    IDENTITY_FILES.forEach(function(filename) {
+      const btn = document.createElement('button');
+      btn.className = 'w-full text-left px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-800 hover:text-gray-100';
+      btn.textContent = filename;
+
+      if (activeIdentityFile === filename) {
+        btn.classList.add('bg-gray-800', 'text-indigo-400');
+      }
+
+      btn.addEventListener('click', function() {
+        // Remove active class from all
+        Array.from(identityFileList.children).forEach(function(child) {
+          child.classList.remove('bg-gray-800', 'text-indigo-400');
+        });
+        btn.classList.add('bg-gray-800', 'text-indigo-400');
+        loadIdentityFile(filename);
+      });
+
+      identityFileList.appendChild(btn);
+    });
+  }
+
+  function loadIdentityFile(filename) {
+    activeIdentityFile = filename;
+    identityFilename.textContent = filename;
+    identitySaveBtn.classList.remove('hidden');
+    identityEditor.value = 'Loading...';
+
+    if (window.webclaw && window.webclaw.identity && window.webclaw.identity.getFile) {
+      window.webclaw.identity.getFile(filename)
+        .then(function(content) {
+          identityEditor.value = content || '';
+        })
+        .catch(function(err) {
+          console.error('Failed to load file:', err);
+          identityEditor.value = '';
+        });
+    } else {
+      identityEditor.value = '';
+    }
+  }
+
+  identitySaveBtn.addEventListener('click', function() {
+    if (!activeIdentityFile) return;
+
+    const content = identityEditor.value;
+    identitySaveBtn.textContent = 'Saving...';
+
+    if (window.webclaw && window.webclaw.identity && window.webclaw.identity.putFile) {
+      window.webclaw.identity.putFile(activeIdentityFile, content)
+        .then(function() {
+          identitySaveBtn.textContent = 'Saved';
+          setTimeout(function() {
+            identitySaveBtn.textContent = 'Save';
+          }, 1500);
+        })
+        .catch(function(err) {
+          console.error('Failed to save file:', err);
+          identitySaveBtn.textContent = 'Error';
+          setTimeout(function() {
+            identitySaveBtn.textContent = 'Save';
+          }, 1500);
+        });
+    } else {
+      identitySaveBtn.textContent = 'Not ready';
+      setTimeout(function() {
+        identitySaveBtn.textContent = 'Save';
+      }, 1500);
+    }
+  });
+
+  // ==========================================
+  // WASM Ready Handler
+  // ==========================================
+  window.addEventListener('webclaw:host-ready', function() {
+    console.log('[UI] Host ready, initializing...');
+    buildSettingsUI();
+    buildIdentityFileList();
+
+    // Add welcome message if empty
+    if (messages.children.length === 0) {
+      const welcomeWrapper = document.createElement('div');
+      welcomeWrapper.className = 'flex justify-start';
+
+      const welcomeBubble = document.createElement('div');
+      welcomeBubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
+      welcomeBubble.textContent = 'Welcome to WebClaw! Type a message to start chatting.';
+
+      welcomeWrapper.appendChild(welcomeBubble);
+      messages.appendChild(welcomeWrapper);
+    }
+  });
+
+  // ==========================================
+  // Init
+  // ==========================================
+  switchTab('chat');
+})();
+</script>
+
 </body>
 </html>
