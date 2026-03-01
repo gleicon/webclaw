@@ -14,6 +14,18 @@ var workerBridge = &WorkerBridge{
 	activeStreams: make(map[string]context.CancelFunc),
 }
 
+// globalAgentLoop is the singleton AgentLoop instance created in main.go.
+// When set, handleStartStream reuses this loop (with its pre-configured router,
+// toolRegistry, and workerBridge) instead of creating a fresh unconfigured loop.
+var globalAgentLoop *AgentLoop
+
+// SetGlobalAgentLoop stores the pre-configured AgentLoop for use by handleStartStream.
+// Call this in main.go after creating the AgentLoop and calling SetRouter,
+// SetToolRegistry, and SetWorkerBridge.
+func SetGlobalAgentLoop(loop *AgentLoop) {
+	globalAgentLoop = loop
+}
+
 // WorkerBridge provides the interface between WASM and the Web Worker
 // Callbacks are set by worker.js and called by the agent loop
 type WorkerBridge struct {
@@ -167,11 +179,16 @@ func handleStartStream(payload js.Value) {
 	streamID := generateStreamID()
 	workerBridge.activeStreams[streamID] = cancel
 
-	// Start the agent loop
+	// Start the agent loop.
+	// Use the global pre-configured loop (with router/toolRegistry/workerBridge)
+	// if one was set in main.go. Otherwise fall back to a new unconfigured loop.
 	go func() {
 		defer delete(workerBridge.activeStreams, streamID)
 
-		loop := NewAgentLoop(providerName, model)
+		loop := globalAgentLoop
+		if loop == nil {
+			loop = NewAgentLoop(providerName, model)
+		}
 		err := loop.Run(ctx, messages, workerBridge)
 		if err != nil {
 			if workerBridge.onError != nil {
