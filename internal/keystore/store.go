@@ -10,6 +10,7 @@ import (
 	"syscall/js"
 	"time"
 
+	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/crypto"
 	"github.com/gleicon/webclaw/internal/jsbridge"
 )
@@ -157,6 +158,34 @@ func (ks *KeyStore) KeyExists(provider string) (bool, error) {
 		return false, err
 	}
 	return stored != nil, nil
+}
+
+// ExportKey returns the encrypted key data for export (without decrypting)
+func (ks *KeyStore) ExportKey(provider string) (*config.ExportedKey, error) {
+	stored, err := ks.loadKey(provider)
+	if err != nil {
+		return nil, err
+	}
+	if stored == nil {
+		return nil, nil
+	}
+	return &config.ExportedKey{
+		Ciphertext: stored.Ciphertext,
+		IV:         stored.IV,
+		Salt:       stored.Salt,
+	}, nil
+}
+
+// ImportKey stores an encrypted key directly (for config import)
+func (ks *KeyStore) ImportKey(provider, ciphertext, iv, salt string) error {
+	stored := StoredKey{
+		Provider:   provider,
+		Ciphertext: ciphertext,
+		IV:         iv,
+		Salt:       salt,
+		CreatedAt:  time.Now().Unix(),
+	}
+	return ks.saveKey(stored)
 }
 
 // DeleteKey removes a stored key for a provider

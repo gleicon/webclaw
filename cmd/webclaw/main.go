@@ -214,6 +214,11 @@ func registerExportImportBridge() {
 					return
 				}
 
+				// If no config exists, create a default one
+				if cfg == nil {
+					cfg = config.DefaultConfig()
+				}
+
 				idStore, err := identity.NewStore()
 				if err != nil {
 					reject.Invoke(err.Error())
@@ -224,7 +229,14 @@ func registerExportImportBridge() {
 				// Create identity provider wrapper
 				idProvider := &identityFileProvider{store: idStore}
 
-				data, err := config.ExportAll(cfg, idProvider, nil) // No keystore for now
+				// Get keystore for exporting encrypted keys
+				ks, err := keystore.NewKeyStore()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				data, err := config.ExportAll(cfg, idProvider, ks)
 				if err != nil {
 					reject.Invoke(err.Error())
 					return
@@ -283,7 +295,14 @@ func registerExportImportBridge() {
 				// Create identity importer wrapper
 				idImporter := &identityFileImporter{store: idStore}
 
-				if err := config.ImportAll(data, storage, idImporter); err != nil {
+				// Create keystore for importing API keys
+				ks, err := keystore.NewKeyStore()
+				if err != nil {
+					reject.Invoke(err.Error())
+					return
+				}
+
+				if err := config.ImportAll(data, storage, idImporter, ks); err != nil {
 					reject.Invoke(err.Error())
 					return
 				}

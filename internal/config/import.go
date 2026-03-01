@@ -22,26 +22,22 @@ func ValidateExport(data *ExportData) error {
 		return fmt.Errorf("unsupported export version: %s", data.Version)
 	}
 
-	if data.Config == nil {
-		return fmt.Errorf("export missing config")
-	}
-
-	if data.Config.Version != CurrentVersion {
-		return fmt.Errorf("config version mismatch: got %d, expected %d",
-			data.Config.Version, CurrentVersion)
-	}
-
-	// Validate config
-	if err := data.Config.Validate(); err != nil {
-		return fmt.Errorf("config validation failed: %w", err)
-	}
-
-	// Check for required identity files
-	requiredFiles := []string{"IDENTITY.md", "SOUL.md"}
-	for _, req := range requiredFiles {
-		if _, ok := data.IdentityFiles[req]; !ok {
-			return fmt.Errorf("export missing required identity file: %s", req)
+	// Config is optional - we can import just identity files or API keys
+	if data.Config != nil {
+		if data.Config.Version != CurrentVersion {
+			return fmt.Errorf("config version mismatch: got %d, expected %d",
+				data.Config.Version, CurrentVersion)
 		}
+
+		// Validate config
+		if err := data.Config.Validate(); err != nil {
+			return fmt.Errorf("config validation failed: %w", err)
+		}
+	}
+
+	// Check for required identity files only if no config (pure identity export)
+	if data.Config == nil && len(data.IdentityFiles) == 0 && len(data.EncryptedKeys) == 0 {
+		return fmt.Errorf("export contains no data (no config, identity files, or API keys)")
 	}
 
 	return nil
@@ -52,16 +48,23 @@ type IdentityFileImporter interface {
 	PutContent(filename string, content string) error
 }
 
+// KeyStoreImporter interface for importing API keys
+type KeyStoreImporter interface {
+	ImportKey(provider string, ciphertext, iv, salt string) error
+}
+
 // ImportAll restores all data from export
-func ImportAll(data *ExportData, storage *Storage, idImporter IdentityFileImporter) error {
+func ImportAll(data *ExportData, storage *Storage, idImporter IdentityFileImporter, ksImporter KeyStoreImporter) error {
 	// Validate first
 	if err := ValidateExport(data); err != nil {
 		return err
 	}
 
-	// Import config
-	if err := storage.SetConfig(data.Config); err != nil {
-		return fmt.Errorf("failed to import config: %w", err)
+	// Import config if present
+	if data.Config != nil {
+		if err := storage.SetConfig(data.Config); err != nil {
+			return fmt.Errorf("failed to import config: %w", err)
+		}
 	}
 
 	// Import identity files
@@ -69,6 +72,15 @@ func ImportAll(data *ExportData, storage *Storage, idImporter IdentityFileImport
 		for filename, content := range data.IdentityFiles {
 			if err := idImporter.PutContent(filename, content); err != nil {
 				return fmt.Errorf("failed to import identity file %s: %w", filename, err)
+			}
+		}
+	}
+
+	// Import API keys
+	if ksImporter != nil {
+		for provider, key := range data.EncryptedKeys {
+			if err := ksImporter.ImportKey(provider, key.Ciphertext, key.IV, key.Salt); err != nil {
+				return fmt.Errorf("failed to import API key for %s: %w", provider, err)
 			}
 		}
 	}

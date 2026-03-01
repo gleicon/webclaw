@@ -62,18 +62,21 @@ func ExportAll(cfg *Config, idProvider IdentityFileProvider, ks KeyStoreExporter
 
 	// Export encrypted keys (if keystore provided)
 	if ks != nil {
-		for provider := range cfg.Providers {
+		// Known provider IDs to check
+		knownProviders := []string{"anthropic", "openai", "openrouter"}
+		for _, provider := range knownProviders {
 			exists, err := ks.KeyExists(provider)
 			if err != nil {
 				continue // Skip on error
 			}
 			if exists {
-				// Export what we have in config (encrypted key stored there)
-				if providerCfg, ok := cfg.Providers[provider]; ok && providerCfg.APIKeyEncrypted != "" {
-					// Parse the encrypted key format (stored as JSON)
-					key, err := parseEncryptedKey(providerCfg.APIKeyEncrypted)
-					if err == nil {
-						data.EncryptedKeys[provider] = *key
+				// Export the encrypted key from keystore
+				exportedKey, err := ks.ExportKey(provider)
+				if err == nil && exportedKey != nil {
+					data.EncryptedKeys[provider] = EncryptedKey{
+						Ciphertext: exportedKey.Ciphertext,
+						IV:         exportedKey.IV,
+						Salt:       exportedKey.Salt,
 					}
 				}
 			}
@@ -86,6 +89,14 @@ func ExportAll(cfg *Config, idProvider IdentityFileProvider, ks KeyStoreExporter
 // KeyStoreExporter interface for keystore operations without direct import
 type KeyStoreExporter interface {
 	KeyExists(provider string) (bool, error)
+	ExportKey(provider string) (*ExportedKey, error)
+}
+
+// ExportedKey represents the data needed to export a key
+type ExportedKey struct {
+	Ciphertext string `json:"ciphertext"`
+	IV         string `json:"iv"`
+	Salt       string `json:"salt"`
 }
 
 // parseEncryptedKey parses the encrypted key format
