@@ -390,7 +390,7 @@ type noProvidersMock struct {
 }
 
 func (np *noProvidersMock) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
-	mockResponse := "[Mock] No AI providers configured. Please add your API key in the Settings tab to enable live AI responses."
+	mockResponse := "[Demo Mode] Enter API key in Settings to enable live AI"
 
 	// Stream the message as a single token
 	tok := provider.Token{
