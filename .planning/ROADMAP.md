@@ -66,6 +66,7 @@ Plans:
   3. Missing or invalid keys return clear error messages to the UI
   4. Provider selection dropdown actually routes to correct provider with live API calls
   5. End-to-end: User message → LLM API call → streamed response → UI display (no mocks)
+**Plans**: 05-01 (Async keystore init) — Planned, 05-02 (Router config) — Planned, 05-03 (E2E testing) — Planned
 
 ### Phase 6: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
@@ -88,5 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. WASM Pipeline | 2/2 | Complete | 2026-02-28 |
 | 2. Configuration and Identity | 4/4 | Complete | 2026-03-01 |
-| 3. Intelligence Core | 3/4 | In Progress|  |
-| 4. Tools and Webchat UI | 2/3 | In Progress|  |
+| 3. Intelligence Core | 4/4 | Complete | 2026-03-01 |
+| 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
+| 5. Live AI Provider Connection | 0/3 | Planned |  |
+| 6. Local Bridge Binary | 0/0 | Defined |  |
