@@ -13,7 +13,7 @@ WebClaw is built in four phases, each delivering a complete, verifiable capabili
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: WASM Pipeline** - Build pipeline that compiles, loads, and distributes the WASM binary in a browser tab
-- [-] **Phase 2: Configuration and Identity** - Agent configuration with secure key storage and identity file system (2 plans complete, 1 remaining)
+- [x] **Phase 2: Configuration and Identity** - Agent configuration with secure key storage and identity file system (COMPLETE)
 
 ### Phase 2: Configuration and Identity
 **Goal**: The agent has a persistent identity, secure configuration, and encrypted API keys before any LLM call is made
@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. On first run, the agent prompts for a passphrase; subsequent runs require it to decrypt stored API keys
   4. API keys are never readable as plaintext in the browser DevTools JavaScript console or memory inspector
   5. Default identity files (IDENTITY.md, SOUL.md, USER.md, AGENTS.md, TOOLS.md, HEARTBEAT.md) are loaded from IndexedDB and user can edit them in the browser
-**Plans**: 02-01 (Config struct + IndexedDB persistence + first-run) — COMPLETE, 02-02 (Web Crypto bridge + Encrypted key storage) — COMPLETE, 02-03 (Identity file system) — COMPLETE
+**Plans**: 02-01 (Config struct + IndexedDB persistence + first-run) — COMPLETE, 02-02 (Web Crypto bridge + Encrypted key storage) — COMPLETE, 02-03 (Identity file system) — COMPLETE, 02-04 (Import/Export config with browser file APIs) — COMPLETE
 
 ### Phase 3: Intelligence Core
 **Goal**: The agent can hold a conversation with an LLM provider, manage its context window, and persist and recall memories
@@ -59,6 +59,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. WASM Pipeline | 2/2 | ✅ Complete | 2026-02-28 |
-| 2. Configuration and Identity | 3/4 | In Progress | - |
+| 2. Configuration and Identity | 4/4 | ✅ Complete | 2026-03-01 |
 | 3. Intelligence Core | 0/TBD | Not started | - |
 | 4. Tools and Webchat UI | 0/TBD | Not started | - |
