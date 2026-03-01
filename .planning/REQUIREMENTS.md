@@ -16,9 +16,9 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 ### Config
 
-- [ ] **CONF-01**: User can define a config in JSON (snake_case and camelCase both accepted)
-- [ ] **CONF-02**: Config is persisted in IndexedDB under `webclaw:config`
-- [ ] **CONF-03**: Config covers: identity, agents defaults (model, maxToolIterations, temperature, bootstrap limits), model providers (apiKey, baseUrl), memory settings
+- [x] **CONF-01**: User can define a config in JSON (snake_case and camelCase both accepted)
+- [x] **CONF-02**: Config is persisted in IndexedDB under `webclaw:config`
+- [x] **CONF-03**: Config covers: identity, agents defaults (model, maxToolIterations, temperature, bootstrap limits), model providers (apiKey, baseUrl), memory settings
 - [ ] **CONF-04**: User can import/export config as a JSON file from the browser UI
 
 ### Identity
