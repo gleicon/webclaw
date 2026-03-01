@@ -40,50 +40,14 @@ func NewStore() (*Store, error) {
 	return s, nil
 }
 
-// openDB opens the IndexedDB connection and ensures object store exists
+// openDB opens the IndexedDB connection using centralized initialization
 func (s *Store) openDB() error {
-	// Use version 3 to force upgrade and ensure object stores exist
-	// (handles case where DB was created without proper initialization)
-	req := jsbridge.IDBOpen("webclaw", 3)
-
-	// Handle upgrade needed
-	req.Set("onupgradeneeded", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		event := args[0]
-		db := event.Get("target").Get("result")
-
-		// Create identity object store if it doesn't exist
-		if !db.Get("objectStoreNames").Call("contains", IdentityStoreName).Bool() {
-			db.Call("createObjectStore", IdentityStoreName, map[string]interface{}{
-				"keyPath": "filename",
-			})
-		}
-		return nil
-	}))
-
-	// Wait for open
-	dbCh := make(chan js.Value, 1)
-	errCh := make(chan error, 1)
-
-	req.Set("onsuccess", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		dbCh <- req.Get("result")
-		return nil
-	}))
-	req.Set("onerror", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		errCh <- fmt.Errorf("failed to open database: %v", req.Get("error"))
-		return nil
-	}))
-	req.Set("onblocked", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		errCh <- fmt.Errorf("database blocked - close other tabs")
-		return nil
-	}))
-
-	select {
-	case db := <-dbCh:
-		s.db = db
-		return nil
-	case err := <-errCh:
+	db, err := jsbridge.OpenWebClawDB()
+	if err != nil {
 		return err
 	}
+	s.db = db
+	return nil
 }
 
 // Get retrieves an identity file by filename
