@@ -56,6 +56,29 @@ Plans:
 - [ ] 04-02-PLAN.md — JS bridge exports for identity/keystore + tool event emission across worker boundary
 - [ ] 04-03-PLAN.md — Full Tailwind dark-mode chat UI (3 tabs, chat bubbles, tool panel, settings, identity editor)
 
+### Phase 5: Live AI Provider Connection
+**Goal**: WebClaw connects to real AI providers (Anthropic, OpenAI, OpenRouter) using stored API keys, enabling actual conversations beyond mock responses
+**Depends on**: Phase 4
+**Requirements**: PROV-01, PROV-02, SEC-02
+**Success Criteria** (what must be TRUE):
+  1. API keys are retrieved from encrypted keystore and passed to provider router at initialization
+  2. Real API calls succeed with valid keys (tested against Anthropic, OpenAI, or OpenRouter)
+  3. Missing or invalid keys return clear error messages to the UI
+  4. Provider selection dropdown actually routes to correct provider with live API calls
+  5. End-to-end: User message → LLM API call → streamed response → UI display (no mocks)
+
+### Phase 6: Local Bridge Binary
+**Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
+**Depends on**: Phase 5
+**Requirements**: BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04
+**Success Criteria** (what must be TRUE):
+  1. `webclaw-bridge` binary runs on macOS/Linux and binds to 127.0.0.1:18800
+  2. Browser connects via WebSocket with 6-digit OTP + bearer token pairing
+  3. File read/write operations work through bridge (file_picker, file_read, file_write tools)
+  4. Shell execution tool runs commands and returns stdout/stderr
+  5. Git operations tool clones, commits, pushes via bridge
+  6. Connection is 127.0.0.1-only (no remote access)
+
 ## Progress
 
 **Execution Order:**
