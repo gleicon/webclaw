@@ -120,56 +120,54 @@ Deferred to next milestone after v1 is dogfooded.
 
 ## Traceability
 
-Populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | TBD | Pending |
-| BUILD-02 | TBD | Pending |
-| BUILD-03 | TBD | Pending |
-| BUILD-04 | TBD | Pending |
-| CONF-01 | TBD | Pending |
-| CONF-02 | TBD | Pending |
-| CONF-03 | TBD | Pending |
-| CONF-04 | TBD | Pending |
-| IDNT-01 | TBD | Pending |
-| IDNT-02 | TBD | Pending |
-| IDNT-03 | TBD | Pending |
-| IDNT-04 | TBD | Pending |
-| PROV-01 | TBD | Pending |
-| PROV-02 | TBD | Pending |
-| PROV-03 | TBD | Pending |
-| PROV-04 | TBD | Pending |
-| PROV-05 | TBD | Pending |
-| SEC-01 | TBD | Pending |
-| SEC-02 | TBD | Pending |
-| SEC-03 | TBD | Pending |
-| AGNT-01 | TBD | Pending |
-| AGNT-02 | TBD | Pending |
-| AGNT-03 | TBD | Pending |
-| AGNT-04 | TBD | Pending |
-| MEM-01 | TBD | Pending |
-| MEM-02 | TBD | Pending |
-| MEM-03 | TBD | Pending |
-| MEM-04 | TBD | Pending |
-| MEM-05 | TBD | Pending |
-| TOOL-01 | TBD | Pending |
-| TOOL-02 | TBD | Pending |
-| TOOL-03 | TBD | Pending |
-| TOOL-04 | TBD | Pending |
-| TOOL-05 | TBD | Pending |
-| TOOL-06 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
+| BUILD-01 | Phase 1 | Pending |
+| BUILD-02 | Phase 1 | Pending |
+| BUILD-03 | Phase 1 | Pending |
+| BUILD-04 | Phase 1 | Pending |
+| CONF-01 | Phase 2 | Pending |
+| CONF-02 | Phase 2 | Pending |
+| CONF-03 | Phase 2 | Pending |
+| CONF-04 | Phase 2 | Pending |
+| IDNT-01 | Phase 2 | Pending |
+| IDNT-02 | Phase 2 | Pending |
+| IDNT-03 | Phase 2 | Pending |
+| IDNT-04 | Phase 2 | Pending |
+| SEC-01 | Phase 2 | Pending |
+| SEC-02 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Pending |
+| PROV-01 | Phase 3 | Pending |
+| PROV-02 | Phase 3 | Pending |
+| PROV-03 | Phase 3 | Pending |
+| PROV-04 | Phase 3 | Pending |
+| PROV-05 | Phase 3 | Pending |
+| AGNT-01 | Phase 3 | Pending |
+| AGNT-02 | Phase 3 | Pending |
+| AGNT-03 | Phase 3 | Pending |
+| AGNT-04 | Phase 3 | Pending |
+| MEM-01 | Phase 3 | Pending |
+| MEM-02 | Phase 3 | Pending |
+| MEM-03 | Phase 3 | Pending |
+| MEM-04 | Phase 3 | Pending |
+| MEM-05 | Phase 3 | Pending |
+| TOOL-01 | Phase 4 | Pending |
+| TOOL-02 | Phase 4 | Pending |
+| TOOL-03 | Phase 4 | Pending |
+| TOOL-04 | Phase 4 | Pending |
+| TOOL-05 | Phase 4 | Pending |
+| TOOL-06 | Phase 4 | Pending |
+| UI-01 | Phase 4 | Pending |
+| UI-02 | Phase 4 | Pending |
+| UI-03 | Phase 4 | Pending |
+| UI-04 | Phase 4 | Pending |
+| UI-05 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 0 (TBD — roadmap pending)
-- Unmapped: 36 ⚠️
+- v1 requirements: 40 total
+- Mapped to phases: 40/40 (100%) ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after initial definition*
+*Last updated: 2026-02-28 after roadmap creation*
