@@ -215,13 +215,23 @@ func (s *Store) List() ([]string, error) {
 		return nil, fmt.Errorf("database not open")
 	}
 
-	// Use IDBObjectStore.getAllKeys() if available, otherwise scan
-	// For simplicity, we'll use a cursor approach
+	// Check if store exists first
+	storeNames := s.db.Get("objectStoreNames")
+	if !storeNames.Call("contains", IdentityStoreName).Bool() {
+		// Store doesn't exist yet - return empty list
+		return []string{}, nil
+	}
+
 	transaction := s.db.Call("transaction", IdentityStoreName, "readonly")
 	store := transaction.Call("objectStore", IdentityStoreName)
 
 	// Try to use getAllKeys if available
 	keysPromise := store.Call("getAllKeys")
+
+	// Check if getAllKeys returned a valid promise
+	if keysPromise.IsUndefined() || keysPromise.IsNull() {
+		return []string{}, nil
+	}
 
 	resultCh := make(chan []string, 1)
 	errorCh := make(chan error, 1)
