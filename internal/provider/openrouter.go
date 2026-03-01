@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
 )
@@ -182,6 +183,9 @@ func (p *OpenRouterProvider) Complete(ctx context.Context, req CompletionRequest
 		return nil, ErrAPIKeyMissing
 	}
 
+	// Log API call (without key)
+	js.Global().Get("console").Call("log", "[OpenRouter] API call: model=", req.Model)
+
 	// Convert messages to OpenRouter format (same as OpenAI)
 	messages := make([]openRouterMessage, len(req.Messages))
 	for i, m := range req.Messages {
@@ -227,8 +231,12 @@ func (p *OpenRouterProvider) Complete(ctx context.Context, req CompletionRequest
 
 	// Handle errors
 	if resp.Status >= 400 {
+		js.Global().Get("console").Call("error", "[OpenRouter] API error: status=", resp.Status)
 		return nil, p.handleError(resp.Status, resp.Body)
 	}
+
+	// Log response metadata
+	js.Global().Get("console").Call("log", "[OpenRouter] API response: status=", resp.Status, "len=", len(resp.Body))
 
 	// Parse response
 	var openRouterResp openRouterResponse
@@ -257,6 +265,9 @@ func (p *OpenRouterProvider) Stream(ctx context.Context, req CompletionRequest) 
 			tokenChan <- Token{FinishReason: "error", Text: ErrAPIKeyMissing.Error()}
 			return
 		}
+
+		// Log streaming request (without key)
+		js.Global().Get("console").Call("log", "[OpenRouter] Stream: model=", req.Model, "messages=", len(req.Messages))
 
 		// Convert messages
 		messages := make([]openRouterMessage, len(req.Messages))
@@ -307,9 +318,13 @@ func (p *OpenRouterProvider) Stream(ctx context.Context, req CompletionRequest) 
 		// Check for immediate error status
 		status := response.Get("status").Int()
 		if status >= 400 {
+			js.Global().Get("console").Call("error", "[OpenRouter] Stream error: status=", status)
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("HTTP %d", status)}
 			return
 		}
+
+		// Log successful stream initiation
+		js.Global().Get("console").Call("log", "[OpenRouter] Stream started: status=", status)
 
 		// Create SSE reader
 		sseReader := jsbridge.NewSSEStreamingReader(response)

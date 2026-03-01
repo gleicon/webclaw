@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
 )
@@ -104,6 +105,9 @@ func (p *AnthropicProvider) Complete(ctx context.Context, req CompletionRequest)
 		return nil, ErrAPIKeyMissing
 	}
 
+	// Log API call (without key)
+	js.Global().Get("console").Call("log", "[Anthropic] API call: model=", req.Model)
+
 	// Convert messages to Anthropic format
 	var systemMsg string
 	var messages []anthropicMessage
@@ -157,8 +161,12 @@ func (p *AnthropicProvider) Complete(ctx context.Context, req CompletionRequest)
 
 	// Handle errors
 	if resp.Status >= 400 {
+		js.Global().Get("console").Call("error", "[Anthropic] API error: status=", resp.Status)
 		return nil, p.handleError(resp.Status, resp.Body)
 	}
+
+	// Log response metadata
+	js.Global().Get("console").Call("log", "[Anthropic] API response: status=", resp.Status, "len=", len(resp.Body))
 
 	// Parse response
 	var anthropicResp anthropicResponse
@@ -191,6 +199,9 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 			tokenChan <- Token{FinishReason: "error", Text: ErrAPIKeyMissing.Error()}
 			return
 		}
+
+		// Log streaming request (without key)
+		js.Global().Get("console").Call("log", "[Anthropic] Stream: model=", req.Model, "messages=", len(req.Messages))
 
 		// Convert messages
 		var systemMsg string
@@ -249,9 +260,13 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 		// Check for immediate error status
 		status := response.Get("status").Int()
 		if status >= 400 {
+			js.Global().Get("console").Call("error", "[Anthropic] Stream error: status=", status)
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("HTTP %d", status)}
 			return
 		}
+
+		// Log successful stream initiation
+		js.Global().Get("console").Call("log", "[Anthropic] Stream started: status=", status)
 
 		// Create SSE reader
 		sseReader := jsbridge.NewSSEStreamingReader(response)

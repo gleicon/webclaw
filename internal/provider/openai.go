@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
 )
@@ -154,6 +155,9 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req CompletionRequest) (*
 		return nil, ErrAPIKeyMissing
 	}
 
+	// Log API call (without key)
+	js.Global().Get("console").Call("log", "[OpenAI] API call: model=", req.Model)
+
 	// Convert messages to OpenAI format
 	messages := make([]openAIMessage, len(req.Messages))
 	for i, m := range req.Messages {
@@ -200,8 +204,12 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req CompletionRequest) (*
 
 	// Handle errors
 	if resp.Status >= 400 {
+		js.Global().Get("console").Call("error", "[OpenAI] API error: status=", resp.Status)
 		return nil, p.handleError(resp.Status, resp.Body)
 	}
+
+	// Log response metadata
+	js.Global().Get("console").Call("log", "[OpenAI] API response: status=", resp.Status, "len=", len(resp.Body))
 
 	// Parse response
 	var openAIResp openAIResponse
@@ -230,6 +238,9 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 			tokenChan <- Token{FinishReason: "error", Text: ErrAPIKeyMissing.Error()}
 			return
 		}
+
+		// Log streaming request (without key)
+		js.Global().Get("console").Call("log", "[OpenAI] Stream: model=", req.Model, "messages=", len(req.Messages))
 
 		// Convert messages
 		messages := make([]openAIMessage, len(req.Messages))
@@ -281,9 +292,13 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 		// Check for immediate error status
 		status := response.Get("status").Int()
 		if status >= 400 {
+			js.Global().Get("console").Call("error", "[OpenAI] Stream error: status=", status)
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("HTTP %d", status)}
 			return
 		}
+
+		// Log successful stream initiation
+		js.Global().Get("console").Call("log", "[OpenAI] Stream started: status=", status)
 
 		// Create SSE reader
 		sseReader := jsbridge.NewSSEStreamingReader(response)
