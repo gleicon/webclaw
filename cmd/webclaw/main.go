@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"syscall/js"
 
+	"github.com/gleicon/webclaw/internal/agent"
 	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/identity"
 	"github.com/gleicon/webclaw/internal/jsbridge"
@@ -35,6 +36,9 @@ func main() {
 		js.Global().Get("console").Call("error", "webclaw: identity initialization failed:", err.Error())
 		// Don't exit - we can still run without identity for now
 	}
+
+	// Initialize worker bridge for streaming
+	agent.InitWorkerBridge()
 
 	js.Global().Get("console").Call("log", "webclaw: export/import ready")
 	js.Global().Get("console").Call("log", "webclaw: WASM ready")
