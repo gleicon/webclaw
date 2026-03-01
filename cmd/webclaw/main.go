@@ -3,13 +3,60 @@
 package main
 
 import (
+	"fmt"
 	"syscall/js"
 
+	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/jsbridge"
 )
 
 func main() {
 	jsbridge.Init()
+
+	// Initialize configuration
+	if err := initializeConfig(); err != nil {
+		js.Global().Get("console").Call("error", "webclaw: config initialization failed:", err.Error())
+		// Don't exit - we can still run without config for now
+	}
+
 	js.Global().Get("console").Call("log", "webclaw: WASM ready")
 	<-make(chan struct{}) // block forever — Go runtime exits when main() returns
+}
+
+func initializeConfig() error {
+	storage, err := config.NewStorage()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	defer storage.Close()
+
+	// Check if config exists
+	exists, err := storage.ConfigExists()
+	if err != nil {
+		return fmt.Errorf("failed to check config existence: %w", err)
+	}
+
+	if !exists {
+		// First run - create default config
+		cfg := config.DefaultConfig()
+		if err := storage.SetConfig(cfg); err != nil {
+			return fmt.Errorf("failed to save default config: %w", err)
+		}
+		js.Global().Call("dispatchEvent",
+			js.Global().Get("CustomEvent").New("webclaw:first-run",
+				map[string]interface{}{"config": cfg}))
+		js.Global().Get("console").Call("log", "webclaw: created default config (first run)")
+	} else {
+		// Config exists - load it
+		cfg, err := storage.GetConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+		js.Global().Call("dispatchEvent",
+			js.Global().Get("CustomEvent").New("webclaw:config-ready",
+				map[string]interface{}{"config": cfg}))
+		js.Global().Get("console").Call("log", "webclaw: config loaded")
+	}
+
+	return nil
 }
