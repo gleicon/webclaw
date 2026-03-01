@@ -70,8 +70,8 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 - [ ] **UI-01**: User can type a message and receive a streamed response in the browser
 - [ ] **UI-02**: UI displays tool execution events (tool name, status, result summary)
-- [ ] **UI-03**: User can view and edit identity files from a settings panel
-- [ ] **UI-04**: User can configure provider API keys from a settings panel (keys encrypted on save)
+- [x] **UI-03**: User can view and edit identity files from a settings panel
+- [x] **UI-04**: User can configure provider API keys from a settings panel (keys encrypted on save)
 - [ ] **UI-05**: Conversation history is displayed with clear user/agent turn separation
 
 ## v2 Requirements
@@ -159,8 +159,8 @@ Deferred to next milestone after v1 is dogfooded.
 | TOOL-06 | Phase 4 | Complete |
 | UI-01 | Phase 4 | Pending |
 | UI-02 | Phase 4 | Pending |
-| UI-03 | Phase 4 | Pending |
-| UI-04 | Phase 4 | Pending |
+| UI-03 | Phase 4 | Complete |
+| UI-04 | Phase 4 | Complete |
 | UI-05 | Phase 4 | Pending |
 
 **Coverage:**

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T21:11:07.764Z"
+last_updated: "2026-03-01T21:15:39.265Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 4 of 4 (Tools and Webchat UI)
-Plan: 1 of 3 in current phase (COMPLETE)
-Status: **04-01 Complete - Tool Registry, four browser tools, and agent loop tool dispatch**
-Last activity: 2026-03-01 — Plan 04-01 complete (Tool registry, web_fetch, web_search, memory tools, agent dispatch loop)
+Plan: 2 of 3 in current phase (COMPLETE)
+Status: **04-02 Complete - JS bridge extensions (identity/keystore), tool event emission, AgentLoop wiring**
+Last activity: 2026-03-01 — Plan 04-02 complete (identity bridge, keystore bridge, TOOL_EVENT channel, SetRouter/SetToolRegistry/SetWorkerBridge wired)
 
-Progress: [█████████████░░░] 81%
+Progress: [██████████████░░] 87%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [█████████████░░░] 81%
 | Phase 02 P02 | 12 min | 4 tasks | 6 files |
 | Phase 02 P01 | 116s | 3 tasks | 4 files |
 | Phase 04-tools-and-webchat-ui P01 | 6 | 4 tasks | 11 files |
+| Phase 04-tools-and-webchat-ui P02 | 10 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 04-01]: MemoryAgent interface in tools package avoids circular import between tools and agent
 - [Phase 04-01]: Provider interface callback changed from func(string) to func(provider.Token) to carry tool_use metadata through the dispatch loop
 - [Phase 04-01]: providerAdapter bridges provider.Router channel-based stream to agent.Provider callback-based interface
+- [Phase 04-02]: v1 keystore passphrase is fixed string webclaw-v1-key; keys encrypted at rest but not user-derived; v2 will prompt user
+- [Phase 04-02]: onToolEvent uses callback pattern (not direct postMessage) so WASM in worker context posts via worker.js
+- [Phase 04-02]: globalAgentLoop singleton in worker_bridge.go: pre-configured loop reused per stream so SetRouter/SetToolRegistry/SetWorkerBridge wiring is preserved
 
 ### Pending Todos
 
@@ -106,8 +110,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 04-tools-and-webchat-ui/04-01-PLAN.md — Tool Registry and Agent Dispatch Loop
-Resume file: .planning/phases/04-tools-and-webchat-ui/04-01-SUMMARY.md
+Stopped at: Completed 04-tools-and-webchat-ui/04-02-PLAN.md — JS Bridge Extensions and Agent Loop Wiring
+Resume file: .planning/phases/04-tools-and-webchat-ui/04-02-SUMMARY.md
 
 ### Phase 3 Progress
 
