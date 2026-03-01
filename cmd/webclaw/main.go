@@ -64,6 +64,9 @@ func main() {
 	router := provider.NewRouter(routerConfig)
 	agentLoop.SetRouter(router)
 
+	// Load persisted API keys from keystore asynchronously (Wave 1: async initialization)
+	go loadProviderKeysAsync(router)
+
 	// Wire tool registry with all four browser tools.
 	// Without this call, toolRegistry == nil and every tool call returns "tool registry not configured".
 	reg := tools.NewRegistry()
@@ -544,4 +547,65 @@ func (i *identityFileImporter) PutContent(filename string, content string) error
 		Content:  content,
 	}
 	return i.store.Put(file)
+}
+
+// loadProviderKeysAsync asynchronously loads persisted API keys from the keystore
+// and registers them with the provider router. This runs in a goroutine to avoid
+// blocking the main thread during IndexedDB operations.
+func loadProviderKeysAsync(router *provider.Router) {
+	// Fixed passphrase for v1 keystore encryption
+	const passphrase = "webclaw-v1-key"
+
+	// Open keystore connection to IndexedDB
+	ks, err := keystore.NewKeyStore()
+	if err != nil {
+		js.Global().Get("console").Call("warn", "webclaw: keystore open failed, no persisted keys loaded:", err.Error())
+		return
+	}
+
+	// List of providers to attempt loading
+	providers := []string{"anthropic", "openai", "openrouter"}
+
+	// Iterate through providers, loading each key if it exists
+	for _, providerName := range providers {
+		// Check if key exists before attempting retrieval
+		exists, err := ks.KeyExists(providerName)
+		if err != nil {
+			js.Global().Get("console").Call("error", "webclaw: failed to check key existence for", providerName+":", err.Error())
+			continue
+		}
+
+		if !exists {
+			js.Global().Get("console").Call("log", "webclaw: no persisted key for", providerName)
+			continue
+		}
+
+		// Retrieve and decrypt the API key
+		apiKey, err := ks.RetrieveKey(providerName, passphrase)
+		if err != nil {
+			js.Global().Get("console").Call("error", "webclaw: failed to retrieve key for", providerName+":", err.Error())
+			continue
+		}
+
+		// Register the provider with the router based on provider name
+		var providerInstance provider.Provider
+		switch providerName {
+		case "anthropic":
+			providerInstance = provider.NewAnthropicProvider(apiKey)
+		case "openai":
+			providerInstance = provider.NewOpenAIProvider(apiKey)
+		case "openrouter":
+			providerInstance = provider.NewOpenRouterProvider(apiKey, "https://github.com/gleicon/webclaw", "WebClaw")
+		}
+
+		if providerInstance != nil {
+			router.RegisterProvider(providerName, providerInstance)
+			js.Global().Get("console").Call("log", "webclaw: loaded persisted key for", providerName)
+		}
+
+		// Clear key from memory (best effort security)
+		keystore.ClearKey(apiKey)
+	}
+
+	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete")
 }
