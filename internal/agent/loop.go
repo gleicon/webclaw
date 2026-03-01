@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"syscall/js"
 	"time"
+
+	"github.com/gleicon/webclaw/internal/memory"
 )
 
 // Provider defines the interface for LLM providers
@@ -23,6 +25,8 @@ type AgentLoop struct {
 	providerName string
 	model        string
 	assembler    *ContextAssembler
+	memory       memory.Store
+	embedder     memory.Embedder
 }
 
 // NewAgentLoop creates a new agent loop for the specified provider
@@ -227,4 +231,115 @@ func splitIntoWords(text string) []string {
 		words = append(words, text[start:])
 	}
 	return words
+}
+
+// SetMemoryStore sets the memory store for the agent loop.
+func (al *AgentLoop) SetMemoryStore(store memory.Store) {
+	al.memory = store
+}
+
+// SetEmbedder sets the embedding generator for memory operations.
+func (al *AgentLoop) SetEmbedder(embedder memory.Embedder) {
+	al.embedder = embedder
+}
+
+// SearchMemory searches for relevant memories based on query.
+func (al *AgentLoop) SearchMemory(query string, limit int) ([]*memory.MemorySearchResult, error) {
+	if al.memory == nil {
+		return nil, fmt.Errorf("memory store not initialized")
+	}
+
+	opts := memory.SearchOptions{
+		Limit:         limit,
+		MinScore:      0.5,
+		VectorWeight:  0.7,
+		KeywordWeight: 0.3,
+	}
+
+	return al.memory.Search(query, opts)
+}
+
+// StoreFact stores a fact in memory.
+func (al *AgentLoop) StoreFact(content string, metadata map[string]interface{}) error {
+	if al.memory == nil {
+		return fmt.Errorf("memory store not initialized")
+	}
+
+	// Generate embedding if embedder is available
+	var embedding []float32
+	if al.embedder != nil {
+		var err error
+		embedding, err = al.embedder.Embed(content)
+		if err != nil {
+			return fmt.Errorf("failed to generate embedding: %w", err)
+		}
+	}
+
+	// Create memory document
+	doc := memory.NewMemoryDocument(
+		generateMemoryID(),
+		content,
+		embedding,
+	)
+
+	if metadata != nil {
+		doc.Metadata = metadata
+	}
+
+	// Store in memory
+	if err := al.memory.Store(doc); err != nil {
+		return fmt.Errorf("failed to store fact: %w", err)
+	}
+
+	// Check if eviction is needed
+	go al.memory.EvictIfNeeded()
+
+	return nil
+}
+
+// generateMemoryID creates a unique memory ID.
+func generateMemoryID() string {
+	return fmt.Sprintf("mem_%d", time.Now().UnixNano())
+}
+
+// EnhanceContextWithMemory searches memory and adds relevant facts to context.
+func (al *AgentLoop) EnhanceContextWithMemory(query string) ([]*memory.MemorySearchResult, error) {
+	results, err := al.SearchMemory(query, 5)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(results) > 0 {
+		js.Global().Get("console").Call("log", "webclaw: found relevant memories:", len(results))
+		for i, result := range results {
+			js.Global().Get("console").Call("log", fmt.Sprintf("  %d. Score: %.3f - %s", i+1, result.Score, result.Document.Content))
+		}
+	}
+
+	return results, nil
+}
+
+// ExtractAndStoreFacts extracts facts from conversation and stores them in memory.
+// This is called after a successful response to capture important information.
+func (al *AgentLoop) ExtractAndStoreFacts(userMessage, assistantResponse string) {
+	if al.memory == nil {
+		return
+	}
+
+	// Simple fact extraction: store key information from the conversation
+	// In a real implementation, this would use an LLM to extract facts
+
+	// Store user message as a memory if it's substantial
+	if len(userMessage) > 50 {
+		go func() {
+			err := al.StoreFact(userMessage, map[string]interface{}{
+				"type":     "user_message",
+				"source":   "conversation",
+				"response": assistantResponse,
+			})
+			if err != nil {
+				js.Global().Get("console").Call("error", "webclaw: failed to store user message:", err.Error())
+			}
+		}()
+	}
 }
