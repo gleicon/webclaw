@@ -228,8 +228,12 @@ func (s *Store) List() ([]string, error) {
 	// Try to use getAllKeys if available
 	keysPromise := store.Call("getAllKeys")
 
-	// Check if getAllKeys returned a valid promise
+	// Check if getAllKeys returned a valid promise with 'then' method
 	if keysPromise.IsUndefined() || keysPromise.IsNull() {
+		return []string{}, nil
+	}
+	// Verify it has a 'then' method (is actually a Promise)
+	if keysPromise.Get("then").IsUndefined() || keysPromise.Get("then").IsNull() {
 		return []string{}, nil
 	}
 
