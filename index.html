@@ -140,6 +140,7 @@
   function updateProviderStatusIndicators() {
     API_PROVIDERS.forEach(function(provider) {
       const statusEl = document.getElementById('provider-status-' + provider.id);
+      const testBtn = document.getElementById('test-btn-' + provider.id);
       if (statusEl) {
         const isAvailable = availableProviders.includes(provider.id);
         if (isAvailable) {
@@ -148,6 +149,15 @@
         } else {
           statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
           statusEl.className = 'text-xs text-red-400';
+        }
+      }
+      // Show/hide test button based on provider registration status
+      if (testBtn) {
+        const isAvailable = availableProviders.includes(provider.id);
+        if (isAvailable) {
+          testBtn.classList.remove('hidden');
+        } else {
+          testBtn.classList.add('hidden');
         }
       }
     });
@@ -554,17 +564,15 @@
           window.webclaw.keystore.setKey(provider.id, value)
             .then(function() {
               input.value = '';
-              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Saved</span>';
-              statusSpan.className = 'text-xs text-green-400 w-20';
+              // Key stored successfully, but provider registration is async
+              // The webclaw:providers-ready event will update status to "Connected"
+              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Saved</span>';
+              statusSpan.className = 'text-xs text-yellow-400 w-20';
               saveBtn.textContent = 'Save';
               saveBtn.disabled = false;
-              // Show test button
-              testBtn.classList.remove('hidden');
+              // Test button will be shown by updateProviderStatusIndicators() when provider is registered
               // Refresh saved keys list
               refreshSavedKeysList();
-              setTimeout(function() {
-                statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
-              }, 2000);
             })
             .catch(function(err) {
               statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Error</span>';
@@ -595,11 +603,13 @@
       row.appendChild(statusSpan);
       apiKeysContainer.appendChild(row);
 
-      // Check if key already exists
+      // Check if key already exists AND provider is registered
       if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
         window.webclaw.keystore.hasKey(provider.id)
           .then(function(hasKey) {
-            if (hasKey) {
+            // Show test button only if provider is actually registered (in availableProviders)
+            const isRegistered = availableProviders.includes(provider.id);
+            if (hasKey && isRegistered) {
               statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
               statusSpan.className = 'text-xs text-green-400 w-20';
               // Show test button
@@ -610,6 +620,10 @@
               keyBadge.textContent = provider.name;
               keyBadge.id = 'saved-key-badge-' + provider.id;
               savedKeysList.appendChild(keyBadge);
+            } else if (hasKey) {
+              // Key exists but not registered yet (async loading in progress)
+              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Loading...</span>';
+              statusSpan.className = 'text-xs text-yellow-400 w-20';
             }
           })
           .catch(function(err) {

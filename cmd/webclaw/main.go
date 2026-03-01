@@ -15,6 +15,10 @@ import (
 	"github.com/gleicon/webclaw/internal/tools"
 )
 
+// globalRouter holds the provider router for access by JS bridge functions.
+// This allows setKey to register providers immediately when keys are added.
+var globalRouter *provider.Router
+
 func main() {
 	jsbridge.Init()
 
@@ -62,6 +66,7 @@ func main() {
 		XTitle:      "WebClaw",
 	}
 	router := provider.NewRouter(routerConfig)
+	globalRouter = router // Store for access by JS bridge functions
 	agentLoop.SetRouter(router)
 
 	// Load persisted API keys from keystore asynchronously (Wave 1: async initialization)
@@ -476,6 +481,10 @@ func registerKeystoreBridge() {
 					reject.Invoke(fmt.Sprintf("failed to store key for %s: %s", providerName, err.Error()))
 					return
 				}
+				// Register the provider immediately so it's available without page reload
+				registerProviderAndNotify(providerName, apiKey)
+				// Clear key from memory after registration (best effort security)
+				keystore.ClearKey(apiKey)
 				resolve.Invoke(js.Undefined())
 			}()
 			return nil
@@ -547,6 +556,43 @@ func (i *identityFileImporter) PutContent(filename string, content string) error
 		Content:  content,
 	}
 	return i.store.Put(file)
+}
+
+// registerProviderAndNotify creates a provider instance from an API key,
+// registers it with the global router, and dispatches the providers-ready event.
+// Used by setKey to make newly-added keys immediately available without page reload.
+func registerProviderAndNotify(providerName, apiKey string) {
+	if globalRouter == nil {
+		js.Global().Get("console").Call("error", "webclaw: cannot register provider, router not initialized")
+		return
+	}
+
+	// Create the appropriate provider instance
+	var providerInstance provider.Provider
+	switch providerName {
+	case "anthropic":
+		providerInstance = provider.NewAnthropicProvider(apiKey)
+	case "openai":
+		providerInstance = provider.NewOpenAIProvider(apiKey)
+	case "openrouter":
+		providerInstance = provider.NewOpenRouterProvider(apiKey, "https://github.com/gleicon/webclaw", "WebClaw")
+	}
+
+	if providerInstance != nil {
+		globalRouter.RegisterProvider(providerName, providerInstance)
+		js.Global().Get("console").Call("log", "webclaw: registered provider:", providerName)
+	}
+
+	// Dispatch event with updated provider list
+	availableProviders := globalRouter.AvailableProviders()
+	js.Global().Call("dispatchEvent",
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready",
+			map[string]interface{}{
+				"providers": availableProviders,
+				"count":     len(availableProviders),
+			}))
+
+	js.Global().Get("console").Call("log", "webclaw: providers ready, count:", len(availableProviders))
 }
 
 // loadProviderKeysAsync asynchronously loads persisted API keys from the keystore
