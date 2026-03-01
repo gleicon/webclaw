@@ -14,7 +14,7 @@ const MSG_TYPES = {
     START_STREAM: 'START_STREAM',
     ADD_MESSAGE: 'ADD_MESSAGE',
     ABORT_STREAM: 'ABORT_STREAM',
-    
+
     // Worker -> Main
     WASM_READY: 'WASM_READY',
     WASM_ERROR: 'WASM_ERROR',
@@ -22,7 +22,8 @@ const MSG_TYPES = {
     COMPLETE: 'COMPLETE',
     ERROR: 'ERROR',
     STREAM_STARTED: 'STREAM_STARTED',
-    STREAM_ABORTED: 'STREAM_ABORTED'
+    STREAM_ABORTED: 'STREAM_ABORTED',
+    TOOL_EVENT: 'TOOL_EVENT'
 };
 
 // Handle messages from main thread
@@ -157,13 +158,22 @@ function registerStreamingCallbacks() {
         isStreaming = false;
         self.postMessage({
             type: MSG_TYPES.ERROR,
-            payload: { 
+            payload: {
                 error: error.message || error,
                 code: error.code || 'UNKNOWN'
             }
         });
     };
-    
+
+    // Called by WASM when a tool starts or completes
+    // Uses registerCallback pattern so WASM can invoke it via the onToolEvent callback field
+    self.webclaw.workerBridge.registerCallback('onToolEvent', function(toolName, status, summary, full) {
+        self.postMessage({
+            type: MSG_TYPES.TOOL_EVENT,
+            payload: { toolName, status, summary, full }
+        });
+    });
+
     console.log('[worker] Streaming callbacks registered');
 }
 

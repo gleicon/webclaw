@@ -24,7 +24,7 @@
         START_STREAM: 'START_STREAM',
         ADD_MESSAGE: 'ADD_MESSAGE',
         ABORT_STREAM: 'ABORT_STREAM',
-        
+
         // Worker -> Main
         WASM_READY: 'WASM_READY',
         WASM_ERROR: 'WASM_ERROR',
@@ -32,7 +32,8 @@
         COMPLETE: 'COMPLETE',
         ERROR: 'ERROR',
         STREAM_STARTED: 'STREAM_STARTED',
-        STREAM_ABORTED: 'STREAM_ABORTED'
+        STREAM_ABORTED: 'STREAM_ABORTED',
+        TOOL_EVENT: 'TOOL_EVENT'
     };
     
     // Initialize main thread WASM (for config, identity, crypto)
@@ -148,7 +149,13 @@
             case MSG_TYPES.WASM_ERROR:
                 console.error('[host] Worker WASM error:', payload);
                 break;
-                
+
+            case MSG_TYPES.TOOL_EVENT:
+                window.dispatchEvent(new CustomEvent('webclaw:tool-event', {
+                    detail: event.data.payload  // { toolName, status, summary, full }
+                }));
+                break;
+
             default:
                 console.log('[host] Unknown message from worker:', type, payload);
         }

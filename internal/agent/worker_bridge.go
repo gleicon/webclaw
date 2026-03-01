@@ -17,17 +17,19 @@ var workerBridge = &WorkerBridge{
 // WorkerBridge provides the interface between WASM and the Web Worker
 // Callbacks are set by worker.js and called by the agent loop
 type WorkerBridge struct {
-	onToken    func(token string)
-	onComplete func(result js.Value)
-	onError    func(err error)
+	onToken      func(token string)
+	onComplete   func(result js.Value)
+	onError      func(err error)
+	onToolEvent  func(name, status, summary, full string)
 
 	// Track active streams for cancellation
 	activeStreams map[string]context.CancelFunc
 }
 
-// InitWorkerBridge registers the worker bridge functions on the global webclaw object
-// Called from main.go during initialization
-func InitWorkerBridge() {
+// InitWorkerBridge registers the worker bridge functions on the global webclaw object.
+// Called from main.go during initialization.
+// Returns the *WorkerBridge instance so main.go can wire it into the AgentLoop via SetWorkerBridge.
+func InitWorkerBridge() *WorkerBridge {
 	webclaw := js.Global().Get("webclaw")
 	if webclaw.IsUndefined() || webclaw.IsNull() {
 		// Create webclaw global if it doesn't exist
@@ -91,10 +93,11 @@ func InitWorkerBridge() {
 	bridge.Set("abortStream", abortStreamFn)
 
 	// Register callback setters (worker.js calls these)
-	// webclaw.workerBridge.onToken = function(token) {}
+	// Initial placeholder values so worker.js can detect they're registered
 	bridge.Set("onToken", js.Undefined())
 	bridge.Set("onComplete", js.Undefined())
 	bridge.Set("onError", js.Undefined())
+	bridge.Set("onToolEvent", js.Undefined())
 
 	// Export setter functions that worker.js can call
 	registerCallbackFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -114,14 +117,16 @@ func InitWorkerBridge() {
 			workerBridge.onComplete = func(result js.Value) {
 				callback.Invoke(result)
 			}
-			// Store the cancel function for completion tracking
-			// (handled in stream management)
 		case "onError":
 			workerBridge.onError = func(err error) {
 				errObj := js.Global().Get("Object").New()
 				errObj.Set("message", err.Error())
 				errObj.Set("code", "STREAM_ERROR")
 				callback.Invoke(errObj)
+			}
+		case "onToolEvent":
+			workerBridge.onToolEvent = func(name, status, summary, full string) {
+				callback.Invoke(name, status, summary, full)
 			}
 		}
 
@@ -136,6 +141,8 @@ func InitWorkerBridge() {
 	webclaw.Set("workerBridge", bridge)
 
 	js.Global().Get("console").Call("log", "webclaw: worker bridge initialized")
+
+	return workerBridge
 }
 
 // handleStartStream processes the START_STREAM message from the worker
@@ -211,25 +218,19 @@ func (wb *WorkerBridge) EmitToken(token string) {
 	}
 }
 
-// EmitToolEvent emits a tool event through the worker message channel.
+// EmitToolEvent emits a tool event to the UI via the onToolEvent callback.
+// worker.js registers onToolEvent via registerCallback('onToolEvent', fn).
+// The callback posts a TOOL_EVENT postMessage to the main thread, which
+// webclaw-host.js then dispatches as a webclaw:tool-event CustomEvent on window.
+//
 // Call BEFORE dispatch with status="running", AFTER with status="done" or "error".
 // toolName: name of the tool being invoked
 // status: "running", "done", or "error"
 // summary: short human-readable description for the UI activity panel
 // full: full content (may be long; used for LLM context)
 func (wb *WorkerBridge) EmitToolEvent(toolName, status, summary, full string) {
-	// Post tool event via JS postMessage so the worker thread receives it
-	event := js.Global().Get("Object").New()
-	event.Set("type", "tool_event")
-	event.Set("toolName", toolName)
-	event.Set("status", status)
-	event.Set("summary", summary)
-	event.Set("full", full)
-
-	// Use the global postMessage if available (Web Worker context)
-	postMessage := js.Global().Get("postMessage")
-	if !postMessage.IsUndefined() && !postMessage.IsNull() {
-		postMessage.Invoke(event)
+	if wb.onToolEvent != nil {
+		wb.onToolEvent(toolName, status, summary, full)
 	}
 }
 
