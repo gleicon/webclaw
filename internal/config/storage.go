@@ -93,7 +93,12 @@ func (s *Storage) openDB() error {
 // Returns nil if no config exists
 func (s *Storage) GetConfig() (*Config, error) {
 	if s.db.IsUndefined() || s.db.IsNull() {
-		return nil, fmt.Errorf("database not open")
+		return nil, nil // Database not ready, treat as no config
+	}
+
+	// Check if store exists
+	if !s.db.Get("objectStoreNames").Call("contains", ConfigStore).Bool() {
+		return nil, nil // Store doesn't exist yet, treat as no config
 	}
 
 	// Wrap IndexedDB operation in promise
@@ -137,6 +142,11 @@ func (s *Storage) GetConfig() (*Config, error) {
 func (s *Storage) SetConfig(cfg *Config) error {
 	if s.db.IsUndefined() || s.db.IsNull() {
 		return fmt.Errorf("database not open")
+	}
+
+	// Check if store exists
+	if !s.db.Get("objectStoreNames").Call("contains", ConfigStore).Bool() {
+		return fmt.Errorf("config store not available")
 	}
 
 	// Validate before saving

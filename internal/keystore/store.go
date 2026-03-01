@@ -161,6 +161,15 @@ func (ks *KeyStore) KeyExists(provider string) (bool, error) {
 
 // DeleteKey removes a stored key for a provider
 func (ks *KeyStore) DeleteKey(provider string) error {
+	// Check if store exists
+	if ks.db.IsUndefined() || ks.db.IsNull() {
+		return fmt.Errorf("database not open")
+	}
+	storeNames := ks.db.Get("objectStoreNames")
+	if !storeNames.Call("contains", "keystore").Bool() {
+		return nil // Store doesn't exist, nothing to delete
+	}
+
 	promise := jsbridge.IDBDelete(ks.db, "keystore", provider)
 
 	resultCh := make(chan struct{}, 1)
@@ -184,6 +193,15 @@ func (ks *KeyStore) DeleteKey(provider string) error {
 
 // saveKey stores a key in IndexedDB
 func (ks *KeyStore) saveKey(key StoredKey) error {
+	// Check if store exists
+	if ks.db.IsUndefined() || ks.db.IsNull() {
+		return fmt.Errorf("database not open")
+	}
+	storeNames := ks.db.Get("objectStoreNames")
+	if !storeNames.Call("contains", "keystore").Bool() {
+		return fmt.Errorf("keystore not available")
+	}
+
 	// Convert to JS object via JSON
 	keyData, err := json.Marshal(key)
 	if err != nil {
@@ -219,6 +237,15 @@ func (ks *KeyStore) saveKey(key StoredKey) error {
 
 // loadKey retrieves a key from IndexedDB
 func (ks *KeyStore) loadKey(provider string) (*StoredKey, error) {
+	// Check if store exists
+	if ks.db.IsUndefined() || ks.db.IsNull() {
+		return nil, nil // Store not ready, treat as not found
+	}
+	storeNames := ks.db.Get("objectStoreNames")
+	if !storeNames.Call("contains", "keystore").Bool() {
+		return nil, nil // Store doesn't exist yet, treat as not found
+	}
+
 	promise := jsbridge.IDBGet(ks.db, "keystore", provider)
 
 	resultCh := make(chan js.Value, 1)
