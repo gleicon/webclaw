@@ -8,6 +8,7 @@ import (
 
 	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/jsbridge"
+	"github.com/gleicon/webclaw/internal/keystore"
 )
 
 func main() {
@@ -19,8 +20,26 @@ func main() {
 		// Don't exit - we can still run without config for now
 	}
 
+	// Initialize keystore
+	if err := initializeKeystore(); err != nil {
+		js.Global().Get("console").Call("error", "webclaw: keystore initialization failed:", err.Error())
+		// Don't exit - we can still run without keystore for now
+	}
+
 	js.Global().Get("console").Call("log", "webclaw: WASM ready")
 	<-make(chan struct{}) // block forever — Go runtime exits when main() returns
+}
+
+func initializeKeystore() error {
+	ks, err := keystore.NewKeyStore()
+	if err != nil {
+		return fmt.Errorf("failed to create keystore: %w", err)
+	}
+
+	// Just verify it works - the keystore reference is managed internally
+	_ = ks
+	js.Global().Get("console").Call("log", "webclaw: keystore initialized")
+	return nil
 }
 
 func initializeConfig() error {
