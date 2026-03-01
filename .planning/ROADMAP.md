@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. When conversation history exceeds threshold, the agent automatically summarizes and replaces history — the user sees the conversation continue naturally
   4. Agent stores a memory fact and later retrieves it via hybrid vector+BM25 search with ranked results
   5. When IndexedDB usage exceeds 80% of quota, old memories are archived without user-visible data loss
-**Plans**: TBD
+**Plans**: 03-01 (LLM Provider System with Anthropic, OpenAI, OpenRouter) — COMPLETE, 03-02 (Agent Loop) — Planned, 03-03 (Memory System) — Planned
 
 ### Phase 4: Tools and Webchat UI
 **Goal**: The developer can interact with the agent through a browser chat interface, use browser tools, and dogfood the full system
@@ -60,5 +60,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. WASM Pipeline | 2/2 | ✅ Complete | 2026-02-28 |
 | 2. Configuration and Identity | 4/4 | ✅ Complete | 2026-03-01 |
-| 3. Intelligence Core | 0/TBD | Not started | - |
+| 3. Intelligence Core | 1/3 | 🔄 In Progress | 2026-03-01 |
 | 4. Tools and Webchat UI | 0/TBD | Not started | - |
