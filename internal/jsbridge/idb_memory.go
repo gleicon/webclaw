@@ -4,10 +4,7 @@ package jsbridge
 
 import (
 	"encoding/json"
-	"fmt"
 	"syscall/js"
-
-	"github.com/gleicon/webclaw/internal/memory"
 )
 
 // MemoryDB is the IndexedDB database name for memory storage.
@@ -22,6 +19,28 @@ const (
 	MemoryStoreIndex    = "memory_index" // BM25 inverted index
 	MemoryStoreArchives = "archives"     // Archived memories
 )
+
+// MemoryDocument represents a memory document for IndexedDB serialization.
+// This is defined here to avoid import cycles with the memory package.
+type MemoryDocument struct {
+	ID           string                 `json:"id"`
+	Content      string                 `json:"content"`
+	Embedding    []float32              `json:"embedding"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	Tokens       int                    `json:"tokens"`
+	AccessCount  int                    `json:"access_count"`
+	LastAccessed string                 `json:"last_accessed"`
+	CreatedAt    string                 `json:"created_at"`
+	Importance   int                    `json:"importance"`
+}
+
+// QuotaInfo represents storage quota estimation.
+type QuotaInfo struct {
+	Usage    int64   `json:"usage"`    // Bytes used
+	Quota    int64   `json:"quota"`    // Total quota bytes
+	Percent  float64 `json:"percent"`  // Usage percentage
+	Overflow bool    `json:"overflow"` // True if usage > quota
+}
 
 // MemoryDBOpen opens the memory database with proper object stores.
 // Returns a Promise that resolves to the IDBDatabase.
@@ -81,27 +100,24 @@ func MemoryDBOpen() js.Value {
 }
 
 // MemoryPut stores a MemoryDocument in IndexedDB.
+// The doc parameter should be a MemoryDocument (or compatible map).
 // Returns a Promise that resolves when complete.
-func MemoryPut(db js.Value, doc *memory.MemoryDocument) js.Value {
+func MemoryPut(db js.Value, doc interface{}) js.Value {
 	promiseCtor := js.Global().Get("Promise")
 	return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
 		resolve := resolveReject[0]
 		reject := resolveReject[1]
 
 		go func() {
-			// Serialize document to JS object via JSON
-			data, err := doc.Serialize()
+			// Serialize document to JSON, then to JS object
+			data, err := json.Marshal(doc)
 			if err != nil {
 				reject.Invoke(err.Error())
 				return
 			}
 
 			// Parse JSON to JS object
-			var jsObj map[string]interface{}
-			if err := json.Unmarshal(data, &jsObj); err != nil {
-				reject.Invoke(err.Error())
-				return
-			}
+			jsObj := js.Global().Get("JSON").Call("parse", string(data))
 
 			transaction := db.Call("transaction", MemoryStoreMain, "readwrite")
 			store := transaction.Call("objectStore", MemoryStoreMain)
@@ -122,8 +138,8 @@ func MemoryPut(db js.Value, doc *memory.MemoryDocument) js.Value {
 	}))
 }
 
-// MemoryGet retrieves a MemoryDocument by ID from IndexedDB.
-// Returns a Promise that resolves to *MemoryDocument or nil if not found.
+// MemoryGet retrieves a document by ID from IndexedDB.
+// Returns a Promise that resolves to the raw JS object or null if not found.
 func MemoryGet(db js.Value, id string) js.Value {
 	promiseCtor := js.Global().Get("Promise")
 	return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
@@ -137,20 +153,7 @@ func MemoryGet(db js.Value, id string) js.Value {
 
 			request.Set("onsuccess", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 				result := request.Get("result")
-				if result.IsUndefined() || result.IsNull() {
-					resolve.Invoke(js.Null())
-					return nil
-				}
-
-				// Convert JS object to JSON string, then to Go struct
-				jsonStr := js.Global().Get("JSON").Call("stringify", result).String()
-				doc, err := memory.DeserializeMemoryDocument([]byte(jsonStr))
-				if err != nil {
-					reject.Invoke(err.Error())
-					return nil
-				}
-
-				resolve.Invoke(js.ValueOf(doc))
+				resolve.Invoke(result)
 				return nil
 			}))
 
@@ -164,7 +167,7 @@ func MemoryGet(db js.Value, id string) js.Value {
 	}))
 }
 
-// MemoryDelete removes a MemoryDocument by ID from IndexedDB.
+// MemoryDelete removes a document by ID from IndexedDB.
 // Returns a Promise that resolves when complete.
 func MemoryDelete(db js.Value, id string) js.Value {
 	promiseCtor := js.Global().Get("Promise")
@@ -192,8 +195,8 @@ func MemoryDelete(db js.Value, id string) js.Value {
 	}))
 }
 
-// MemoryGetAll retrieves all MemoryDocuments from IndexedDB.
-// Returns a Promise that resolves to []*MemoryDocument.
+// MemoryGetAll retrieves all documents from IndexedDB.
+// Returns a Promise that resolves to array of raw JS objects.
 func MemoryGetAll(db js.Value) js.Value {
 	promiseCtor := js.Global().Get("Promise")
 	return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
@@ -207,28 +210,7 @@ func MemoryGetAll(db js.Value) js.Value {
 
 			request.Set("onsuccess", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 				results := request.Get("result")
-				if results.IsUndefined() || results.IsNull() {
-					resolve.Invoke(js.Global().Get("Array").New())
-					return nil
-				}
-
-				// Convert each JS object to Go struct
-				length := results.Get("length").Int()
-				docs := make([]*memory.MemoryDocument, 0, length)
-
-				for i := 0; i < length; i++ {
-					item := results.Index(i)
-					jsonStr := js.Global().Get("JSON").Call("stringify", item).String()
-					doc, err := memory.DeserializeMemoryDocument([]byte(jsonStr))
-					if err != nil {
-						// Log error but continue with other documents
-						fmt.Printf("Error deserializing memory document: %v\n", err)
-						continue
-					}
-					docs = append(docs, doc)
-				}
-
-				resolve.Invoke(js.ValueOf(docs))
+				resolve.Invoke(results)
 				return nil
 			}))
 
@@ -278,7 +260,7 @@ func ArchivePut(db js.Value, id string, compressedData []byte) js.Value {
 }
 
 // GetStorageQuota returns storage quota information using navigator.storage.estimate().
-// Returns a Promise that resolves to memory.QuotaInfo.
+// Returns a Promise that resolves to QuotaInfo.
 func GetStorageQuota() js.Value {
 	promiseCtor := js.Global().Get("Promise")
 	return promiseCtor.New(js.FuncOf(func(this js.Value, resolveReject []js.Value) interface{} {
@@ -314,14 +296,14 @@ func GetStorageQuota() js.Value {
 					percent = float64(usage) / float64(quota) * 100
 				}
 
-				quotaInfo := memory.QuotaInfo{
-					Usage:    usage,
-					Quota:    quota,
-					Percent:  percent,
-					Overflow: usage > quota,
-				}
+				// Return as plain JS object
+				result := js.Global().Get("Object").New()
+				result.Set("usage", usage)
+				result.Set("quota", quota)
+				result.Set("percent", percent)
+				result.Set("overflow", usage > quota)
 
-				resolve.Invoke(js.ValueOf(quotaInfo))
+				resolve.Invoke(result)
 				return nil
 			})).Call("catch", js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
 				reject.Invoke(args[0])
@@ -331,4 +313,54 @@ func GetStorageQuota() js.Value {
 
 		return nil
 	}))
+}
+
+// MemoryDocumentFromJS converts a JS memory document to our Go struct.
+func MemoryDocumentFromJS(val js.Value) *MemoryDocument {
+	if val.IsUndefined() || val.IsNull() {
+		return nil
+	}
+
+	// Convert JS object to JSON string, then parse
+	jsonStr := js.Global().Get("JSON").Call("stringify", val).String()
+
+	var doc MemoryDocument
+	if err := json.Unmarshal([]byte(jsonStr), &doc); err != nil {
+		return nil
+	}
+
+	return &doc
+}
+
+// MemoryDocumentsFromJSArray converts a JS array of documents to Go slice.
+func MemoryDocumentsFromJSArray(val js.Value) []*MemoryDocument {
+	if val.IsUndefined() || val.IsNull() {
+		return []*MemoryDocument{}
+	}
+
+	length := val.Get("length").Int()
+	docs := make([]*MemoryDocument, 0, length)
+
+	for i := 0; i < length; i++ {
+		item := val.Index(i)
+		if doc := MemoryDocumentFromJS(item); doc != nil {
+			docs = append(docs, doc)
+		}
+	}
+
+	return docs
+}
+
+// QuotaInfoFromJS converts a JS quota info object to Go struct.
+func QuotaInfoFromJS(val js.Value) *QuotaInfo {
+	if val.IsUndefined() || val.IsNull() {
+		return nil
+	}
+
+	return &QuotaInfo{
+		Usage:    int64(val.Get("usage").Float()),
+		Quota:    int64(val.Get("quota").Float()),
+		Percent:  val.Get("percent").Float(),
+		Overflow: val.Get("overflow").Bool(),
+	}
 }
