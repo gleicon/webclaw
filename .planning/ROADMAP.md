@@ -49,7 +49,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can view and edit identity files from a settings panel without leaving the browser tab
   4. User can enter provider API keys in a settings panel and they are encrypted on save (key never visible in plaintext after entry)
   5. Developer can dogfood a complete multi-turn conversation with tool use end-to-end from a browser tab with no server dependency
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Tool registry + four browser tool implementations + real provider wiring in AgentLoop
+- [ ] 04-02-PLAN.md — JS bridge exports for identity/keystore + tool event emission across worker boundary
+- [ ] 04-03-PLAN.md — Full Tailwind dark-mode chat UI (3 tabs, chat bubbles, tool panel, settings, identity editor)
 
 ## Progress
 
@@ -58,7 +63,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. WASM Pipeline | 2/2 | ✅ Complete | 2026-02-28 |
-| 2. Configuration and Identity | 4/4 | ✅ Complete | 2026-03-01 |
+| 1. WASM Pipeline | 2/2 | Complete | 2026-02-28 |
+| 2. Configuration and Identity | 4/4 | Complete | 2026-03-01 |
 | 3. Intelligence Core | 3/4 | In Progress|  |
-| 4. Tools and Webchat UI | 0/TBD | Not started | - |
+| 4. Tools and Webchat UI | 0/3 | Not started | - |
