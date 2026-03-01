@@ -8,9 +8,9 @@ progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   current_phase: 3
-  current_plan: 3
+  current_plan: 4
 ---
 
 # Project State
@@ -25,18 +25,18 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 3 of 4 (Intelligence Core)
-Plan: 3 of 4 in current phase (IN PROGRESS)
-Status: **03-02 Complete - Agent Loop & Streaming implemented**
-Last activity: 2026-03-01 — Plan 03-02 complete (Web Worker streaming with context assembly)
+Plan: 4 of 4 in current phase (COMPLETE)
+Status: **03-04 Complete - Memory System & Hybrid Search implemented**
+Last activity: 2026-03-01 — Plan 03-04 complete (Memory with Float32Array embeddings and hybrid search)
 
-Progress: [████████████░░░░] 65%
+Progress: [████████████░░░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 34 min
-- Total execution time: 3.3 hours
+- Total plans completed: 8
+- Average duration: 31 min
+- Total execution time: 3.4 hours
 
 **By Phase:**
 
@@ -44,12 +44,14 @@ Progress: [████████████░░░░] 65%
 |-------|-------|-------|----------|
 | 01-wasm-pipeline | 2 | 24 min | 12 min |
 | 02-config-identity | 4 | 155 min | 39 min |
-| 03-intelligence-core | 2 | 8 min | 4 min |
+| 03-intelligence-core | 3 | 14 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (4 min), 03-01 (4 min), 02-04 (35 min), 02-03 (8 min), 02-02 (12 min)
-- Trend: efficient streaming implementation
+- Last 5 plans: 03-04 (6 min), 03-03 (4 min), 03-02 (4 min), 03-01 (4 min), 02-04 (35 min)
+- Trend: efficient memory system implementation
 
+| Phase 03 P04 | 6 min | 10 tasks | 7 files |
+| Phase 03 P03 | 4 min | 7 tasks | 9 files |
 | Phase 03 P02 | 4 min | 7 tasks | 9 files |
 | Phase 03 P01 | 4 min | 7 tasks | 8 files |
 | Phase 02 P04 | 35 min | 4 tasks | 6 files |
@@ -85,11 +87,14 @@ Recent decisions affecting current work:
 - [03-02] Two message types: ConversationMessage (internal with metadata) and Message (API format)
 - [03-02] Web Worker runs separate WASM instance for non-blocking streaming
 - [03-02] Context cancellation for stream abort (simpler than channels in WASM)
+- [03-04] Hybrid search with 70% cosine similarity + 30% BM25 for semantic + keyword balance
+- [03-04] Memory embeddings stored as Float32Array in IndexedDB for compact storage
+- [03-04] LRU eviction with multi-factor scoring: age, access count, and importance
+- [03-04] Created duplicate types in jsbridge to avoid import cycles with memory package
+- [03-04] Gzip compression for memory archival before deletion
 
 ### Pending Todos
 
-- Phase 3: Memory System (03-03 - next)
-- Phase 3: Semantic search and retrieval (03-04)
 - Phase 4: Tools and Webchat UI
 
 ### Blockers/Concerns
@@ -99,12 +104,18 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 03-intelligence-core/03-02-PLAN.md — Agent Loop & Streaming
-Resume file: .planning/phases/03-intelligence-core/03-02-SUMMARY.md
+Stopped at: Completed 03-intelligence-core/03-04-PLAN.md — Memory System & Hybrid Search
+Resume file: .planning/phases/03-intelligence-core/03-04-SUMMARY.md
 
 ### Phase 3 Progress
 
 Plans completed in Phase 3:
+- 03-01: Provider routing with streaming support
+- 03-02: Agent loop with context assembly
+- 03-03: Context window management
+- 03-04: Memory system with hybrid search
+
+**Phase 3 Complete** - Ready for Phase 4: Tools and Webchat UI
 - 03-01: LLM Provider System (Anthropic, OpenAI, OpenRouter with failover)
 - 03-02: Agent Loop & Streaming (Web Worker, context assembly, streaming)
 
