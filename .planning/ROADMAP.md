@@ -68,9 +68,22 @@ Plans:
   5. ✅ End-to-end: User message → LLM API call → streamed response → UI display (no mocks)
 **Plans**: 05-01 (Async keystore init) — COMPLETE, 05-02 (Router config) — COMPLETE, 05-03 (E2E testing) — COMPLETE
 
-### Phase 6: Local Bridge Binary
+### Phase 6: Real Agent Loop
+**Goal:** Make WebClaw a real OpenClaw implementation with working tool_use loop, real LLM-based summarization, and memory flush before compaction
+**Depends on:** Phase 5
+**Requirements:** AGNT-01, AGNT-02, AGNT-03, AGNT-04, MEM-04, PROV-03 (full)
+**Success Criteria** (what must be TRUE):
+  1. Providers send tool definitions to LLM and parse tool_use/tool_calls from responses
+  2. Agent loop passes tools to provider on every iteration, enabling real tool execution
+  3. When conversation exceeds 20 messages or 75% of context window, automatic LLM-based summarization occurs
+  4. Before summarization, key facts are extracted and flushed to memory store + MEMORY.md
+  5. Token counting uses accurate estimation (not crude chars/4)
+  6. Full E2E flow works: user message → LLM with tools → tool_use → execute → tool_result → final response
+**Plans**: 06-01 (Provider tool support), 06-02 (Agent loop wiring), 06-03 (Real summarization), 06-04 (Memory flush), 06-05 (Integration)
+
+### Phase 7: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
-**Depends on**: Phase 5
+**Depends on**: Phase 6
 **Requirements**: BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04
 **Success Criteria** (what must be TRUE):
   1. `webclaw-bridge` binary runs on macOS/Linux and binds to 127.0.0.1:18800
@@ -80,9 +93,9 @@ Plans:
   5. Git operations tool clones, commits, pushes via bridge
   6. Connection is 127.0.0.1-only (no remote access)
 
-### Phase 7: Polish & Release
+### Phase 8: Polish & Release
 **Goal**: Production-ready release with documentation, distribution, and stability improvements
-**Depends on**: Phase 6 (or can skip to after Phase 5)
+**Depends on**: Phase 7 (or can skip to after Phase 6)
 **Requirements**: DOCS-01, DIST-01, STABLE-01, PERF-01
 **Success Criteria** (what must be TRUE):
   1. README with installation and usage instructions
@@ -104,5 +117,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 3. Intelligence Core | 4/4 | Complete | 2026-03-01 |
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
 | 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
-| 6. Local Bridge Binary | 0/0 | Planned |  |
-| 7. Polish & Release | 0/0 | Planned |  |
+| 6. Real Agent Loop | 0/5 | Planned |  |
+| 7. Local Bridge Binary | 0/0 | Planned |  |
+| 8. Polish & Release | 0/0 | Planned |  |
