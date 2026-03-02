@@ -131,10 +131,34 @@
     const detail = e.detail || {};
     availableProviders = detail.providers || [];
     const count = detail.count || 0;
+    console.log('[UI] Providers ready event:', e);
+    console.log('[UI] Event detail:', detail);
+    console.log('[UI] Providers array:', availableProviders);
+    console.log('[UI] Count:', count);
     console.log('[UI] Providers ready:', count, 'providers available');
 
     // Update provider status indicators in settings
     updateProviderStatusIndicators();
+    
+    // Auto-select first available provider if current selection has no key
+    if (count > 0 && modelSelector) {
+      const currentModel = modelSelector.value;
+      const currentProvider = currentModel.split('/')[0];
+      if (!availableProviders.includes(currentProvider)) {
+        // Current provider not available, switch to first available
+        const firstAvailable = availableProviders[0];
+        console.log('[UI] Auto-switching to available provider:', firstAvailable);
+        // Find first model for this provider
+        const options = modelSelector.querySelectorAll('option');
+        for (let i = 0; i < options.length; i++) {
+          if (options[i].value.startsWith(firstAvailable + '/')) {
+            modelSelector.selectedIndex = i;
+            console.log('[UI] Selected model:', options[i].value);
+            break;
+          }
+        }
+      }
+    }
   });
 
   function updateProviderStatusIndicators() {
@@ -295,10 +319,20 @@
   // Send Message Flow
   // ==========================================
   function sendMessage() {
-    if (isStreaming) return;
-
+    // Prevent sending if already streaming (e.g., during test connection)
+    if (isStreaming) {
+      console.log('[UI] Cannot send message - stream already in progress');
+      return;
+    }
+    
     const content = userInput.value.trim();
     if (!content) return;
+    
+    // Don't allow sending if no providers are available
+    if (availableProviders.length === 0) {
+      showErrorToast('Please enter your API key in Settings to enable live AI');
+      return;
+    }
 
     // Parse model selector (vendor/model-id format)
     const modelValue = modelSelector.value;
@@ -665,11 +699,20 @@
     const provider = API_PROVIDERS.find(function(p) { return p.id === providerId; });
     if (!provider) return;
 
+    // Prevent test if already streaming
+    if (isStreaming) {
+      showErrorToast('A stream is already in progress. Please wait.');
+      return;
+    }
+
     const testBtn = document.getElementById('test-btn-' + providerId);
     if (testBtn) {
       testBtn.disabled = true;
       testBtn.innerHTML = '⏳';
     }
+
+    // Set streaming state to prevent chat during test
+    isStreaming = true;
 
     // Use a cheap model for testing (haiku for Anthropic, gpt-3.5-turbo for OpenAI)
     let testModel;
@@ -683,28 +726,70 @@
 
     console.log('[UI] Testing connection to', providerId, 'with model', testModel);
 
+    let testComplete = false;
+    let tokenReceived = false;
+
+    // Set a timeout to detect stuck streams
+    const timeoutId = setTimeout(function() {
+      if (!testComplete) {
+        testComplete = true;
+        
+        // Reset streaming state
+        isStreaming = false;
+        
+        console.error('[UI] Test connection timed out after 30 seconds');
+        if (testBtn) {
+          testBtn.disabled = false;
+          testBtn.innerHTML = '🧪';
+        }
+        if (!tokenReceived) {
+          showErrorToast('Connection test timed out. Check console for [DEBUG] logs.');
+        }
+      }
+    }, 30000);
+
     // Make a minimal test call
     window.webclawHost.startStream({
       provider: providerId,
       model: testModel,
       messages: [{ role: 'user', content: "Say 'test'" }],
       onToken: function(token) {
-        // Token received - connection working
+        tokenReceived = true;
+        console.log('[UI] Token received:', token);
       },
       onComplete: function() {
+        if (testComplete) return;
+        testComplete = true;
+        clearTimeout(timeoutId);
+        
+        // Reset streaming state
+        isStreaming = false;
+        
         if (testBtn) {
           testBtn.disabled = false;
           testBtn.innerHTML = '🧪';
         }
-        showErrorToast('Connection to ' + provider.name + ' successful!');
-        // Change toast to success style
-        const toast = document.getElementById('error-toast');
-        if (toast) {
-          toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900 text-green-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
-          toast.innerHTML = '<span class="text-green-400">✓</span><span>Connection to ' + provider.name + ' successful!</span>';
+        
+        if (tokenReceived) {
+          showErrorToast('Connection to ' + provider.name + ' successful!');
+          // Change toast to success style
+          const toast = document.getElementById('error-toast');
+          if (toast) {
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900 text-green-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
+            toast.innerHTML = '<span class="text-green-400">✓</span><span>Connection to ' + provider.name + ' successful!</span>';
+          }
+        } else {
+          showErrorToast('Stream completed but no tokens received');
         }
       },
       onError: function(err) {
+        if (testComplete) return;
+        testComplete = true;
+        clearTimeout(timeoutId);
+        
+        // Reset streaming state
+        isStreaming = false;
+        
         if (testBtn) {
           testBtn.disabled = false;
           testBtn.innerHTML = '🧪';
@@ -712,6 +797,7 @@
 
         // Handle specific error types
         const errorMsg = err && err.message ? err.message : String(err);
+        console.error('[UI] Test connection error:', errorMsg);
         if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('invalid')) {
           showErrorToast('Invalid API key for ' + provider.name + ' — please check and re-enter');
         } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {

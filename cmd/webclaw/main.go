@@ -592,14 +592,18 @@ func registerProviderAndNotify(providerName, apiKey string) {
 		providersJS.SetIndex(i, p)
 	}
 
-	// Create detail object
-	detail := js.Global().Get("Object").New()
-	detail.Set("providers", providersJS)
-	detail.Set("count", len(availableProviders))
+	// Create detail object with provider data
+	detailData := js.Global().Get("Object").New()
+	detailData.Set("providers", providersJS)
+	detailData.Set("count", len(availableProviders))
+
+	// Create CustomEvent options with detail property
+	options := js.Global().Get("Object").New()
+	options.Set("detail", detailData)
 
 	// Dispatch the event
 	js.Global().Call("dispatchEvent",
-		js.Global().Get("CustomEvent").New("webclaw:providers-ready", detail))
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready", options))
 
 	js.Global().Get("console").Call("log", "webclaw: providers ready, count:", len(availableProviders))
 }
@@ -671,14 +675,18 @@ func loadProviderKeysAsync(router *provider.Router) {
 		providersJS.SetIndex(i, p)
 	}
 
-	// Create detail object
-	detail := js.Global().Get("Object").New()
-	detail.Set("providers", providersJS)
-	detail.Set("count", len(availableProviders))
+	// Create detail object with provider data
+	detailData := js.Global().Get("Object").New()
+	detailData.Set("providers", providersJS)
+	detailData.Set("count", len(availableProviders))
+
+	// Create CustomEvent options with detail property
+	options := js.Global().Get("Object").New()
+	options.Set("detail", detailData)
 
 	// Dispatch the event
 	js.Global().Call("dispatchEvent",
-		js.Global().Get("CustomEvent").New("webclaw:providers-ready", detail))
+		js.Global().Get("CustomEvent").New("webclaw:providers-ready", options))
 
 	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete, providers:", len(availableProviders))
 }

@@ -7,6 +7,8 @@ import (
 	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
+	"github.com/gleicon/webclaw/internal/keystore"
+	"github.com/gleicon/webclaw/internal/provider"
 )
 
 // workerBridge holds the callbacks registered from the worker
@@ -172,6 +174,16 @@ func handleStartStream(payload js.Value) {
 		if modelVal := payload.Get("model"); !modelVal.IsUndefined() {
 			model = modelVal.String()
 		}
+		// Extract messages array from payload
+		if messagesVal := payload.Get("messages"); !messagesVal.IsUndefined() && !messagesVal.IsNull() {
+			messagesLen := messagesVal.Get("length").Int()
+			for i := 0; i < messagesLen; i++ {
+				msgVal := messagesVal.Index(i)
+				role := msgVal.Get("role").String()
+				content := msgVal.Get("content").String()
+				messages = append(messages, Message{Role: role, Content: content})
+			}
+		}
 	}
 
 	// Create cancellable context for this stream
@@ -188,6 +200,41 @@ func handleStartStream(payload js.Value) {
 		loop := globalAgentLoop
 		if loop == nil {
 			loop = NewAgentLoop(providerName, model)
+		} else {
+			// Update the global loop with the provider/model from this stream request
+			loop.SetProviderName(providerName)
+			loop.SetModel(model)
+
+			// If provider not registered, try to load key from keystore and register it (SYNCHRONOUSLY)
+			if loop.router != nil && !loop.router.HasProvider(providerName) {
+				// Load synchronously (not in goroutine) so provider is available before Run()
+				ks, err := keystore.NewKeyStore()
+				if err != nil {
+					js.Global().Get("console").Call("error", "Failed to open keystore:", err.Error())
+				} else {
+					const passphrase = "webclaw-v1-key"
+					apiKey, err := ks.RetrieveKey(providerName, passphrase)
+					if err != nil {
+						js.Global().Get("console").Call("error", "Failed to retrieve key:", err.Error())
+					} else if apiKey == "" {
+						js.Global().Get("console").Call("error", "No API key found for:", providerName)
+					} else {
+						var providerInstance provider.Provider
+						switch providerName {
+						case "anthropic":
+							providerInstance = provider.NewAnthropicProvider(apiKey)
+						case "openai":
+							providerInstance = provider.NewOpenAIProvider(apiKey)
+						case "openrouter":
+							providerInstance = provider.NewOpenRouterProvider(apiKey, "https://github.com/gleicon/webclaw", "WebClaw")
+						}
+						if providerInstance != nil {
+							loop.router.RegisterProvider(providerName, providerInstance)
+						}
+						keystore.ClearKey(apiKey)
+					}
+				}
+			}
 		}
 		err := loop.Run(ctx, messages, workerBridge)
 		if err != nil {
@@ -258,6 +305,7 @@ func (wb *WorkerBridge) EmitComplete(success bool, content string) {
 		result.Set("success", success)
 		result.Set("content", content)
 		wb.onComplete(result)
+	} else {
 	}
 }
 

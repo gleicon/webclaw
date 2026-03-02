@@ -25,5 +25,6 @@ func main() {
 		http.FileServer(http.Dir(".")).ServeHTTP(w, r)
 	})
 	log.Println("Serving on http://localhost:8080")
+	log.Println("Static file server for WebClaw WASM")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

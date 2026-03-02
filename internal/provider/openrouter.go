@@ -23,10 +23,27 @@ type OpenRouterProvider struct {
 }
 
 // NewOpenRouterProvider creates a new OpenRouter provider
+// In dev mode (localhost:8080), uses proxy to bypass CORS
 func NewOpenRouterProvider(apiKey, httpReferer, xTitle string) *OpenRouterProvider {
+	baseURL := "https://openrouter.ai/api/v1"
+
+	// Check if we're running on localhost (dev mode with proxy)
+	// Note: In Web Workers, window is undefined, so we need to check carefully
+	window := js.Global().Get("window")
+	if !window.IsUndefined() && !window.IsNull() {
+		location := window.Get("location")
+		if !location.IsUndefined() && !location.IsNull() {
+			origin := location.Get("origin").String()
+			if origin == "http://localhost:8080" {
+				baseURL = "http://localhost:8080/proxy/openrouter/api/v1"
+				js.Global().Get("console").Call("log", "[OpenRouter] Using dev proxy:", baseURL)
+			}
+		}
+	}
+
 	return &OpenRouterProvider{
 		apiKey:      apiKey,
-		baseURL:     "https://openrouter.ai/api/v1",
+		baseURL:     baseURL,
 		httpReferer: httpReferer,
 		xTitle:      xTitle,
 	}

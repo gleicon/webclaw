@@ -19,10 +19,27 @@ type AnthropicProvider struct {
 }
 
 // NewAnthropicProvider creates a new Anthropic provider
+// In dev mode (localhost:8080), uses proxy to bypass CORS
 func NewAnthropicProvider(apiKey string) *AnthropicProvider {
+	baseURL := "https://api.anthropic.com/v1"
+
+	// Check if we're running on localhost (dev mode with proxy)
+	// Note: In Web Workers, window is undefined, so we need to check carefully
+	window := js.Global().Get("window")
+	if !window.IsUndefined() && !window.IsNull() {
+		location := window.Get("location")
+		if !location.IsUndefined() && !location.IsNull() {
+			origin := location.Get("origin").String()
+			if origin == "http://localhost:8080" {
+				baseURL = "http://localhost:8080/proxy/anthropic/v1"
+				js.Global().Get("console").Call("log", "[Anthropic] Using dev proxy:", baseURL)
+			}
+		}
+	}
+
 	return &AnthropicProvider{
 		apiKey:  apiKey,
-		baseURL: "https://api.anthropic.com/v1",
+		baseURL: baseURL,
 	}
 }
 
@@ -238,28 +255,46 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("marshal error: %v", err)}
 			return
 		}
+		js.Global().Get("console").Call("log", "[Anthropic] Request body:", string(body))
 
 		// Initiate streaming fetch
+		// Note: The "anthropic-dangerous-direct-browser-access" header enables CORS
+		// support for browser-based applications (added by Anthropic in Aug 2024)
 		opts := jsbridge.FetchOptions{
 			Method: "POST",
 			Headers: map[string]string{
 				"Content-Type":      "application/json",
 				"x-api-key":         p.apiKey,
 				"anthropic-version": "2023-06-01",
-				"Accept":            "text/event-stream",
+				"anthropic-dangerous-direct-browser-access": "true",
+				"Accept": "text/event-stream",
 			},
 			Body: string(body),
 		}
 
 		response, err := jsbridge.FetchStream(p.baseURL+"/messages", opts)
 		if err != nil {
+			js.Global().Get("console").Call("error", "[Anthropic] FetchStream error:", err.Error())
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("stream error: %v", err)}
 			return
 		}
+		js.Global().Get("console").Call("log", "[Anthropic] FetchStream returned")
 
 		// Check for immediate error status
 		status := response.Get("status").Int()
+		js.Global().Get("console").Call("log", "[Anthropic] Response status:", status)
 		if status >= 400 {
+			// Try to get error body - text() returns a Promise
+			textPromise := response.Call("text")
+			if !textPromise.IsUndefined() && !textPromise.IsNull() {
+				// Create promise handler to log error
+				textPromise.Call("then", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+					if len(args) > 0 {
+						js.Global().Get("console").Call("error", "[Anthropic] Error response body:", args[0].String())
+					}
+					return nil
+				}))
+			}
 			js.Global().Get("console").Call("error", "[Anthropic] Stream error: status=", status)
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("HTTP %d", status)}
 			return
@@ -269,12 +304,20 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 		js.Global().Get("console").Call("log", "[Anthropic] Stream started: status=", status)
 
 		// Create SSE reader
+		js.Global().Get("console").Call("log", "[Anthropic] Creating SSE reader...")
 		sseReader := jsbridge.NewSSEStreamingReader(response)
 		events := sseReader.Events()
+		js.Global().Get("console").Call("log", "[Anthropic] SSE reader created, waiting for events...")
 
 		// Process SSE events
+		eventCount := 0
 		for event := range events {
+			eventCount++
+			if eventCount == 1 {
+				js.Global().Get("console").Call("log", "[Anthropic] First SSE event received")
+			}
 			if event.Event == "error" {
+				js.Global().Get("console").Call("error", "[Anthropic] SSE error event:", event.Data)
 				tokenChan <- Token{FinishReason: "error", Text: event.Data}
 				return
 			}

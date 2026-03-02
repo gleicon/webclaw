@@ -168,7 +168,8 @@
         }
         
         if (state.isStreaming) {
-            throw new Error('Stream already in progress');
+            console.warn('[host] Stream already in progress, resetting state...');
+            state.isStreaming = false;
         }
         
         // Set callbacks

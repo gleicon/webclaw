@@ -21,6 +21,7 @@ type OpenAIProvider struct {
 }
 
 // NewOpenAIProvider creates a new OpenAI provider
+// Note: OpenAI does not support direct browser CORS, users need a proxy
 func NewOpenAIProvider(apiKey string) *OpenAIProvider {
 	return &OpenAIProvider{
 		apiKey:  apiKey,
@@ -30,11 +31,9 @@ func NewOpenAIProvider(apiKey string) *OpenAIProvider {
 
 // NewOpenAIProviderWithOrg creates an OpenAI provider with organization ID
 func NewOpenAIProviderWithOrg(apiKey, orgID string) *OpenAIProvider {
-	return &OpenAIProvider{
-		apiKey:  apiKey,
-		baseURL: "https://api.openai.com/v1",
-		orgID:   orgID,
-	}
+	p := NewOpenAIProvider(apiKey)
+	p.orgID = orgID
+	return p
 }
 
 // Name returns the provider identifier
@@ -292,6 +291,16 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 		// Check for immediate error status
 		status := response.Get("status").Int()
 		if status >= 400 {
+			// Try to get error body - text() returns a Promise
+			textPromise := response.Call("text")
+			if !textPromise.IsUndefined() && !textPromise.IsNull() {
+				textPromise.Call("then", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+					if len(args) > 0 {
+						js.Global().Get("console").Call("error", "[OpenAI] Error response body:", args[0].String())
+					}
+					return nil
+				}))
+			}
 			js.Global().Get("console").Call("error", "[OpenAI] Stream error: status=", status)
 			tokenChan <- Token{FinishReason: "error", Text: fmt.Sprintf("HTTP %d", status)}
 			return

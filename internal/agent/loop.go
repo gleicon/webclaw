@@ -54,6 +54,18 @@ func (al *AgentLoop) SetRouter(r *provider.Router) {
 	al.router = r
 }
 
+// SetProviderName updates the provider name for the current stream.
+// Used by handleStartStream to set the provider from the payload.
+func (al *AgentLoop) SetProviderName(name string) {
+	al.providerName = name
+}
+
+// SetModel updates the model for the current stream.
+// Used by handleStartStream to set the model from the payload.
+func (al *AgentLoop) SetModel(model string) {
+	al.model = model
+}
+
 // SetToolRegistry wires the tool registry so tool calls are dispatched through it.
 // Without this call, every tool invocation returns "tool registry not configured".
 // Call this in main.go after constructing AgentLoop.
@@ -107,12 +119,14 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		return fmt.Errorf("no context assembler and no messages provided")
 	}
 
+
 	// Get or create provider
 	prov, err := al.getProvider()
 	if err != nil {
 		bridge.EmitError(fmt.Errorf("failed to get provider: %w", err))
 		return err
 	}
+
 
 	// Use provided messages or assemble from context
 	requestMessages := messages
@@ -300,8 +314,10 @@ type providerAdapter struct {
 }
 
 func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+
 	// Check if provider is available before attempting API call
-	if !pa.router.HasProvider(pa.name) {
+	hasProv := pa.router.HasProvider(pa.name)
+	if !hasProv {
 		return fmt.Errorf("provider '%s' not available - no API key configured. Please add your API key in Settings", pa.name)
 	}
 
@@ -321,7 +337,11 @@ func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callb
 	if err != nil {
 		return err
 	}
+	tokenCount := 0
 	for tok := range ch {
+		tokenCount++
+		if tokenCount == 1 {
+		}
 		if tok.FinishReason == "error" {
 			return fmt.Errorf("provider error: %s", tok.Text)
 		}

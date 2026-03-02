@@ -136,25 +136,30 @@ function registerStreamingCallbacks() {
         return;
     }
     
+    // Register all callbacks using the registerCallback pattern
+    // This properly wires them to the Go WorkerBridge struct
+    
     // Called by WASM when a token is received from LLM
-    self.webclaw.workerBridge.onToken = function(token) {
+    self.webclaw.workerBridge.registerCallback('onToken', function(token) {
         self.postMessage({
             type: MSG_TYPES.TOKEN,
             payload: { token }
         });
-    };
+    });
     
     // Called by WASM when stream completes (naturally or by error)
-    self.webclaw.workerBridge.onComplete = function(result) {
+    self.webclaw.workerBridge.registerCallback('onComplete', function(result) {
+        console.log('[worker] onComplete called, resetting isStreaming');
         isStreaming = false;
         self.postMessage({
             type: MSG_TYPES.COMPLETE,
             payload: result || { success: true }
         });
-    };
+    });
     
     // Called by WASM when an error occurs
-    self.webclaw.workerBridge.onError = function(error) {
+    self.webclaw.workerBridge.registerCallback('onError', function(error) {
+        console.log('[worker] onError called, resetting isStreaming');
         isStreaming = false;
         self.postMessage({
             type: MSG_TYPES.ERROR,
@@ -163,10 +168,9 @@ function registerStreamingCallbacks() {
                 code: error.code || 'UNKNOWN'
             }
         });
-    };
+    });
 
     // Called by WASM when a tool starts or completes
-    // Uses registerCallback pattern so WASM can invoke it via the onToolEvent callback field
     self.webclaw.workerBridge.registerCallback('onToolEvent', function(toolName, status, summary, full) {
         self.postMessage({
             type: MSG_TYPES.TOOL_EVENT,
