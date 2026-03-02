@@ -61,12 +61,12 @@ Plans:
 **Depends on**: Phase 4
 **Requirements**: PROV-01, PROV-02, SEC-02
 **Success Criteria** (what must be TRUE):
-  1. API keys are retrieved from encrypted keystore and passed to provider router at initialization
-  2. Real API calls succeed with valid keys (tested against Anthropic, OpenAI, or OpenRouter)
-  3. Missing or invalid keys return clear error messages to the UI
-  4. Provider selection dropdown actually routes to correct provider with live API calls
-  5. End-to-end: User message → LLM API call → streamed response → UI display (no mocks)
-**Plans**: 05-01 (Async keystore init) — Planned, 05-02 (Router config) — Planned, 05-03 (E2E testing) — Planned
+  1. ✅ API keys are retrieved from encrypted keystore and passed to provider router at initialization
+  2. ✅ Real API calls succeed with valid keys (tested against Anthropic, OpenAI, or OpenRouter)
+  3. ✅ Missing or invalid keys return clear error messages to the UI
+  4. ✅ Provider selection dropdown actually routes to correct provider with live API calls
+  5. ✅ End-to-end: User message → LLM API call → streamed response → UI display (no mocks)
+**Plans**: 05-01 (Async keystore init) — COMPLETE, 05-02 (Router config) — COMPLETE, 05-03 (E2E testing) — COMPLETE
 
 ### Phase 6: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
@@ -80,6 +80,18 @@ Plans:
   5. Git operations tool clones, commits, pushes via bridge
   6. Connection is 127.0.0.1-only (no remote access)
 
+### Phase 7: Polish & Release
+**Goal**: Production-ready release with documentation, distribution, and stability improvements
+**Depends on**: Phase 6 (or can skip to after Phase 5)
+**Requirements**: DOCS-01, DIST-01, STABLE-01, PERF-01
+**Success Criteria** (what must be TRUE):
+  1. README with installation and usage instructions
+  2. Static site deployed (GitHub Pages/Netlify) for immediate use
+  3. Binary releases for bridge (macOS/Linux ARM64/x86_64)
+  4. Conversation export/import (save/load chat history)
+  5. Performance: WASM <2s load time, streaming <1s first token
+  6. Error telemetry and graceful degradation
+
 ## Progress
 
 **Execution Order:**
@@ -91,5 +103,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Configuration and Identity | 4/4 | Complete | 2026-03-01 |
 | 3. Intelligence Core | 4/4 | Complete | 2026-03-01 |
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
-| 5. Live AI Provider Connection | 0/3 | Planned |  |
-| 6. Local Bridge Binary | 0/0 | Defined |  |
+| 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
+| 6. Local Bridge Binary | 0/0 | Planned |  |
+| 7. Polish & Release | 0/0 | Planned |  |
