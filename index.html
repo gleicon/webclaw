@@ -127,6 +127,7 @@
   // ==========================================
   let availableProviders = [];
   let failedProviders = []; // Track providers that failed (invalid key, no credits)
+  let pausedProviders = []; // Track providers manually paused by user
 
   window.addEventListener('webclaw:providers-ready', function(e) {
     const detail = e.detail || {};
@@ -141,22 +142,26 @@
     // Update provider status indicators in settings
     updateProviderStatusIndicators();
     
-    // Update model selector to disable failed providers
+    // Update model selector to disable failed/paused providers
     updateModelSelector();
     
-    // Auto-select first available provider if current selection has no key or failed
+    // Auto-select first available provider if current selection has no key or is paused/failed
     if (count > 0 && modelSelector) {
       const currentModel = modelSelector.value;
       const currentProvider = currentModel.split('/')[0];
-      if (!availableProviders.includes(currentProvider) || failedProviders.includes(currentProvider)) {
-        // Current provider not available or failed, switch to first working provider
-        const firstAvailable = availableProviders.find(p => !failedProviders.includes(p));
-        if (firstAvailable) {
-          console.log('[UI] Auto-switching to available provider:', firstAvailable);
+      const isCurrentPaused = pausedProviders.includes(currentProvider);
+      const isCurrentFailed = failedProviders.includes(currentProvider);
+      const isCurrentAvailable = availableProviders.includes(currentProvider);
+      
+      if (!isCurrentAvailable || isCurrentPaused || isCurrentFailed) {
+        // Current provider not available, paused, or failed - switch to first working provider
+        const firstWorking = availableProviders.find(p => !pausedProviders.includes(p) && !failedProviders.includes(p));
+        if (firstWorking) {
+          console.log('[UI] Auto-switching to working provider:', firstWorking);
           // Find model for this provider
           const options = modelSelector.querySelectorAll('option');
           for (let i = 0; i < options.length; i++) {
-            if (options[i].value.startsWith(firstAvailable + '/')) {
+            if (options[i].value.startsWith(firstWorking + '/')) {
               modelSelector.selectedIndex = i;
               console.log('[UI] Selected model:', options[i].value);
               break;
@@ -171,13 +176,22 @@
     API_PROVIDERS.forEach(function(provider) {
       const statusEl = document.getElementById('provider-status-' + provider.id);
       const testBtn = document.getElementById('test-btn-' + provider.id);
+      const pauseBtn = document.getElementById('pause-btn-' + provider.id);
       const row = statusEl ? statusEl.closest('.flex') : null;
       
       if (statusEl) {
         const isAvailable = availableProviders.includes(provider.id);
         const isFailed = failedProviders.includes(provider.id);
+        const isPaused = pausedProviders.includes(provider.id);
         
-        if (isFailed) {
+        if (isPaused) {
+          // Paused provider - yellow/orange
+          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Paused</span>';
+          statusEl.className = 'text-xs text-yellow-400';
+          if (row) {
+            row.classList.remove('opacity-50');
+          }
+        } else if (isFailed) {
           // Failed provider - grey out
           statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Failed</span>';
           statusEl.className = 'text-xs text-gray-400';
@@ -200,14 +214,39 @@
           }
         }
       }
-      // Show/hide test button based on provider registration status
+      
+      // Show/hide test button based on provider status
       if (testBtn) {
         const isAvailable = availableProviders.includes(provider.id);
         const isFailed = failedProviders.includes(provider.id);
-        if (isAvailable && !isFailed) {
+        const isPaused = pausedProviders.includes(provider.id);
+        if (isAvailable && !isFailed && !isPaused) {
           testBtn.classList.remove('hidden');
         } else {
           testBtn.classList.add('hidden');
+        }
+      }
+      
+      // Show/hide pause button based on provider availability
+      if (pauseBtn) {
+        const isAvailable = availableProviders.includes(provider.id);
+        const isPaused = pausedProviders.includes(provider.id);
+        
+        if (isAvailable) {
+          pauseBtn.classList.remove('hidden');
+          if (isPaused) {
+            pauseBtn.innerHTML = '▶️';
+            pauseBtn.title = 'Resume provider';
+            pauseBtn.classList.remove('bg-yellow-700', 'hover:bg-yellow-600');
+            pauseBtn.classList.add('bg-green-700', 'hover:bg-green-600');
+          } else {
+            pauseBtn.innerHTML = '⏸️';
+            pauseBtn.title = 'Pause provider';
+            pauseBtn.classList.remove('bg-green-700', 'hover:bg-green-600');
+            pauseBtn.classList.add('bg-yellow-700', 'hover:bg-yellow-600');
+          }
+        } else {
+          pauseBtn.classList.add('hidden');
         }
       }
     });
@@ -217,21 +256,31 @@
   }
 
   function updateModelSelector() {
-    // Grey out models from failed providers in the dropdown
+    // Grey out models from failed or paused providers in the dropdown
     const options = modelSelector.querySelectorAll('option');
     options.forEach(function(option) {
       const provider = option.value.split('/')[0];
-      if (failedProviders.includes(provider)) {
+      const originalText = option.getAttribute('data-original-text') || option.textContent;
+      
+      if (!option.getAttribute('data-original-text')) {
+        option.setAttribute('data-original-text', originalText);
+      }
+      
+      const isFailed = failedProviders.includes(provider);
+      const isPaused = pausedProviders.includes(provider);
+      
+      if (isFailed) {
         option.disabled = true;
-        option.textContent = option.textContent.replace(/^.*?\//, '[Failed] ') + ' (invalid key/no credits)';
+        option.textContent = '[Failed] ' + originalText + ' (invalid key/no credits)';
         option.classList.add('text-gray-500');
+      } else if (isPaused) {
+        option.disabled = true;
+        option.textContent = '[Paused] ' + originalText;
+        option.classList.add('text-yellow-600');
       } else {
         option.disabled = false;
-        // Reset text if it was previously marked as failed
-        if (option.textContent.includes('[Failed]')) {
-          option.textContent = option.getAttribute('data-original-text') || option.textContent.replace(/\[Failed\] /, '').replace(' (invalid key/no credits)', '');
-        }
-        option.classList.remove('text-gray-500');
+        option.textContent = originalText;
+        option.classList.remove('text-gray-500', 'text-yellow-600');
       }
     });
   }
@@ -673,6 +722,13 @@
       testBtn.title = 'Test connection';
       testBtn.innerHTML = '🧪';
 
+      // Pause/Resume button
+      const pauseBtn = document.createElement('button');
+      pauseBtn.id = 'pause-btn-' + provider.id;
+      pauseBtn.className = 'hidden bg-yellow-700 hover:bg-yellow-600 text-yellow-100 rounded px-2 py-2 text-xs font-medium';
+      pauseBtn.title = 'Pause provider';
+      pauseBtn.innerHTML = '⏸️';
+
       // Save handler
       saveBtn.addEventListener('click', function() {
         const value = input.value.trim();
@@ -716,10 +772,38 @@
         testProviderConnection(provider.id);
       });
 
+      // Pause/Resume handler
+      pauseBtn.addEventListener('click', function() {
+        const isPaused = pausedProviders.includes(provider.id);
+        if (isPaused) {
+          // Resume
+          const idx = pausedProviders.indexOf(provider.id);
+          if (idx > -1) {
+            pausedProviders.splice(idx, 1);
+          }
+          pauseBtn.innerHTML = '⏸️';
+          pauseBtn.title = 'Pause provider';
+          pauseBtn.classList.remove('bg-green-700', 'hover:bg-green-600');
+          pauseBtn.classList.add('bg-yellow-700', 'hover:bg-yellow-600');
+          showErrorToast(provider.name + ' resumed');
+        } else {
+          // Pause
+          pausedProviders.push(provider.id);
+          pauseBtn.innerHTML = '▶️';
+          pauseBtn.title = 'Resume provider';
+          pauseBtn.classList.remove('bg-yellow-700', 'hover:bg-yellow-600');
+          pauseBtn.classList.add('bg-green-700', 'hover:bg-green-600');
+          showErrorToast(provider.name + ' paused - will skip in auto-selection');
+        }
+        updateProviderStatusIndicators();
+        updateModelSelector();
+      });
+
       row.appendChild(label);
       row.appendChild(input);
       row.appendChild(saveBtn);
       row.appendChild(testBtn);
+      row.appendChild(pauseBtn);
       row.appendChild(statusSpan);
       apiKeysContainer.appendChild(row);
 
