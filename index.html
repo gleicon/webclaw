@@ -409,9 +409,11 @@
         // Handle specific error cases
         const errorMessage = err && err.message ? err.message : 'Stream error';
         let userMessage = errorMessage;
+        let shouldSwitchProvider = false;
 
-        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid')) {
-          userMessage = 'Invalid API key - please check and re-enter in Settings';
+        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid') || errorMessage.includes('credit balance is too low')) {
+          userMessage = 'Invalid API key or no credits - switching to available provider';
+          shouldSwitchProvider = true;
         } else if (errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('RateLimit')) {
           userMessage = 'Rate limited - please wait a moment';
         } else if (errorMessage.includes('No provider') || errorMessage.includes('not found')) {
@@ -421,6 +423,36 @@
         appendErrorBubble(userMessage);
         resetStreamingState();
         scrollToBottom();
+        
+        // If provider failed, try to switch to another available provider and retry
+        if (shouldSwitchProvider && availableProviders.length > 1) {
+          // Remove current failed provider from available list temporarily
+          const currentProviderIdx = availableProviders.indexOf(provider);
+          if (currentProviderIdx > -1) {
+            console.log('[UI] Provider', provider, 'failed, removing from available list');
+            availableProviders.splice(currentProviderIdx, 1);
+          }
+          
+          // Find next available provider
+          const nextProvider = availableProviders[0];
+          if (nextProvider) {
+            console.log('[UI] Auto-switching to next available provider:', nextProvider);
+            // Find model for this provider
+            const options = modelSelector.querySelectorAll('option');
+            for (let i = 0; i < options.length; i++) {
+              if (options[i].value.startsWith(nextProvider + '/')) {
+                modelSelector.selectedIndex = i;
+                console.log('[UI] Switched to model:', options[i].value);
+                // Retry the message after a brief delay
+                setTimeout(function() {
+                  userInput.value = content; // Restore the message
+                  sendMessage();
+                }, 500);
+                return;
+              }
+            }
+          }
+        }
       }
     });
   }
