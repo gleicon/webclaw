@@ -126,6 +126,7 @@
   // Provider Status Indicators
   // ==========================================
   let availableProviders = [];
+  let failedProviders = []; // Track providers that failed (invalid key, no credits)
 
   window.addEventListener('webclaw:providers-ready', function(e) {
     const detail = e.detail || {};
@@ -140,21 +141,26 @@
     // Update provider status indicators in settings
     updateProviderStatusIndicators();
     
-    // Auto-select first available provider if current selection has no key
+    // Update model selector to disable failed providers
+    updateModelSelector();
+    
+    // Auto-select first available provider if current selection has no key or failed
     if (count > 0 && modelSelector) {
       const currentModel = modelSelector.value;
       const currentProvider = currentModel.split('/')[0];
-      if (!availableProviders.includes(currentProvider)) {
-        // Current provider not available, switch to first available
-        const firstAvailable = availableProviders[0];
-        console.log('[UI] Auto-switching to available provider:', firstAvailable);
-        // Find first model for this provider
-        const options = modelSelector.querySelectorAll('option');
-        for (let i = 0; i < options.length; i++) {
-          if (options[i].value.startsWith(firstAvailable + '/')) {
-            modelSelector.selectedIndex = i;
-            console.log('[UI] Selected model:', options[i].value);
-            break;
+      if (!availableProviders.includes(currentProvider) || failedProviders.includes(currentProvider)) {
+        // Current provider not available or failed, switch to first working provider
+        const firstAvailable = availableProviders.find(p => !failedProviders.includes(p));
+        if (firstAvailable) {
+          console.log('[UI] Auto-switching to available provider:', firstAvailable);
+          // Find model for this provider
+          const options = modelSelector.querySelectorAll('option');
+          for (let i = 0; i < options.length; i++) {
+            if (options[i].value.startsWith(firstAvailable + '/')) {
+              modelSelector.selectedIndex = i;
+              console.log('[UI] Selected model:', options[i].value);
+              break;
+            }
           }
         }
       }
@@ -165,20 +171,40 @@
     API_PROVIDERS.forEach(function(provider) {
       const statusEl = document.getElementById('provider-status-' + provider.id);
       const testBtn = document.getElementById('test-btn-' + provider.id);
+      const row = statusEl ? statusEl.closest('.flex') : null;
+      
       if (statusEl) {
         const isAvailable = availableProviders.includes(provider.id);
-        if (isAvailable) {
+        const isFailed = failedProviders.includes(provider.id);
+        
+        if (isFailed) {
+          // Failed provider - grey out
+          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Failed</span>';
+          statusEl.className = 'text-xs text-gray-400';
+          if (row) {
+            row.classList.add('opacity-50');
+          }
+        } else if (isAvailable) {
+          // Available provider - green
           statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
           statusEl.className = 'text-xs text-green-400';
+          if (row) {
+            row.classList.remove('opacity-50');
+          }
         } else {
+          // No key - red
           statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
           statusEl.className = 'text-xs text-red-400';
+          if (row) {
+            row.classList.remove('opacity-50');
+          }
         }
       }
       // Show/hide test button based on provider registration status
       if (testBtn) {
         const isAvailable = availableProviders.includes(provider.id);
-        if (isAvailable) {
+        const isFailed = failedProviders.includes(provider.id);
+        if (isAvailable && !isFailed) {
           testBtn.classList.remove('hidden');
         } else {
           testBtn.classList.add('hidden');
@@ -188,6 +214,26 @@
 
     // Update demo mode indicator
     updateDemoModeIndicator();
+  }
+
+  function updateModelSelector() {
+    // Grey out models from failed providers in the dropdown
+    const options = modelSelector.querySelectorAll('option');
+    options.forEach(function(option) {
+      const provider = option.value.split('/')[0];
+      if (failedProviders.includes(provider)) {
+        option.disabled = true;
+        option.textContent = option.textContent.replace(/^.*?\//, '[Failed] ') + ' (invalid key/no credits)';
+        option.classList.add('text-gray-500');
+      } else {
+        option.disabled = false;
+        // Reset text if it was previously marked as failed
+        if (option.textContent.includes('[Failed]')) {
+          option.textContent = option.getAttribute('data-original-text') || option.textContent.replace(/\[Failed\] /, '').replace(' (invalid key/no credits)', '');
+        }
+        option.classList.remove('text-gray-500');
+      }
+    });
   }
 
   function updateDemoModeIndicator() {
@@ -426,6 +472,14 @@
         
         // If provider failed, try to switch to another available provider and retry
         if (shouldSwitchProvider && availableProviders.length > 1) {
+          // Mark current provider as failed
+          if (!failedProviders.includes(provider)) {
+            failedProviders.push(provider);
+            console.log('[UI] Provider', provider, 'marked as failed');
+            updateProviderStatusIndicators();
+            updateModelSelector();
+          }
+          
           // Remove current failed provider from available list temporarily
           const currentProviderIdx = availableProviders.indexOf(provider);
           if (currentProviderIdx > -1) {
@@ -434,7 +488,7 @@
           }
           
           // Find next available provider
-          const nextProvider = availableProviders[0];
+          const nextProvider = availableProviders.find(p => !failedProviders.includes(p));
           if (nextProvider) {
             console.log('[UI] Auto-switching to next available provider:', nextProvider);
             // Find model for this provider
@@ -830,8 +884,16 @@
         // Handle specific error types
         const errorMsg = err && err.message ? err.message : String(err);
         console.error('[UI] Test connection error:', errorMsg);
-        if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('invalid')) {
-          showErrorToast('Invalid API key for ' + provider.name + ' — please check and re-enter');
+        
+        // Mark provider as failed if invalid key or no credits
+        if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('invalid') || errorMsg.includes('credit balance is too low')) {
+          if (!failedProviders.includes(providerId)) {
+            failedProviders.push(providerId);
+            console.log('[UI] Marked provider as failed:', providerId);
+            updateProviderStatusIndicators();
+            updateModelSelector();
+          }
+          showErrorToast('Invalid API key or no credits for ' + provider.name + ' — please check Settings');
         } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
           showErrorToast('Rate limited on ' + provider.name + ' — please wait a moment');
         } else if (errorMsg.includes('missing') || errorMsg.includes('No provider')) {
@@ -986,6 +1048,14 @@
 
     buildSettingsUI();
     buildIdentityFileList();
+    
+    // Store original model option texts for later restoration
+    const options = modelSelector.querySelectorAll('option');
+    options.forEach(function(option) {
+      if (!option.getAttribute('data-original-text')) {
+        option.setAttribute('data-original-text', option.textContent);
+      }
+    });
 
     // Add welcome message if empty
     if (messages.children.length === 0) {
