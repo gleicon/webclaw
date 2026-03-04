@@ -10,6 +10,7 @@ import (
 
 	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/identity"
+	"github.com/gleicon/webclaw/internal/memory"
 	"github.com/gleicon/webclaw/internal/provider"
 )
 
@@ -312,3 +313,140 @@ func TestContextAssembler_CheckAndSummarize_Continuity(t *testing.T) {
 
 	t.Logf("Context continuity preserved: summary + %d recent messages", len(conv.Messages))
 }
+
+// TestContextAssembler_MemoryFlush tests memory flush before summarization
+func TestContextAssembler_MemoryFlush(t *testing.T) {
+	// Create mock summarizer that extracts facts
+	mockProvider := &mockFactProvider{
+		facts: []string{
+			"User's name is Alice",
+			"User works at Acme Corp",
+			"User prefers Go programming",
+		},
+	}
+	summarizer := NewSummarizer(mockProvider)
+
+	// Create mock memory store
+	mockMemStore := &mockMemoryStore{
+		storedDocs: make([]*mockMemoryDoc, 0),
+	}
+
+	// Create assembler with dependencies
+	cfg := &config.Config{}
+	assembler := NewContextAssembler(cfg, &identity.Store{})
+	assembler.SetSummarizer(summarizer)
+	assembler.SetMemoryStore(mockMemStore)
+
+	// Add 20 messages to trigger summarization threshold
+	for i := 0; i < 20; i++ {
+		assembler.GetConversation().AddUserMessage("Test message " + string(rune('A'+i%26)))
+	}
+
+	// Call CheckAndSummarize
+	ctx := context.Background()
+	_, triggered := assembler.CheckAndSummarize(ctx)
+
+	if !triggered {
+		t.Error("expected summarization to be triggered")
+	}
+
+	// Wait for async flush to complete
+	time.Sleep(150 * time.Millisecond)
+
+	// Verify facts were stored in memory
+	if len(mockMemStore.storedDocs) != 3 {
+		t.Errorf("expected 3 facts stored, got %d", len(mockMemStore.storedDocs))
+	}
+
+	// Verify facts content
+	expectedFacts := map[string]bool{
+		"User's name is Alice":        false,
+		"User works at Acme Corp":     false,
+		"User prefers Go programming": false,
+	}
+	for _, doc := range mockMemStore.storedDocs {
+		if _, ok := expectedFacts[doc.content]; ok {
+			expectedFacts[doc.content] = true
+		}
+		// Check metadata
+		if doc.metadata["type"] != "conversation_fact" {
+			t.Errorf("expected type=conversation_fact, got %v", doc.metadata["type"])
+		}
+		if doc.metadata["source"] != "pre_summarization_flush" {
+			t.Errorf("expected source=pre_summarization_flush, got %v", doc.metadata["source"])
+		}
+	}
+
+	for fact, found := range expectedFacts {
+		if !found {
+			t.Errorf("expected fact not found: %s", fact)
+		}
+	}
+
+	t.Logf("Memory flush verified: %d facts stored", len(mockMemStore.storedDocs))
+}
+
+// mockFactProvider is a mock provider that returns facts for extraction
+type mockFactProvider struct {
+	facts []string
+}
+
+func (mfp *mockFactProvider) Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(provider.Token)) error {
+	// Check if this is a fact extraction call (contains "Extract key facts")
+	isExtraction := false
+	for _, msg := range messages {
+		if strings.Contains(msg.Content, "Extract key facts") {
+			isExtraction = true
+			break
+		}
+	}
+
+	if isExtraction {
+		// Return facts as bullet points
+		var response strings.Builder
+		for _, fact := range mfp.facts {
+			response.WriteString("- " + fact + "\n")
+		}
+		tok := provider.Token{Text: response.String(), FinishReason: "stop"}
+		callback(tok)
+	} else {
+		// Return summary
+		tok := provider.Token{Text: "Mock summary of conversation", FinishReason: "stop"}
+		callback(tok)
+	}
+	return nil
+}
+
+func (mfp *mockFactProvider) GetName() string  { return "mock-fact" }
+func (mfp *mockFactProvider) GetModel() string { return "test-model" }
+
+// mockMemoryStore is a mock memory store for testing
+type mockMemoryStore struct {
+	storedDocs []*mockMemoryDoc
+}
+
+type mockMemoryDoc struct {
+	id       string
+	content  string
+	metadata map[string]interface{}
+}
+
+func (mms *mockMemoryStore) Store(doc *memory.MemoryDocument) error {
+	mms.storedDocs = append(mms.storedDocs, &mockMemoryDoc{
+		id:       doc.ID,
+		content:  doc.Content,
+		metadata: doc.Metadata,
+	})
+	return nil
+}
+
+func (mms *mockMemoryStore) Get(id string) (*memory.MemoryDocument, error) { return nil, nil }
+func (mms *mockMemoryStore) Delete(id string) error                        { return nil }
+func (mms *mockMemoryStore) Search(query string, opts memory.SearchOptions) ([]*memory.MemorySearchResult, error) {
+	return nil, nil
+}
+func (mms *mockMemoryStore) GetAll() ([]*memory.MemoryDocument, error) { return nil, nil }
+func (mms *mockMemoryStore) CheckQuota() (*memory.QuotaInfo, error) {
+	return &memory.QuotaInfo{Usage: 0, Quota: 1000000, Percent: 0}, nil
+}
+func (mms *mockMemoryStore) EvictIfNeeded() error { return nil }
