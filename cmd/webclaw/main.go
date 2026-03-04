@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"syscall/js"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/gleicon/webclaw/internal/identity"
 	"github.com/gleicon/webclaw/internal/jsbridge"
 	"github.com/gleicon/webclaw/internal/keystore"
+	"github.com/gleicon/webclaw/internal/memory"
 	"github.com/gleicon/webclaw/internal/provider"
 	"github.com/gleicon/webclaw/internal/tools"
 )
@@ -103,6 +105,50 @@ func main() {
 			"webclaw: Provider retry policy configured (3 attempts, exponential backoff)")
 	}()
 
+	// Initialize memory system with OpenAI embedder (MEM-01, MEM-02, MEM-03)
+	// PHASE 6-6: Wire memory store with embedder and LRU evictor
+	// Initially create without embedder (BM25-only), async load enables embeddings
+	memoryStore, memErr := memory.NewMemoryStore(nil)
+	if memErr != nil {
+		js.Global().Get("console").Call("error", "webclaw: memory store initialization failed:", memErr.Error())
+	} else {
+		js.Global().Get("console").Call("log", "webclaw: memory store initialized (BM25-only until OpenAI key loaded)")
+		agentLoop.SetMemoryStore(memoryStore)
+
+		// Async load OpenAI key to enable embeddings
+		go func() {
+			const passphrase = "webclaw-v1-key"
+			time.Sleep(200 * time.Millisecond) // Wait for keystore init
+
+			ks, err := keystore.NewKeyStore()
+			if err != nil {
+				js.Global().Get("console").Call("warn", "webclaw: keystore not available for embedder:", err.Error())
+				return
+			}
+
+			exists, err := ks.KeyExists("openai")
+			if err != nil || !exists {
+				js.Global().Get("console").Call("log", "webclaw: no OpenAI key - memory uses BM25 only")
+				return
+			}
+
+			apiKey, err := ks.RetrieveKey("openai", passphrase)
+			if err != nil {
+				js.Global().Get("console").Call("error", "webclaw: failed to retrieve OpenAI key:", err.Error())
+				return
+			}
+
+			// Enable embeddings on the memory store
+			embedder := memory.NewOpenAIEmbedder(apiKey)
+			if embedderStore, ok := memoryStore.(interface{ SetEmbedder(memory.Embedder) }); ok {
+				embedderStore.SetEmbedder(embedder)
+				js.Global().Get("console").Call("log", "webclaw: OpenAI embedder enabled - hybrid search active")
+			}
+
+			keystore.ClearKey(apiKey)
+		}()
+	}
+
 	// Wire tool registry with all four browser tools.
 	// Without this call, toolRegistry == nil and every tool call returns "tool registry not configured".
 	reg := tools.NewRegistry()
@@ -111,6 +157,12 @@ func main() {
 	reg.Register(tools.NewMemoryStoreTool(agentLoop))
 	reg.Register(tools.NewMemorySearchTool(agentLoop))
 	agentLoop.SetToolRegistry(reg)
+
+	// Wire summarizer for conversation management
+	// Create a simple provider adapter for the summarizer
+	summaryProvider := &summarizerProviderAdapter{router: router, name: "summarizer", model: "default"}
+	summarizer := agent.NewSummarizer(summaryProvider)
+	agentLoop.SetSummarizer(summarizer)
 
 	// Wire worker bridge so EmitToolEvent calls from the dispatch loop reach the UI.
 	agentLoop.SetWorkerBridge(workerBridgeInstance)
@@ -639,6 +691,63 @@ func registerProviderAndNotify(providerName, apiKey string) {
 	js.Global().Get("console").Call("log", "webclaw: providers ready, count:", len(availableProviders))
 }
 
+// summarizerProviderAdapter wraps provider.Router to implement agent.Provider for the summarizer
+type summarizerProviderAdapter struct {
+	router *provider.Router
+	name   string
+	model  string
+}
+
+func (spa *summarizerProviderAdapter) Stream(ctx context.Context, messages []agent.Message, tools []map[string]interface{}, callback func(provider.Token)) error {
+	// Convert agent.Message to provider.Message
+	provMsgs := make([]provider.Message, len(messages))
+	for i, m := range messages {
+		provMsgs[i] = provider.Message{Role: m.Role, Content: m.Content}
+	}
+
+	req := provider.CompletionRequest{
+		Model:       spa.model,
+		Messages:    provMsgs,
+		MaxTokens:   500, // Shorter for summaries
+		Temperature: 0.3, // Lower temperature for more focused summaries
+		Stream:      true,
+	}
+
+	// Use the primary available provider
+	available := spa.router.AvailableProviders()
+	if len(available) == 0 {
+		return fmt.Errorf("no providers available for summarization")
+	}
+
+	model := spa.model
+	if model == "default" || model == "" {
+		// Try to use a cheap/fast model based on available providers
+		if spa.router.HasProvider("openai") {
+			model = "gpt-4o-mini"
+		} else if spa.router.HasProvider("anthropic") {
+			model = "claude-3-haiku-20240307"
+		} else {
+			model = "anthropic/claude-3-haiku"
+		}
+	}
+
+	ch, err := spa.router.Stream(ctx, model, req)
+	if err != nil {
+		return err
+	}
+
+	for tok := range ch {
+		if tok.FinishReason == "error" {
+			return fmt.Errorf("provider error: %s", tok.Text)
+		}
+		callback(tok)
+	}
+	return nil
+}
+
+func (spa *summarizerProviderAdapter) GetName() string  { return spa.name }
+func (spa *summarizerProviderAdapter) GetModel() string { return spa.model }
+
 // loadProviderKeysAsync asynchronously loads persisted API keys from the keystore
 // and registers them with the provider router. This runs in a goroutine to avoid
 // blocking the main thread during IndexedDB operations.
@@ -721,3 +830,54 @@ func loadProviderKeysAsync(router *provider.Router) {
 
 	js.Global().Get("console").Call("log", "webclaw: async keystore initialization complete, providers:", len(availableProviders))
 }
+
+// summarizerProviderAdapter wraps provider.Router to implement agent.Provider interface
+// for the summarizer component. This allows the summarizer to use the router's streaming
+// capabilities while satisfying the agent.Provider interface requirements.
+type summarizerProviderAdapter struct {
+	router *provider.Router
+	name   string
+	model  string
+}
+
+func (spa *summarizerProviderAdapter) Stream(ctx context.Context, messages []agent.Message, tools []map[string]interface{}, callback func(tok provider.Token)) error {
+	// Convert agent messages to provider messages
+	provMsgs := make([]provider.Message, len(messages))
+	for i, m := range messages {
+		provMsgs[i] = provider.Message{Role: m.Role, Content: m.Content}
+	}
+
+	// Use default model if not specified
+	model := spa.model
+	if model == "default" || model == "" {
+		// Get first available provider's default model
+		available := spa.router.AvailableProviders()
+		if len(available) > 0 {
+			model = available[0] // Use first available
+		}
+	}
+
+	req := provider.CompletionRequest{
+		Model:       model,
+		Messages:    provMsgs,
+		MaxTokens:   1024,
+		Temperature: 0.3, // Lower temp for summarization
+		Stream:      true,
+	}
+
+	ch, err := spa.router.Stream(ctx, model, req)
+	if err != nil {
+		return err
+	}
+
+	for tok := range ch {
+		if tok.FinishReason == "error" {
+			return fmt.Errorf("provider error: %s", tok.Text)
+		}
+		callback(tok)
+	}
+	return nil
+}
+
+func (spa *summarizerProviderAdapter) GetName() string  { return spa.name }
+func (spa *summarizerProviderAdapter) GetModel() string { return spa.model }
