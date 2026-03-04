@@ -169,16 +169,17 @@ func (c *Conversation) ClearMessages() {
 	c.UpdatedAt = time.Now()
 }
 
-// estimateTokens returns an estimate of token count using chars/4 heuristic
+// estimateTokens (DEPRECATED: use EstimateTokens from tokenizer.go)
+// Kept for backwards compatibility, delegates to new implementation
 func estimateTokens(content string) int {
-	return len(content) / 4
+	return EstimateTokens(content)
 }
 
 // GetTokenCount returns the estimated total token count for all messages
 func (c *Conversation) GetTokenCount() int {
 	total := 0
 	for _, msg := range c.Messages {
-		total += estimateTokens(msg.Content)
+		total += EstimateMessageTokens(msg.Role, msg.Content)
 	}
 	return total
 }
