@@ -5,6 +5,7 @@ package memory
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -20,6 +21,42 @@ type LRUEvictor struct{}
 // NewLRUEvictor creates a new LRU evictor.
 func NewLRUEvictor() *LRUEvictor {
 	return &LRUEvictor{}
+}
+
+// CheckQuota returns current storage quota information.
+// PHASE 6-6: Uses navigator.storage.estimate() via jsbridge (MEM-05)
+func (e *LRUEvictor) CheckQuota(ctx context.Context) (*QuotaInfo, error) {
+	quotaPromise := jsbridge.GetStorageQuota()
+
+	quotaChan := make(chan *jsbridge.QuotaInfo, 1)
+	errChan := make(chan error, 1)
+
+	quotaPromise.Call("then", js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		info := jsbridge.QuotaInfoFromJS(args[0])
+		quotaChan <- info
+		return nil
+	})).Call("catch", js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		errChan <- fmt.Errorf("failed to get quota: %v", args[0])
+		return nil
+	}))
+
+	select {
+	case info := <-quotaChan:
+		// Convert to memory package QuotaInfo with ShouldEvict at 80%
+		return &QuotaInfo{
+			Usage:       info.Usage,
+			Quota:       info.Quota,
+			Percent:     info.Percent,
+			Overflow:    info.Overflow,
+			ShouldEvict: info.Percent >= 80.0,
+		}, nil
+	case err := <-errChan:
+		return nil, err
+	case <-time.After(5 * time.Second):
+		return nil, fmt.Errorf("timeout checking quota")
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 // EvictToTarget removes memories until quota usage is below target percent.

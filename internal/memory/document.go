@@ -125,8 +125,9 @@ func DefaultSearchOptions() SearchOptions {
 
 // QuotaInfo represents storage quota estimation.
 type QuotaInfo struct {
-	Usage    int64   `json:"usage"`    // Bytes used
-	Quota    int64   `json:"quota"`    // Total quota bytes
-	Percent  float64 `json:"percent"`  // Usage percentage
-	Overflow bool    `json:"overflow"` // True if usage > quota
+	Usage       int64   `json:"usage"`        // Bytes used
+	Quota       int64   `json:"quota"`        // Total quota bytes
+	Percent     float64 `json:"percent"`      // Usage percentage
+	Overflow    bool    `json:"overflow"`     // True if usage > quota
+	ShouldEvict bool    `json:"should_evict"` // True if usage >= 80% threshold
 }
