@@ -61,6 +61,33 @@ func main() {
 	// Create the persistent AgentLoop (no provider/model yet; set via webclaw.keystore.setKey at runtime)
 	agentLoop := agent.NewAgentLoop("", "")
 
+	// PHASE 6-4: Create and wire context assembler for conversation management
+	// Assembler needs identity store and config for system prompt assembly
+	idStore, idErr := identity.NewStore()
+	if idErr != nil {
+		js.Global().Get("console").Call("warn", "webclaw: identity store not available for assembler:", idErr.Error())
+	} else {
+		defer idStore.Close()
+
+		// Load config for assembler
+		cfgStorage, cfgErr := config.NewStorage()
+		var cfg *config.Config
+		if cfgErr == nil {
+			defer cfgStorage.Close()
+			exists, _ := cfgStorage.ConfigExists()
+			if exists {
+				cfg, _ = cfgStorage.GetConfig()
+			}
+		}
+		if cfg == nil {
+			cfg = config.DefaultConfig()
+		}
+
+		assembler := agent.NewContextAssembler(cfg, idStore)
+		agentLoop.SetAssembler(assembler)
+		js.Global().Get("console").Call("log", "webclaw: context assembler initialized")
+	}
+
 	// Wire real provider router so getProvider() returns a real LLM, not mockProvider.
 	// API keys start empty; user sets them via webclaw.keystore.setKey in the Settings tab.
 	// TODO v2: load persisted keys from keystore at startup (requires async init).

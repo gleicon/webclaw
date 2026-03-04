@@ -484,6 +484,11 @@ func splitIntoWords(text string) []string {
 // SetMemoryStore sets the memory store for the agent loop.
 func (al *AgentLoop) SetMemoryStore(store memory.Store) {
 	al.memory = store
+	// Also wire to assembler if it exists
+	if al.assembler != nil {
+		al.assembler.SetMemoryStore(store)
+		js.Global().Get("console").Call("log", "webclaw: memory store wired to assembler")
+	}
 }
 
 // SetEmbedder sets the embedding generator for memory operations.
