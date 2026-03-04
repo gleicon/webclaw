@@ -150,7 +150,16 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		var lastTok provider.Token
 		var iterContent string
 
-		streamErr := prov.Stream(ctx, requestMessages, nil, func(tok provider.Token) {
+		// PHASE 6-2: Get tool schemas from registry
+		var toolSchemas []map[string]interface{}
+		if al.toolRegistry != nil {
+			toolSchemas = al.toolRegistry.ToAPISchema()
+			js.Global().Get("console").Call("log",
+				"webclaw: sending", len(toolSchemas), "tools to provider")
+		}
+
+		// Pass tools to provider on every iteration
+		streamErr := prov.Stream(ctx, requestMessages, toolSchemas, func(tok provider.Token) {
 			// Track first token timing across iterations
 			if tokenCount == 0 {
 				firstTokenTime = time.Now()
