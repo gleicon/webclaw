@@ -312,6 +312,32 @@ func (s *Store) Close() {
 	}
 }
 
+// AppendToMemoryFile appends content to the MEMORY.md identity file
+// Creates the file if it doesn't exist
+func (s *Store) AppendToMemoryFile(content string) error {
+	// Get current MEMORY.md content
+	current, err := s.Get("MEMORY.md")
+	if err != nil {
+		return fmt.Errorf("failed to get MEMORY.md: %w", err)
+	}
+
+	if current == nil {
+		// MEMORY.md doesn't exist yet, create it with header
+		current = &IdentityFile{
+			Filename: "MEMORY.md",
+			Content:  "# Memory\n\nPersistent facts extracted from conversations.\n\n---\n",
+		}
+	}
+
+	// Append new content
+	current.Content += content
+	current.ModifiedAt = time.Now()
+	current.Checksum = calculateChecksum(current.Content)
+
+	// Save back
+	return s.Put(current)
+}
+
 // calculateChecksum computes SHA256 hash of content
 func calculateChecksum(content string) string {
 	h := sha256.Sum256([]byte(content))
