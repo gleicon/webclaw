@@ -32,8 +32,8 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 
 - [x] **PROV-01**: Agent routes LLM calls using `vendor/model-id` format (e.g. `anthropic/claude-sonnet-4-5`)
 - [x] **PROV-02**: All provider HTTP calls go through `syscall/js` fetch() — no `net/http`
-- [ ] **PROV-03**: Provider supports streaming completions (streamed to UI incrementally)
-- [ ] **PROV-04**: Provider failover: primary → retries with exponential backoff → fallback model chain
+- [x] **PROV-03**: Provider supports streaming completions (streamed to UI incrementally)
+- [x] **PROV-04**: Provider failover: primary → retries with exponential backoff → fallback model chain
 - [ ] **PROV-05**: Supported providers in v1: Anthropic, OpenAI, OpenRouter
 
 ### Security
@@ -139,8 +139,8 @@ Deferred to next milestone after v1 is dogfooded.
 | SEC-03 | Phase 2 | 🚧 In Progress |
 | PROV-01 | Phase 3 | Complete |
 | PROV-02 | Phase 3 | Complete |
-| PROV-03 | Phase 3 | Pending |
-| PROV-04 | Phase 3 | Pending |
+| PROV-03 | Phase 3 | Complete |
+| PROV-04 | Phase 3 | Complete |
 | PROV-05 | Phase 3 | Pending |
 | AGNT-01 | Phase 3 | Complete |
 | AGNT-02 | Phase 3 | Pending |

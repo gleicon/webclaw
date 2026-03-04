@@ -119,6 +119,11 @@ Recent decisions affecting current work:
 - **[Phase 06-01]:** Accumulate partial JSON from streaming deltas, parse at message_stop/finish
 - **[Phase 06-01]:** Convert generic []map[string]interface{} tools to provider-specific formats at request time
 - **[Phase 06-01]:** Handle one tool at a time per Token (simplifies agent loop integration)
+- **[Phase 06-07]:** Router wraps all providers in ProviderChain for automatic retry and fallback
+- **[Phase 06-07]:** Exponential backoff: 1s → 2s → 4s delays with multiplier 2.0
+- **[Phase 06-07]:** Fallback chain: Anthropic → OpenAI → OpenRouter configured in async goroutine
+- **[Phase 06-07]:** Provider health tracking with consecutive failure detection (unhealthy after 3 failures)
+- **[Phase 06-07]:** Non-retryable errors (401, 403, 400) fail fast without wasting retry attempts
 
 ### Pending Todos
 
@@ -131,16 +136,17 @@ None. Provider tool support is complete across all three providers (Anthropic, O
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 06-real-agent-loop/06-02-PLAN.md — Tool Registry Wired to Provider
-Resume file: .planning/phases/06-real-agent-loop/06-02-SUMMARY.md
+Stopped at: Completed 06-real-agent-loop/06-07-PLAN.md — Provider Streaming Failover
+Resume file: .planning/phases/06-real-agent-loop/06-07-SUMMARY.md
 
 ## Phase 6 Summary
 
 Plans completed in Phase 6:
 - 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
 - 06-02: Tool Registry Wired to Provider (tools flow from registry → agent loop → provider → LLM)
+- 06-07: Provider Streaming Failover with exponential backoff and fallback chains
 
-**Phase 6 COMPLETE** - Real Agent Loop
+**Phase 6 IN PROGRESS** - Real Agent Loop
 - Tool definitions in CompletionRequest (all providers)
 - Anthropic content_block_start/content_block_delta tool_use parsing
 - OpenAI/OpenRouter tool_calls parsing with FinishReason normalization
@@ -149,6 +155,11 @@ Plans completed in Phase 6:
 - Tool registry integration with agent loop
 - Provider interface accepts tools parameter
 - Console logging for debugging tool flow
+- Provider failover with exponential backoff (1s, 2s, 4s)
+- Automatic fallback chains: Anthropic → OpenAI → OpenRouter
+- Provider health tracking with failure/success monitoring
+- Retryable error classification (429, 502, 503, 504, 529)
+- Non-retryable errors fail fast (401, 403, 400)
 
 Ready for:
 - End-to-end testing with live LLM and real tool execution
