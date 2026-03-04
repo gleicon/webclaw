@@ -92,9 +92,23 @@ type openAIFunction struct {
 }
 
 type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-	Name    string `json:"name,omitempty"`
+	Role      string           `json:"role"`
+	Content   string           `json:"content"`
+	Name      string           `json:"name,omitempty"`
+	ToolCalls []openAIToolCall `json:"tool_calls,omitempty"` // For streaming delta
+}
+
+// openAIToolCall represents a tool call in streaming delta
+type openAIToolCall struct {
+	Index    int                `json:"index"`
+	ID       string             `json:"id,omitempty"`
+	Type     string             `json:"type,omitempty"`
+	Function openAIToolFunction `json:"function,omitempty"`
+}
+
+type openAIToolFunction struct {
+	Name      string `json:"name,omitempty"`
+	Arguments string `json:"arguments,omitempty"`
 }
 
 // openAIResponse represents a non-streaming response
@@ -160,6 +174,45 @@ type openAIEmbeddingUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
+// convertToOpenAITools converts generic tool definitions to OpenAI format
+func convertToOpenAITools(tools []map[string]interface{}) []openAITool {
+	if len(tools) == 0 {
+		return nil
+	}
+	result := make([]openAITool, len(tools))
+	for i, t := range tools {
+		result[i] = openAITool{
+			Type: "function",
+			Function: openAIFunction{
+				Name:        getString(t, "name"),
+				Description: getString(t, "description"),
+				Parameters:  getMap(t, "input_schema"),
+			},
+		}
+	}
+	return result
+}
+
+// getString safely extracts a string value from a map
+func getString(m map[string]interface{}, key string) string {
+	if v, ok := m[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+// getMap safely extracts a map value from a map
+func getMap(m map[string]interface{}, key string) map[string]interface{} {
+	if v, ok := m[key]; ok {
+		if mm, ok := v.(map[string]interface{}); ok {
+			return mm
+		}
+	}
+	return nil
+}
+
 // Complete performs a non-streaming completion
 func (p *OpenAIProvider) Complete(ctx context.Context, req CompletionRequest) (*Token, error) {
 	if p.apiKey == "" {
@@ -186,6 +239,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req CompletionRequest) (*
 		Stream:      false,
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
+		Tools:       convertToOpenAITools(req.Tools), // Convert and pass tool definitions
 	}
 
 	body, err := json.Marshal(openAIReq)
@@ -270,6 +324,7 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 			Stream:      true,
 			Temperature: req.Temperature,
 			TopP:        req.TopP,
+			Tools:       convertToOpenAITools(req.Tools), // Convert and pass tool definitions
 		}
 
 		body, err := json.Marshal(openAIReq)
@@ -325,6 +380,13 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 		sseReader := jsbridge.NewSSEStreamingReader(response)
 		events := sseReader.Events()
 
+		// Track tool calls during streaming
+		toolCalls := make(map[int]*struct {
+			ID        string
+			Name      string
+			Arguments strings.Builder
+		})
+
 		// Process SSE events
 		for event := range events {
 			if event.Event == "error" {
@@ -357,6 +419,25 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 
 			choice := streamResp.Choices[0]
 
+			// Handle tool_calls in delta
+			if len(choice.Delta.ToolCalls) > 0 {
+				for _, tc := range choice.Delta.ToolCalls {
+					if _, exists := toolCalls[tc.Index]; !exists {
+						toolCalls[tc.Index] = &struct {
+							ID        string
+							Name      string
+							Arguments strings.Builder
+						}{
+							ID:   tc.ID,
+							Name: tc.Function.Name,
+						}
+					}
+					if tc.Function.Arguments != "" {
+						toolCalls[tc.Index].Arguments.WriteString(tc.Function.Arguments)
+					}
+				}
+			}
+
 			// Send content delta
 			if choice.Delta.Content != "" {
 				tokenChan <- Token{
@@ -366,9 +447,29 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req CompletionRequest) <-ch
 
 			// Check for finish reason
 			if choice.FinishReason != "" {
-				tokenChan <- Token{
-					Text:         "",
-					FinishReason: choice.FinishReason,
+				if choice.FinishReason == "tool_calls" {
+					// Process first tool call (OpenAI may return multiple)
+					for _, tc := range toolCalls {
+						var args map[string]interface{}
+						if err := json.Unmarshal([]byte(tc.Arguments.String()), &args); err != nil {
+							js.Global().Get("console").Call("error", "[OpenAI] Failed to parse tool arguments:", err.Error())
+							args = make(map[string]interface{}) // Use empty map on error
+						}
+
+						js.Global().Get("console").Call("log", "[OpenAI] Tool call:", tc.Name)
+						tokenChan <- Token{
+							FinishReason: "tool_use",
+							ToolName:     tc.Name,
+							ToolInput:    args,
+							ToolUseID:    tc.ID,
+						}
+						break // Handle one at a time for now
+					}
+				} else {
+					tokenChan <- Token{
+						Text:         "",
+						FinishReason: choice.FinishReason,
+					}
 				}
 				return
 			}
