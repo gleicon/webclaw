@@ -57,10 +57,21 @@ func (pc *ProviderChain) WithFallback(fallback Provider, modelID string) *Provid
 	return pc
 }
 
-// WithRetryConfig sets custom retry configuration
+// WithRetryConfig sets custom retry configuration (fluent API)
 func (pc *ProviderChain) WithRetryConfig(config RetryConfig) *ProviderChain {
 	pc.retry = config
 	return pc
+}
+
+// SetRetryConfig sets custom retry configuration (direct API)
+func (pc *ProviderChain) SetRetryConfig(config RetryConfig) {
+	pc.retry = config
+}
+
+// SetFallback sets a fallback provider and model (direct API)
+func (pc *ProviderChain) SetFallback(fallback Provider, modelID string) {
+	pc.fallback = fallback
+	pc.fallbackModel = modelID
 }
 
 // Name returns the provider name
