@@ -142,11 +142,23 @@ func (ca *ContextAssembler) ClearHistory() {
 	ca.conversation.ClearMessages()
 }
 
-// CheckAndSummarize checks if conversation needs summarization and returns the summary if triggered
-func (ca *ContextAssembler) CheckAndSummarize() (*Summary, bool) {
-	if ca.conversation.NeedsSummarization() {
-		// For now, return a placeholder - summarization would be implemented in a future phase
-		// This would call an LLM to summarize the conversation
+// CheckAndSummarize checks if conversation needs summarization and triggers it
+// Returns the summary and true if summarization was triggered
+func (ca *ContextAssembler) CheckAndSummarize(ctx context.Context) (*Summary, bool) {
+	// Check if summarization is needed
+	if !ca.conversation.NeedsSummarization() {
+		return nil, false
+	}
+
+	js.Global().Get("console").Call("log",
+		"webclaw: summarization triggered -",
+		ca.conversation.GetMessageCount(), "messages")
+
+	// If no summarizer configured, use placeholder (backwards compatibility)
+	if ca.summarizer == nil {
+		js.Global().Get("console").Call("warn",
+			"webclaw: no summarizer configured, using placeholder")
+
 		msgCount, tokenCount, tokenPct := ca.conversation.GetContextUsage()
 		summary := &Summary{
 			ID:           generateMessageID(),
@@ -158,7 +170,47 @@ func (ca *ContextAssembler) CheckAndSummarize() (*Summary, bool) {
 		ca.conversation.ClearMessages()
 		return summary, true
 	}
-	return nil, false
+
+	// Real LLM-based summarization
+	start := time.Now()
+	result, err := ca.summarizer.SummarizeConversation(ctx, ca.conversation)
+	if err != nil {
+		js.Global().Get("console").Call("error",
+			"webclaw: summarization failed:", err.Error())
+		// Don't block on summarization failure
+		return nil, false
+	}
+
+	duration := time.Since(start)
+	js.Global().Get("console").Call("log",
+		"webclaw: summarization complete -",
+		result.TokenCount, "tokens in", duration.Seconds(), "s")
+
+	// Create summary object
+	summary := &Summary{
+		ID:           generateMessageID(),
+		Content:      result.Summary,
+		MessageCount: result.MessageCount,
+		CreatedAt:    time.Now(),
+	}
+
+	// PHASE 6-3: Keep last 2 messages for continuity
+	// Get last 2 messages before clearing
+	recentMessages := ca.conversation.GetRecentMessages(2)
+
+	// Set summary and clear old messages
+	ca.conversation.SetSummary(summary)
+	ca.conversation.ClearMessages()
+
+	// Restore last 2 messages for context continuity
+	for _, msg := range recentMessages {
+		ca.conversation.AddMessage(Role(msg.Role), msg.Content)
+	}
+
+	js.Global().Get("console").Call("log",
+		"webclaw: conversation compacted - summary +", len(recentMessages), "recent messages")
+
+	return summary, true
 }
 
 // EstimateTokens returns approximate token count for the complete context
