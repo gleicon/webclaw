@@ -82,6 +82,14 @@ func (al *AgentLoop) SetWorkerBridge(wb interface {
 	al.workerBridge = wb
 }
 
+// SetSummarizer wires the summarizer for conversation management
+func (al *AgentLoop) SetSummarizer(s *Summarizer) {
+	if al.assembler != nil {
+		al.assembler.SetSummarizer(s)
+		js.Global().Get("console").Call("log", "webclaw: summarizer wired to assembler")
+	}
+}
+
 // NewAgentLoop creates a new agent loop for the specified provider
 func NewAgentLoop(providerName, model string) *AgentLoop {
 	return &AgentLoop{
@@ -206,10 +214,15 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 				"tps:", float64(tokenCount)/duration.Seconds())
 
 			if al.assembler != nil {
-				al.assembler.AddAssistantResponse(responseContent)
-				if summary, triggered := al.assembler.CheckAndSummarize(); triggered {
-					js.Global().Get("console").Call("log", "webclaw: conversation summarized", summary.MessageCount)
+				// PHASE 6-3: Check and trigger summarization BEFORE adding response
+				// This prevents context overflow on the NEXT turn
+				if summary, triggered := al.assembler.CheckAndSummarize(ctx); triggered {
+					js.Global().Get("console").Call("log",
+						"webclaw: conversation summarized -",
+						summary.MessageCount, "messages → summary + recent context")
 				}
+
+				al.assembler.AddAssistantResponse(responseContent)
 			}
 
 			bridge.EmitComplete(true, responseContent)
