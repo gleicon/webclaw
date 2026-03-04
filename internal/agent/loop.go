@@ -18,7 +18,7 @@ import (
 // The callback receives full provider.Token structs so that tool_use metadata
 // (ToolName, ToolInput, ToolUseID, FinishReason) can flow back to the caller.
 type Provider interface {
-	Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error
+	Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(tok provider.Token)) error
 	GetName() string
 	GetModel() string
 }
@@ -119,14 +119,12 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		return fmt.Errorf("no context assembler and no messages provided")
 	}
 
-
 	// Get or create provider
 	prov, err := al.getProvider()
 	if err != nil {
 		bridge.EmitError(fmt.Errorf("failed to get provider: %w", err))
 		return err
 	}
-
 
 	// Use provided messages or assemble from context
 	requestMessages := messages
@@ -152,7 +150,7 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		var lastTok provider.Token
 		var iterContent string
 
-		streamErr := prov.Stream(ctx, requestMessages, func(tok provider.Token) {
+		streamErr := prov.Stream(ctx, requestMessages, nil, func(tok provider.Token) {
 			// Track first token timing across iterations
 			if tokenCount == 0 {
 				firstTokenTime = time.Now()
@@ -313,7 +311,7 @@ type providerAdapter struct {
 	model  string
 }
 
-func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(tok provider.Token)) error {
 
 	// Check if provider is available before attempting API call
 	hasProv := pa.router.HasProvider(pa.name)
@@ -329,6 +327,7 @@ func (pa *providerAdapter) Stream(ctx context.Context, messages []Message, callb
 	req := provider.CompletionRequest{
 		Model:       pa.model,
 		Messages:    provMsgs,
+		Tools:       tools, // FORWARD TOOLS TO PROVIDER
 		MaxTokens:   4096,
 		Temperature: 0.7,
 		Stream:      true,
@@ -370,7 +369,7 @@ type mockProvider struct {
 	model string
 }
 
-func (mp *mockProvider) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+func (mp *mockProvider) Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(tok provider.Token)) error {
 	// Simulate streaming with a mock response
 	mockResponse := "This is a mock response from the " + mp.name + " provider using model " + mp.model + ". "
 	mockResponse += "The agent loop is working correctly and streaming tokens to the UI."
@@ -409,7 +408,7 @@ type noProvidersMock struct {
 	model string
 }
 
-func (np *noProvidersMock) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+func (np *noProvidersMock) Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(tok provider.Token)) error {
 	mockResponse := "[Demo Mode] Enter API key in Settings to enable live AI"
 
 	// Stream the message as a single token

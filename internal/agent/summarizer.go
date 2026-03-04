@@ -66,7 +66,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummarizeRequest) (*Summ
 
 	// Call provider for summary
 	var summary strings.Builder
-	err := s.provider.Stream(ctx, messages, func(tok provider.Token) {
+	err := s.provider.Stream(ctx, messages, nil, func(tok provider.Token) {
 		summary.WriteString(tok.Text)
 	})
 
@@ -187,7 +187,7 @@ func (s *Summarizer) SummarizeWithProgressiveWindow(ctx context.Context, sw *Sli
 
 	// Call provider for summary
 	var summary strings.Builder
-	err := s.provider.Stream(ctx, messages, func(tok provider.Token) {
+	err := s.provider.Stream(ctx, messages, nil, func(tok provider.Token) {
 		summary.WriteString(tok.Text)
 	})
 
@@ -217,7 +217,7 @@ func CreateMockSummarizer() *Summarizer {
 // mockSummarizerProvider is a mock provider that returns deterministic summaries
 type mockSummarizerProvider struct{}
 
-func (mp *mockSummarizerProvider) Stream(ctx context.Context, messages []Message, callback func(tok provider.Token)) error {
+func (mp *mockSummarizerProvider) Stream(ctx context.Context, messages []Message, tools []map[string]interface{}, callback func(tok provider.Token)) error {
 	// Extract the conversation content from the prompt
 	var conversationContent string
 	for _, msg := range messages {
@@ -298,7 +298,7 @@ Key facts:`, conversation.String())
 	}
 
 	var result strings.Builder
-	err := s.provider.Stream(ctx, extractionMessages, func(tok provider.Token) {
+	err := s.provider.Stream(ctx, extractionMessages, nil, func(tok provider.Token) {
 		result.WriteString(tok.Text)
 	})
 
