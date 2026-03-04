@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"syscall/js"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
@@ -106,15 +107,23 @@ type anthropicUsage struct {
 
 // anthropicStreamEvent represents SSE events from Anthropic streaming
 type anthropicStreamEvent struct {
-	Type  string          `json:"type"`
-	Index int             `json:"index,omitempty"`
-	Delta *anthropicDelta `json:"delta,omitempty"`
-	Usage *anthropicUsage `json:"usage,omitempty"`
+	Type         string                 `json:"type"`
+	Index        int                    `json:"index,omitempty"`
+	Delta        *anthropicDelta        `json:"delta,omitempty"`
+	Usage        *anthropicUsage        `json:"usage,omitempty"`
+	ContentBlock *anthropicContentBlock `json:"content_block,omitempty"` // For content_block_start
+}
+
+type anthropicContentBlock struct {
+	Type string `json:"type"`
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 type anthropicDelta struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type        string `json:"type"`
+	Text        string `json:"text,omitempty"`
+	PartialJSON string `json:"partial_json,omitempty"` // For input_json_delta
 }
 
 // Complete performs a non-streaming completion
@@ -150,6 +159,7 @@ func (p *AnthropicProvider) Complete(ctx context.Context, req CompletionRequest)
 		Stream:      false,
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
+		Tools:       req.Tools, // Pass tool definitions
 	}
 
 	if anthropicReq.MaxTokens == 0 {
@@ -245,6 +255,7 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 			Stream:      true,
 			Temperature: req.Temperature,
 			TopP:        req.TopP,
+			Tools:       req.Tools, // Pass tool definitions
 		}
 
 		if anthropicReq.MaxTokens == 0 {
@@ -310,6 +321,11 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 		events := sseReader.Events()
 		js.Global().Get("console").Call("log", "[Anthropic] SSE reader created, waiting for events...")
 
+		// Track tool use state during streaming
+		var toolUseID, toolName string
+		var toolInputJSON strings.Builder
+		var inToolUse bool
+
 		// Process SSE events
 		eventCount := 0
 		for event := range events {
@@ -343,17 +359,47 @@ func (p *AnthropicProvider) Stream(ctx context.Context, req CompletionRequest) <
 			}
 
 			switch streamEvent.Type {
+			case "content_block_start":
+				if streamEvent.ContentBlock != nil && streamEvent.ContentBlock.Type == "tool_use" {
+					inToolUse = true
+					toolUseID = streamEvent.ContentBlock.ID
+					toolName = streamEvent.ContentBlock.Name
+					toolInputJSON.Reset()
+					js.Global().Get("console").Call("log", "[Anthropic] Tool use started:", toolName)
+				}
+
 			case "content_block_delta":
-				if streamEvent.Delta != nil && streamEvent.Delta.Type == "text_delta" {
-					tokenChan <- Token{
-						Text: streamEvent.Delta.Text,
+				if streamEvent.Delta != nil {
+					if inToolUse && streamEvent.Delta.Type == "input_json_delta" {
+						toolInputJSON.WriteString(streamEvent.Delta.PartialJSON)
+					} else if streamEvent.Delta.Type == "text_delta" {
+						tokenChan <- Token{
+							Text: streamEvent.Delta.Text,
+						}
 					}
 				}
 
 			case "message_stop":
-				tokenChan <- Token{
-					Text:         "",
-					FinishReason: "stop",
+				if inToolUse {
+					// Parse accumulated JSON
+					var toolInput map[string]interface{}
+					if err := json.Unmarshal([]byte(toolInputJSON.String()), &toolInput); err != nil {
+						js.Global().Get("console").Call("error", "[Anthropic] Failed to parse tool input JSON:", err.Error())
+						toolInput = make(map[string]interface{}) // Use empty map on error
+					}
+
+					js.Global().Get("console").Call("log", "[Anthropic] Tool use complete:", toolName)
+					tokenChan <- Token{
+						FinishReason: "tool_use",
+						ToolName:     toolName,
+						ToolInput:    toolInput,
+						ToolUseID:    toolUseID,
+					}
+				} else {
+					tokenChan <- Token{
+						Text:         "",
+						FinishReason: "stop",
+					}
 				}
 				return
 
