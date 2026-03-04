@@ -47,7 +47,7 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 - [x] **AGNT-01**: Agent executes a turn: assemble context (system prompt + identity + history) → call provider → handle response → execute tools if any → loop until no tool calls or maxToolIterations reached
 - [x] **AGNT-02**: Context history is capped — when history exceeds threshold (20 messages or 75% of context window), agent triggers summarization
 - [x] **AGNT-03**: Summarization is performed by calling the LLM provider with a summarize prompt; summary replaces history
-- [ ] **AGNT-04**: Agent loop runs in a Web Worker to avoid blocking the UI thread
+- [x] **AGNT-04**: Agent loop runs in a Web Worker to avoid blocking the UI thread
 
 ### Memory
 
@@ -145,7 +145,7 @@ Deferred to next milestone after v1 is dogfooded.
 | AGNT-01 | Phase 3 | Complete |
 | AGNT-02 | Phase 3 | Complete |
 | AGNT-03 | Phase 3 | Complete |
-| AGNT-04 | Phase 3 | Pending |
+| AGNT-04 | Phase 3 | Complete |
 | MEM-01 | Phase 3 | Complete |
 | MEM-02 | Phase 3 | Complete |
 | MEM-03 | Phase 3 | Complete |
