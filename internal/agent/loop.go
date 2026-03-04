@@ -155,6 +155,8 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		if al.toolRegistry != nil {
 			toolSchemas = al.toolRegistry.ToAPISchema()
 			js.Global().Get("console").Call("log",
+				"webclaw: available tools:", al.toolRegistry.List())
+			js.Global().Get("console").Call("log",
 				"webclaw: sending", len(toolSchemas), "tools to provider")
 		}
 
@@ -219,7 +221,9 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		toolInput := lastTok.ToolInput
 		toolUseID := lastTok.ToolUseID
 
-		js.Global().Get("console").Call("log", "webclaw: tool use detected", toolName)
+		js.Global().Get("console").Call("log",
+			"webclaw: tool use detected:", toolName,
+			"with input:", toolInput)
 
 		// Emit "running" event before dispatch
 		if al.workerBridge != nil {
@@ -254,6 +258,10 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		if al.workerBridge != nil {
 			al.workerBridge.EmitToolEvent(toolName, result.Status, result.DisplayContent, result.Content)
 		}
+
+		// Log tool result injection
+		js.Global().Get("console").Call("log",
+			"webclaw: injecting tool result for", toolUseID)
 
 		// Inject tool_use + tool_result into message history for next LLM call.
 		// Format as JSON strings since the Message.Content field is a string.
