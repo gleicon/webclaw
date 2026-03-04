@@ -162,6 +162,73 @@ func (ca *ContextAssembler) CheckAndSummarize(ctx context.Context) (*Summary, bo
 		"webclaw: summarization triggered -",
 		ca.conversation.GetMessageCount(), "messages")
 
+	// PHASE 6-4: Memory flush before summarization
+	// Extract and store key facts so they aren't lost
+	if ca.summarizer != nil && ca.memoryStore != nil {
+		go func() {
+			// Extract key facts (async so we don't block)
+			facts, err := ca.summarizer.ExtractKeyFacts(ctx, ca.conversation.GetMessages())
+			if err != nil {
+				js.Global().Get("console").Call("error",
+					"webclaw: fact extraction failed:", err.Error())
+				return
+			}
+
+			if len(facts) == 0 {
+				js.Global().Get("console").Call("log",
+					"webclaw: no key facts to extract")
+				return
+			}
+
+			js.Global().Get("console").Call("log",
+				"webclaw: extracted", len(facts), "key facts for memory")
+
+			// Store each fact to memory store
+			for i, fact := range facts {
+				doc := memory.NewMemoryDocument(
+					generateMemoryID(),
+					fact,
+					nil, // No embedding for now (can be added later)
+				)
+				doc.Metadata = map[string]interface{}{
+					"type":            "conversation_fact",
+					"source":          "pre_summarization_flush",
+					"extracted_at":    time.Now().Format(time.RFC3339),
+					"fact_index":      i,
+					"conversation_id": ca.conversation.ID,
+				}
+
+				if err := ca.memoryStore.Store(doc); err != nil {
+					js.Global().Get("console").Call("error",
+						"webclaw: failed to store fact:", err.Error())
+					// Continue with other facts
+				}
+			}
+
+			js.Global().Get("console").Call("log",
+				"webclaw: stored", len(facts), "facts to memory")
+
+			// Also append to MEMORY.md identity file
+			if ca.identityStore != nil {
+				// Format facts for MEMORY.md
+				var memoryContent strings.Builder
+				memoryContent.WriteString(fmt.Sprintf("\n\n## Facts from %s\n\n",
+					time.Now().Format("2006-01-02 15:04")))
+				for _, fact := range facts {
+					memoryContent.WriteString(fmt.Sprintf("- %s\n", fact))
+				}
+
+				if err := ca.identityStore.AppendToMemoryFile(memoryContent.String()); err != nil {
+					js.Global().Get("console").Call("error",
+						"webclaw: failed to append to MEMORY.md:", err.Error())
+				} else {
+					js.Global().Get("console").Call("log",
+						"webclaw: appended facts to MEMORY.md")
+				}
+			}
+		}()
+	}
+
 	// If no summarizer configured, use placeholder (backwards compatibility)
 	if ca.summarizer == nil {
 		js.Global().Get("console").Call("warn",
