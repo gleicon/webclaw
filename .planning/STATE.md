@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: active
-last_updated: "2026-03-04T00:14:10Z"
+status: unknown
+last_updated: "2026-03-04T00:17:39.272Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 6 of 6 (Real Agent Loop)
-Plan: 3 of 7 in current phase (In Progress)
-Status: **06-07 Complete - Provider Streaming Failover**
-Last activity: 2026-03-04 — Plan 06-07 complete (provider failover with exponential backoff, fallback chains, health tracking)
+Plan: 4 of 7 in current phase (In Progress)
+Status: **06-03 Complete - Real LLM-Based Summarization**
+Last activity: 2026-03-04 — Plan 06-03 complete (context window management with 20-message threshold, last 2 messages preserved)
 
-Progress: [███████████████████░] 94%
+Progress: [██████████████████░░] 91%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [███████████████████░] 94%
 | Phase 02 P02 | 12 min | 4 tasks | 6 files |
 | Phase 02 P01 | 116s | 3 tasks | 4 files |
 | Phase 06-real-agent-loop P07 | 3 min | 6 tasks | 4 files |
+| Phase 06-real-agent-loop P03 | 3min | 5 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,9 @@ Recent decisions affecting current work:
 - **[Phase 06-07]:** Fallback chain: Anthropic → OpenAI → OpenRouter configured in async goroutine
 - **[Phase 06-07]:** Provider health tracking with consecutive failure detection (unhealthy after 3 failures)
 - **[Phase 06-07]:** Non-retryable errors (401, 403, 400) fail fast without wasting retry attempts
+- [Phase 06-real-agent-loop]: CheckAndSummarize called before AddAssistantResponse to prevent losing new responses in summary
+- [Phase 06-real-agent-loop]: Last 2 messages preserved after summarization for context continuity
+- [Phase 06-real-agent-loop]: Created summarizerProviderAdapter to wrap router for agent.Provider interface
 
 ### Pending Todos
 
@@ -136,14 +140,15 @@ None. Provider tool support is complete across all three providers (Anthropic, O
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 06-real-agent-loop/06-07-PLAN.md — Provider Streaming Failover
-Resume file: .planning/phases/06-real-agent-loop/06-07-SUMMARY.md
+Stopped at: Completed 06-real-agent-loop/06-03-PLAN.md — Real LLM-Based Summarization
+Resume file: .planning/phases/06-real-agent-loop/06-03-SUMMARY.md
 
 ## Phase 6 Summary
 
 Plans completed in Phase 6:
 - 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
 - 06-02: Tool Registry Wired to Provider (tools flow from registry → agent loop → provider → LLM)
+- 06-03: Real LLM-Based Summarization (20-message threshold, 75% token limit, last 2 messages preserved)
 - 06-07: Provider Streaming Failover with exponential backoff and fallback chains
 
 **Phase 6 IN PROGRESS** - Real Agent Loop
@@ -160,6 +165,10 @@ Plans completed in Phase 6:
 - Provider health tracking with failure/success monitoring
 - Retryable error classification (429, 502, 503, 504, 529)
 - Non-retryable errors fail fast (401, 403, 400)
+- **NEW: Real LLM-based summarization with 20-message threshold**
+- **NEW: Context window management (75% token threshold)**
+- **NEW: Context continuity via last 2 message preservation after summarization**
+- **NEW: Summarizer wired to agent loop and main.go initialization**
 
 Ready for:
 - End-to-end testing with live LLM and real tool execution
