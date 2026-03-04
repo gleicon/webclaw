@@ -5,11 +5,13 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strings" // NEW
 	"syscall/js"
 	"time"
 
 	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/identity"
+	"github.com/gleicon/webclaw/internal/memory" // NEW
 )
 
 // ContextAssembler builds the complete context for LLM requests
@@ -18,7 +20,8 @@ type ContextAssembler struct {
 	config        *config.Config
 	identityStore *identity.Store
 	conversation  *Conversation
-	summarizer    *Summarizer // NEW: for real LLM-based summarization
+	summarizer    *Summarizer  // NEW: for real LLM-based summarization
+	memoryStore   memory.Store // NEW: for fact storage
 }
 
 // NewContextAssembler creates a new context assembler
@@ -130,6 +133,11 @@ func (ca *ContextAssembler) GetConversation() *Conversation {
 // SetSummarizer wires the summarizer for conversation management
 func (ca *ContextAssembler) SetSummarizer(s *Summarizer) {
 	ca.summarizer = s
+}
+
+// SetMemoryStore wires the memory store for fact persistence
+func (ca *ContextAssembler) SetMemoryStore(store memory.Store) {
+	ca.memoryStore = store
 }
 
 // GetHistoryCount returns the number of messages in conversation history
