@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"syscall/js"
+	"time"
 
 	"github.com/gleicon/webclaw/internal/agent"
 	"github.com/gleicon/webclaw/internal/config"
@@ -71,6 +72,36 @@ func main() {
 
 	// Load persisted API keys from keystore asynchronously (Wave 1: async initialization)
 	go loadProviderKeysAsync(router)
+
+	// Configure provider fallback chains for production-grade reliability
+	// These will be applied as providers are registered
+	go func() {
+		// Small delay to allow initial provider registration from keystore
+		time.Sleep(100 * time.Millisecond)
+
+		// Set up fallback chain: Anthropic → OpenAI → OpenRouter
+		if router.HasProvider("anthropic") && router.HasProvider("openai") {
+			router.SetFallback("anthropic", "openai", "gpt-4o-mini")
+			js.Global().Get("console").Call("log",
+				"webclaw: Anthropic → OpenAI fallback configured")
+		}
+
+		if router.HasProvider("openai") && router.HasProvider("openrouter") {
+			router.SetFallback("openai", "openrouter", "anthropic/claude-3-haiku")
+			js.Global().Get("console").Call("log",
+				"webclaw: OpenAI → OpenRouter fallback configured")
+		}
+
+		// Configure retry policy (optional - uses defaults otherwise)
+		router.SetRetryConfig(provider.RetryConfig{
+			MaxAttempts:       3,
+			InitialBackoff:    1 * time.Second,
+			BackoffMultiplier: 2.0,
+			MaxBackoff:        8 * time.Second,
+		})
+		js.Global().Get("console").Call("log",
+			"webclaw: Provider retry policy configured (3 attempts, exponential backoff)")
+	}()
 
 	// Wire tool registry with all four browser tools.
 	// Without this call, toolRegistry == nil and every tool call returns "tool registry not configured".
