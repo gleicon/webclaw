@@ -45,17 +45,17 @@ Requirements for initial release (core WASM runtime). Goal: a working browser AI
 ### Agent Loop
 
 - [x] **AGNT-01**: Agent executes a turn: assemble context (system prompt + identity + history) → call provider → handle response → execute tools if any → loop until no tool calls or maxToolIterations reached
-- [ ] **AGNT-02**: Context history is capped — when history exceeds threshold (20 messages or 75% of context window), agent triggers summarization
-- [ ] **AGNT-03**: Summarization is performed by calling the LLM provider with a summarize prompt; summary replaces history
+- [x] **AGNT-02**: Context history is capped — when history exceeds threshold (20 messages or 75% of context window), agent triggers summarization
+- [x] **AGNT-03**: Summarization is performed by calling the LLM provider with a summarize prompt; summary replaces history
 - [ ] **AGNT-04**: Agent loop runs in a Web Worker to avoid blocking the UI thread
 
 ### Memory
 
-- [ ] **MEM-01**: Agent can store memory documents to IndexedDB (key-value + vector embedding)
-- [ ] **MEM-02**: Agent can recall memories using hybrid search: cosine vector similarity (0.7 weight) + BM25 keyword (0.3 weight), results merged and ranked
-- [ ] **MEM-03**: Embeddings are computed via the active LLM provider's embedding endpoint (stored as Float32Arrays in IndexedDB)
-- [ ] **MEM-04**: Before compaction/summarization, durable knowledge is flushed from conversation into MEMORY.md (matching OpenClaw's memory flush behavior)
-- [ ] **MEM-05**: Storage hygiene: when IndexedDB usage exceeds 80% of quota, old memories are archived/purged
+- [x] **MEM-01**: Agent can store memory documents to IndexedDB (key-value + vector embedding)
+- [x] **MEM-02**: Agent can recall memories using hybrid search: cosine vector similarity (0.7 weight) + BM25 keyword (0.3 weight), results merged and ranked
+- [x] **MEM-03**: Embeddings are computed via the active LLM provider's embedding endpoint (stored as Float32Arrays in IndexedDB)
+- [x] **MEM-04**: Before compaction/summarization, durable knowledge is flushed from conversation into MEMORY.md (matching OpenClaw's memory flush behavior)
+- [x] **MEM-05**: Storage hygiene: when IndexedDB usage exceeds 80% of quota, old memories are archived/purged
 
 ### Tools
 
@@ -143,14 +143,14 @@ Deferred to next milestone after v1 is dogfooded.
 | PROV-04 | Phase 3 | Complete |
 | PROV-05 | Phase 3 | Pending |
 | AGNT-01 | Phase 3 | Complete |
-| AGNT-02 | Phase 3 | Pending |
-| AGNT-03 | Phase 3 | Pending |
+| AGNT-02 | Phase 3 | Complete |
+| AGNT-03 | Phase 3 | Complete |
 | AGNT-04 | Phase 3 | Pending |
-| MEM-01 | Phase 3 | Pending |
-| MEM-02 | Phase 3 | Pending |
-| MEM-03 | Phase 3 | Pending |
-| MEM-04 | Phase 3 | Pending |
-| MEM-05 | Phase 3 | Pending |
+| MEM-01 | Phase 3 | Complete |
+| MEM-02 | Phase 3 | Complete |
+| MEM-03 | Phase 3 | Complete |
+| MEM-04 | Phase 3 | Complete |
+| MEM-05 | Phase 3 | Complete |
 | TOOL-01 | Phase 4 | Complete |
 | TOOL-02 | Phase 4 | Complete |
 | TOOL-03 | Phase 4 | Complete |
