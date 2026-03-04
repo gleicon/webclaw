@@ -39,6 +39,9 @@ type ProviderChain struct {
 	modelID       string   // Primary model ID
 	fallbackModel string   // Fallback model ID (if different)
 	retry         RetryConfig
+
+	// Health tracking
+	health ProviderHealth
 }
 
 // NewProviderChain creates a new provider chain with retry
@@ -74,6 +77,39 @@ func (pc *ProviderChain) SetFallback(fallback Provider, modelID string) {
 	pc.fallbackModel = modelID
 }
 
+// ProviderHealth tracks the health status of a provider
+type ProviderHealth struct {
+	LastSuccess  time.Time
+	LastFailure  time.Time
+	FailureCount int
+	SuccessCount int
+	IsHealthy    bool
+}
+
+// recordSuccess records a successful operation
+func (pc *ProviderChain) recordSuccess() {
+	pc.health.LastSuccess = time.Now()
+	pc.health.SuccessCount++
+	pc.health.FailureCount = 0
+	pc.health.IsHealthy = true
+}
+
+// recordFailure records a failed operation
+func (pc *ProviderChain) recordFailure(err error) {
+	pc.health.LastFailure = time.Now()
+	pc.health.FailureCount++
+
+	// Mark unhealthy after 3 consecutive failures
+	if pc.health.FailureCount >= 3 {
+		pc.health.IsHealthy = false
+	}
+}
+
+// GetHealth returns the current health status
+func (pc *ProviderChain) GetHealth() ProviderHealth {
+	return pc.health
+}
+
 // Name returns the provider name
 func (pc *ProviderChain) Name() string {
 	return "chain:" + pc.primary.Name()
@@ -89,8 +125,11 @@ func (pc *ProviderChain) Complete(ctx context.Context, req CompletionRequest) (*
 	// Try primary with retries
 	token, err := pc.completeWithRetry(ctx, pc.primary, pc.modelID, req)
 	if err == nil {
+		pc.recordSuccess()
 		return token, nil
 	}
+
+	pc.recordFailure(err)
 
 	// If retryable error and fallback available, try fallback
 	if pc.shouldFallback(err) && pc.fallback != nil {
@@ -206,7 +245,8 @@ func (pc *ProviderChain) Stream(ctx context.Context, req CompletionRequest) <-ch
 			// Consume the stream and check for errors
 			tokens, err := pc.consumeStream(ctx, ch)
 			if err == nil {
-				// Stream succeeded - forward all tokens
+				// Stream succeeded - forward all tokens and record success
+				pc.recordSuccess()
 				for _, token := range tokens {
 					resultChan <- token
 				}
@@ -231,7 +271,8 @@ func (pc *ProviderChain) Stream(ctx context.Context, req CompletionRequest) <-ch
 			}
 		}
 
-		// Primary failed after retries - try fallback if available
+		// Primary failed after retries - record failure and try fallback if available
+		pc.recordFailure(streamErr)
 		if pc.fallback != nil && pc.shouldFallback(streamErr) {
 			fallbackReq := req
 			if pc.fallbackModel != "" {
@@ -310,8 +351,11 @@ func (pc *ProviderChain) Embed(ctx context.Context, input string) ([]float32, er
 	// Try primary with retries
 	embeddings, err := pc.embedWithRetry(ctx, pc.primary, input)
 	if err == nil {
+		pc.recordSuccess()
 		return embeddings, nil
 	}
+
+	pc.recordFailure(err)
 
 	// Try fallback if available
 	if pc.shouldFallback(err) && pc.fallback != nil {
