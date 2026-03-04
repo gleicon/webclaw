@@ -3,7 +3,9 @@
 package agent
 
 import (
+	"context"
 	"fmt"
+	"syscall/js"
 	"time"
 
 	"github.com/gleicon/webclaw/internal/config"
@@ -16,6 +18,7 @@ type ContextAssembler struct {
 	config        *config.Config
 	identityStore *identity.Store
 	conversation  *Conversation
+	summarizer    *Summarizer // NEW: for real LLM-based summarization
 }
 
 // NewContextAssembler creates a new context assembler
@@ -24,6 +27,7 @@ func NewContextAssembler(cfg *config.Config, store *identity.Store) *ContextAsse
 		config:        cfg,
 		identityStore: store,
 		conversation:  NewConversation(generateConversationID()),
+		summarizer:    nil, // Must be set via SetSummarizer
 	}
 }
 
@@ -33,6 +37,7 @@ func NewContextAssemblerWithConversation(cfg *config.Config, store *identity.Sto
 		config:        cfg,
 		identityStore: store,
 		conversation:  conv,
+		summarizer:    nil,
 	}
 }
 
@@ -120,6 +125,11 @@ func (ca *ContextAssembler) buildFallbackSystemPrompt() string {
 // GetConversation returns the underlying conversation
 func (ca *ContextAssembler) GetConversation() *Conversation {
 	return ca.conversation
+}
+
+// SetSummarizer wires the summarizer for conversation management
+func (ca *ContextAssembler) SetSummarizer(s *Summarizer) {
+	ca.summarizer = s
 }
 
 // GetHistoryCount returns the number of messages in conversation history
