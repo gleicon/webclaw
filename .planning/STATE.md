@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-04T00:17:39.272Z"
+status: active
+last_updated: "2026-03-04T00:33:00Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 23
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 6 of 6 (Real Agent Loop)
-Plan: 4 of 7 in current phase (In Progress)
-Status: **06-03 Complete - Real LLM-Based Summarization**
-Last activity: 2026-03-04 — Plan 06-03 complete (context window management with 20-message threshold, last 2 messages preserved)
+Plan: 5 of 7 in current phase (In Progress)
+Status: **06-06 Complete - Memory System Integration**
+Last activity: 2026-03-04 — Plan 06-06 complete (memory system with async OpenAI embedder, storage hygiene at 80% quota, LRU eviction)
 
-Progress: [██████████████████░░] 91%
+Progress: [████████████████████░░] 95%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [██████████████████░░] 91%
 | Phase 02 P02 | 12 min | 4 tasks | 6 files |
 | Phase 02 P01 | 116s | 3 tasks | 4 files |
 | Phase 06-real-agent-loop P07 | 3 min | 6 tasks | 4 files |
+| Phase 06-real-agent-loop P06 | 18 min | 6 tasks | 5 files |
 | Phase 06-real-agent-loop P03 | 3min | 5 tasks | 4 files |
 
 ## Accumulated Context
@@ -128,6 +129,9 @@ Recent decisions affecting current work:
 - [Phase 06-real-agent-loop]: CheckAndSummarize called before AddAssistantResponse to prevent losing new responses in summary
 - [Phase 06-real-agent-loop]: Last 2 messages preserved after summarization for context continuity
 - [Phase 06-real-agent-loop]: Created summarizerProviderAdapter to wrap router for agent.Provider interface
+- **[Phase 06-06]:** Memory store initializes BM25-only, async goroutine loads OpenAI key to enable hybrid search
+- **[Phase 06-06]:** Storage hygiene via CheckQuota before every Store(), LRU eviction at 80% quota threshold
+- **[Phase 06-06]:** QuotaInfo.ShouldEvict flag unifies eviction decision logic across memory system
 
 ### Pending Todos
 
@@ -140,8 +144,8 @@ None. Provider tool support is complete across all three providers (Anthropic, O
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 06-real-agent-loop/06-03-PLAN.md — Real LLM-Based Summarization
-Resume file: .planning/phases/06-real-agent-loop/06-03-SUMMARY.md
+Stopped at: Completed 06-real-agent-loop/06-06-PLAN.md — Memory System Integration
+Resume file: .planning/phases/06-real-agent-loop/06-06-SUMMARY.md
 
 ## Phase 6 Summary
 
@@ -149,6 +153,7 @@ Plans completed in Phase 6:
 - 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
 - 06-02: Tool Registry Wired to Provider (tools flow from registry → agent loop → provider → LLM)
 - 06-03: Real LLM-Based Summarization (20-message threshold, 75% token limit, last 2 messages preserved)
+- 06-06: Memory System Integration (async OpenAI embedder, storage hygiene, LRU eviction at 80% quota)
 - 06-07: Provider Streaming Failover with exponential backoff and fallback chains
 
 **Phase 6 IN PROGRESS** - Real Agent Loop
@@ -165,13 +170,18 @@ Plans completed in Phase 6:
 - Provider health tracking with failure/success monitoring
 - Retryable error classification (429, 502, 503, 504, 529)
 - Non-retryable errors fail fast (401, 403, 400)
-- **NEW: Real LLM-based summarization with 20-message threshold**
-- **NEW: Context window management (75% token threshold)**
-- **NEW: Context continuity via last 2 message preservation after summarization**
-- **NEW: Summarizer wired to agent loop and main.go initialization**
+- Real LLM-based summarization with 20-message threshold
+- Context window management (75% token threshold)
+- Context continuity via last 2 message preservation after summarization
+- Summarizer wired to agent loop and main.go initialization
+- **NEW: Memory store with IndexedDB backing and Float32Array embeddings**
+- **NEW: Hybrid search (70% cosine + 30% BM25) for semantic + keyword relevance**
+- **NEW: Storage hygiene with navigator.storage.estimate quota checking**
+- **NEW: LRU eviction triggered at 80% quota threshold**
+- **NEW: Async OpenAI embedder loading for non-blocking startup**
 
 Ready for:
-- End-to-end testing with live LLM and real tool execution
+- End-to-end testing with live LLM and real tool execution including memory_store and memory_search
 - Additional tool implementations
 - Tool result formatting and UI display refinements
 
