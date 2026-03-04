@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-01T23:57:02.544Z"
+status: active
+last_updated: "2026-03-04T00:10:01Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 17
+  completed_plans: 17
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** A fully functional OpenClaw-compatible AI assistant that boots from a URL in a browser tab — zero install, instant distribution, no Node.js or server required.
-**Current focus:** Phase 5 complete - Live AI Connection
+**Current focus:** Phase 6 started - Real Agent Loop with tool support
 
 ## Current Position
 
-Phase: 5 of 5 (Live AI Connection)
-Plan: 3 of 3 in current phase (Complete)
-Status: **05-03 Complete - End-to-End Testing with Real APIs**
-Last activity: 2026-03-01 — Plan 05-03 complete (live API validation, error handling, integration tests)
+Phase: 6 of 6 (Real Agent Loop)
+Plan: 1 of 1 in current phase (In Progress)
+Status: **06-01 Complete - Provider-Side Tool Support**
+Last activity: 2026-03-04 — Plan 06-01 complete (provider tool use implementation, all providers support tools)
 
-Progress: [██████████████████] 100%
+Progress: [███████████████████░] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 27 min
-- Total execution time: ~6 hours
+- Total plans completed: 17
+- Average duration: 26 min
+- Total execution time: ~7 hours
 
 **By Phase:**
 
@@ -45,11 +45,13 @@ Progress: [██████████████████] 100%
 | 03-intelligence-core | 3 | 14 min | 5 min |
 | 04-tools-and-webchat-ui | 3 | 31 min | 10 min |
 | 05-live-ai-connection | 3 | 4 min | 1 min |
+| 06-real-agent-loop | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (3 min), 05-02 (1 min), 05-01 (1 min), 04-03 (15 min), 04-02 (10 min)
-- Trend: Phase 5 complete - Live AI connection validated
+- Last 5 plans: 06-01 (3 min), 05-03 (3 min), 05-02 (1 min), 05-01 (1 min), 04-03 (15 min)
+- Trend: Phase 6 started - Real agent loop with tool support
 
+| Phase 06 P01 | 3 min | 5 tasks | 6 files |
 | Phase 05 P03 | 3 min | 13 tasks | 6 files |
 | Phase 05 P02 | 1 min | 10 tasks | 2 files |
 | Phase 05 P01 | 1 min | 6 tasks | 1 files |
@@ -112,38 +114,39 @@ Recent decisions affecting current work:
 - [Phase 05-03]: Console logging via syscall/js for browser DevTools visibility (not Go log package)
 - [Phase 05-03]: Error toast notifications with auto-dismiss and specific error type handling
 - [Phase 05-03]: Demo mode messaging '[Demo Mode] Enter API key in Settings to enable live AI'
+- **[Phase 06-01]:** FinishReason normalization to "tool_use" across all providers (Anthropic uses natively, OpenAI/OpenRouter use "tool_calls" but we normalize)
+- **[Phase 06-01]:** Accumulate partial JSON from streaming deltas, parse at message_stop/finish
+- **[Phase 06-01]:** Convert generic []map[string]interface{} tools to provider-specific formats at request time
+- **[Phase 06-01]:** Handle one tool at a time per Token (simplifies agent loop integration)
 
 ### Pending Todos
 
-None - Phase 5 complete. Ready for v1.0 release preparation.
+None - Phase 06-01 complete. Ready for agent loop integration.
 
 ### Blockers/Concerns
 
-None. Phase 5 Wave 3 complete. All live AI connection features implemented.
+None. Provider tool support is complete across all three providers (Anthropic, OpenAI, OpenRouter).
 
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: Completed 05-live-ai-connection/05-03-PLAN.md — End-to-End Testing with Real APIs
-Resume file: .planning/phases/05-live-ai-connection/05-03-SUMMARY.md
+Last session: 2026-03-04
+Stopped at: Completed 06-real-agent-loop/06-01-PLAN.md — Provider-Side Tool Support
+Resume file: .planning/phases/06-real-agent-loop/06-01-SUMMARY.md
 
-## Phase 5 Summary
+## Phase 6 Summary
 
-Plans completed in Phase 5:
-- 05-01: Async Keystore Initialization with goroutine pattern
-- 05-02: AI Provider Integration with real LLM routing
-- 05-03: End-to-End Testing with live API validation
+Plans completed in Phase 6:
+- 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
 
-**Phase 5 COMPLETE** - Live AI Connection
-- Real API connections validated with console logging
-- Provider status indicators in Settings UI
-- Error handling with specific messages for 401, 429, missing keys
-- Integration tests for Anthropic, OpenAI, OpenRouter
-- Demo mode with clear messaging
+**Phase 6 IN PROGRESS** - Real Agent Loop
+- Tool definitions in CompletionRequest (all providers)
+- Anthropic content_block_start/content_block_delta tool_use parsing
+- OpenAI/OpenRouter tool_calls parsing with FinishReason normalization
+- Token struct has ToolName, ToolInput, ToolUseID for agent loop integration
+- Comprehensive test coverage for all providers
 
 Ready for:
-- v1.0 release preparation
-- Documentation updates
-- Performance optimization
-
+- Agent loop integration with tool calling
+- Tool execution and result passing back to LLM
+- Multi-turn conversation with tool use
 

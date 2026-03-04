@@ -82,7 +82,7 @@ Plans:
   7. Provider failover with exponential backoff: primary → retries → fallback chain (1s, 2s, 4s delays)
   8. Token counting uses accurate estimation (not crude chars/4)
   9. Full E2E flow works: user message → LLM with tools → tool_use → execute → tool_result → final response
-**Plans**: 06-01 (Provider tool support), 06-02 (Agent loop wiring), 06-03 (Real summarization), 06-04 (Memory flush), 06-05 (Integration), 06-06 (Memory system), 06-07 (Provider streaming & failover)
+**Plans**: 06-01 (Provider tool support) — COMPLETE, 06-02 (Agent loop wiring) — Planned, 06-03 (Real summarization) — Planned, 06-04 (Memory flush) — Planned, 06-05 (Integration) — Planned, 06-06 (Memory system) — Planned, 06-07 (Provider streaming & failover) — Planned
 
 ### Phase 7: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
@@ -111,7 +111,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -120,6 +120,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 3. Intelligence Core | 4/4 | Complete | 2026-03-01 |
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
 | 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
-| 6. Real Agent Loop | 0/7 | Planned |  |
+| 6. Real Agent Loop | 1/7 | In Progress | 2026-03-04 |
 | 7. Local Bridge Binary | 0/0 | Planned |  |
 | 8. Polish & Release | 0/0 | Planned |  |
