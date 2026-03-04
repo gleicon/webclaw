@@ -10,40 +10,63 @@ import (
 
 // Router routes requests to the appropriate provider based on model ID
 type Router struct {
-	providers map[string]Provider
+	providers map[string]*ProviderChain // Changed from Provider to ProviderChain
 	config    *Config
+	retry     RetryConfig
+	fallbacks map[string]fallbackConfig // primary -> fallback mapping
+}
+
+// fallbackConfig holds fallback provider configuration
+type fallbackConfig struct {
+	providerName string
+	modelID      string
 }
 
 // NewRouter creates a new provider router with the given configuration
 func NewRouter(config *Config) *Router {
 	r := &Router{
-		providers: make(map[string]Provider),
+		providers: make(map[string]*ProviderChain),
 		config:    config,
+		retry:     DefaultRetryConfig(),
+		fallbacks: make(map[string]fallbackConfig),
 	}
 
 	// Register providers based on available API keys
 	if config.AnthropicAPIKey != "" {
-		r.providers["anthropic"] = NewAnthropicProvider(config.AnthropicAPIKey)
+		anthropicProv := NewAnthropicProvider(config.AnthropicAPIKey)
+		r.providers["anthropic"] = NewProviderChain(anthropicProv, "claude-sonnet-4-5")
 	}
 
 	if config.OpenAIAPIKey != "" {
-		r.providers["openai"] = NewOpenAIProvider(config.OpenAIAPIKey)
+		openaiProv := NewOpenAIProvider(config.OpenAIAPIKey)
+		r.providers["openai"] = NewProviderChain(openaiProv, "gpt-4o-mini")
 	}
 
 	if config.OpenRouterAPIKey != "" {
-		r.providers["openrouter"] = NewOpenRouterProvider(
+		openrouterProv := NewOpenRouterProvider(
 			config.OpenRouterAPIKey,
 			config.HTTPReferer,
 			config.XTitle,
 		)
+		r.providers["openrouter"] = NewProviderChain(openrouterProv, "anthropic/claude-3-haiku")
 	}
 
 	return r
 }
 
 // RegisterProvider manually registers a provider (useful for testing)
-func (r *Router) RegisterProvider(name string, provider Provider) {
-	r.providers[name] = provider
+// Wraps the provider in a ProviderChain with retry support
+func (r *Router) RegisterProvider(name string, p Provider) {
+	// Get model ID from provider if available
+	modelID := "default"
+	if mp, ok := p.(interface{ GetModel() string }); ok {
+		modelID = mp.GetModel()
+	}
+
+	// Wrap in ProviderChain with retry config
+	chain := NewProviderChain(p, modelID)
+	chain.SetRetryConfig(r.retry)
+	r.providers[name] = chain
 }
 
 // HasProvider checks if a provider is available
@@ -288,6 +311,32 @@ func (r *Router) GetModelInfo(modelID string) (*ModelInfo, error) {
 		MaxContext: route.Provider.MaxContextWindow(route.ModelID),
 		Available:  true,
 	}, nil
+}
+
+// SetFallback configures a fallback provider for a primary provider
+// When the primary fails after retries, the fallback provider will be used
+func (r *Router) SetFallback(primaryName string, fallbackName string, fallbackModel string) {
+	r.fallbacks[primaryName] = fallbackConfig{
+		providerName: fallbackName,
+		modelID:      fallbackModel,
+	}
+
+	// Apply fallback to the chain if both providers exist
+	if primaryChain, ok := r.providers[primaryName]; ok {
+		if fallbackChain, ok := r.providers[fallbackName]; ok {
+			// Extract the actual provider from the fallback chain
+			primaryChain.SetFallback(fallbackChain, fallbackModel)
+		}
+	}
+}
+
+// SetRetryConfig sets the retry configuration for all providers in the router
+func (r *Router) SetRetryConfig(config RetryConfig) {
+	r.retry = config
+	// Update all existing provider chains
+	for _, chain := range r.providers {
+		chain.SetRetryConfig(config)
+	}
 }
 
 // ChainResult combines multiple providers into a fallback chain
