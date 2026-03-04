@@ -80,6 +80,12 @@ func NewMemoryStore(embedder Embedder) (Store, error) {
 	}
 }
 
+// SetEmbedder sets the embedder for generating embeddings.
+// PHASE 6-6: Allows async enablement of embeddings after initialization.
+func (s *memoryStore) SetEmbedder(embedder Embedder) {
+	s.embedder = embedder
+}
+
 // Store saves a memory document with embedding.
 func (s *memoryStore) Store(doc *MemoryDocument) error {
 	// Generate embedding if not provided
