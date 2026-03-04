@@ -31,6 +31,7 @@ type Message struct {
 type CompletionRequest struct {
 	Model       string
 	Messages    []Message
+	Tools       []map[string]interface{} `json:"tools,omitempty"` // Tool definitions for LLM
 	MaxTokens   int
 	Temperature float64
 	TopP        float64

@@ -77,6 +77,18 @@ type openAIRequest struct {
 	TopP        float64         `json:"top_p,omitempty"`
 	Stream      bool            `json:"stream"`
 	User        string          `json:"user,omitempty"`
+	Tools       []openAITool    `json:"tools,omitempty"` // Tool definitions for LLM
+}
+
+type openAITool struct {
+	Type     string         `json:"type"`
+	Function openAIFunction `json:"function"`
+}
+
+type openAIFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters"`
 }
 
 type openAIMessage struct {

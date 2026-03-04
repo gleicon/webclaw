@@ -67,13 +67,14 @@ func (p *AnthropicProvider) MaxContextWindow(model string) int {
 
 // anthropicRequest represents the request body for Anthropic Messages API
 type anthropicRequest struct {
-	Model       string             `json:"model"`
-	Messages    []anthropicMessage `json:"messages"`
-	System      string             `json:"system,omitempty"`
-	MaxTokens   int                `json:"max_tokens"`
-	Stream      bool               `json:"stream"`
-	Temperature float64            `json:"temperature,omitempty"`
-	TopP        float64            `json:"top_p,omitempty"`
+	Model       string                   `json:"model"`
+	Messages    []anthropicMessage       `json:"messages"`
+	System      string                   `json:"system,omitempty"`
+	MaxTokens   int                      `json:"max_tokens"`
+	Stream      bool                     `json:"stream"`
+	Temperature float64                  `json:"temperature,omitempty"`
+	TopP        float64                  `json:"top_p,omitempty"`
+	Tools       []map[string]interface{} `json:"tools,omitempty"` // Tool definitions for LLM
 }
 
 type anthropicMessage struct {
