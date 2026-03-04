@@ -3,6 +3,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"syscall/js"
 	"time"
@@ -88,6 +89,20 @@ func (s *memoryStore) SetEmbedder(embedder Embedder) {
 
 // Store saves a memory document with embedding.
 func (s *memoryStore) Store(doc *MemoryDocument) error {
+	// PHASE 6-6: Check quota before storing (MEM-05)
+	// Trigger eviction at 80% quota threshold
+	if s.evictor != nil {
+		quota, err := s.evictor.CheckQuota(context.Background())
+		if err == nil && quota.ShouldEvict {
+			js.Global().Get("console").Call("log",
+				"webclaw: storage at", int(quota.Percent), "%- triggering LRU eviction")
+			if err := s.EvictIfNeeded(); err != nil {
+				js.Global().Get("console").Call("error",
+					"webclaw: eviction failed:", err.Error())
+			}
+		}
+	}
+
 	// Generate embedding if not provided
 	if len(doc.Embedding) == 0 && s.embedder != nil {
 		embedding, err := s.embedder.Embed(doc.Content)
