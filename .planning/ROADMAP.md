@@ -69,17 +69,20 @@ Plans:
 **Plans**: 05-01 (Async keystore init) — COMPLETE, 05-02 (Router config) — COMPLETE, 05-03 (E2E testing) — COMPLETE
 
 ### Phase 6: Real Agent Loop
-**Goal:** Make WebClaw a real OpenClaw implementation with working tool_use loop, real LLM-based summarization, and memory flush before compaction
+**Goal:** Make WebClaw a real OpenClaw implementation with working tool_use loop, real LLM-based summarization, memory system, and provider failover
 **Depends on:** Phase 5
-**Requirements:** AGNT-01, AGNT-02, AGNT-03, AGNT-04, MEM-04, PROV-03 (full)
+**Requirements:** AGNT-01, AGNT-02, AGNT-03, AGNT-04, MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, PROV-03, PROV-04
 **Success Criteria** (what must be TRUE):
   1. Providers send tool definitions to LLM and parse tool_use/tool_calls from responses
   2. Agent loop passes tools to provider on every iteration, enabling real tool execution
   3. When conversation exceeds 20 messages or 75% of context window, automatic LLM-based summarization occurs
   4. Before summarization, key facts are extracted and flushed to memory store + MEMORY.md
-  5. Token counting uses accurate estimation (not crude chars/4)
-  6. Full E2E flow works: user message → LLM with tools → tool_use → execute → tool_result → final response
-**Plans**: 06-01 (Provider tool support), 06-02 (Agent loop wiring), 06-03 (Real summarization), 06-04 (Memory flush), 06-05 (Integration)
+  5. Memory documents stored in IndexedDB with Float32 embeddings retrieved via hybrid search (0.7 vector + 0.3 BM25)
+  6. Storage hygiene triggers at 80% quota with LRU eviction of old memories
+  7. Provider failover with exponential backoff: primary → retries → fallback chain (1s, 2s, 4s delays)
+  8. Token counting uses accurate estimation (not crude chars/4)
+  9. Full E2E flow works: user message → LLM with tools → tool_use → execute → tool_result → final response
+**Plans**: 06-01 (Provider tool support), 06-02 (Agent loop wiring), 06-03 (Real summarization), 06-04 (Memory flush), 06-05 (Integration), 06-06 (Memory system), 06-07 (Provider streaming & failover)
 
 ### Phase 7: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
@@ -117,6 +120,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 3. Intelligence Core | 4/4 | Complete | 2026-03-01 |
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
 | 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
-| 6. Real Agent Loop | 0/5 | Planned |  |
+| 6. Real Agent Loop | 0/7 | Planned |  |
 | 7. Local Bridge Binary | 0/0 | Planned |  |
 | 8. Polish & Release | 0/0 | Planned |  |
