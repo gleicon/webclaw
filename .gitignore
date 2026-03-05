@@ -1,7 +1,46 @@
-dist/webclaw.wasm
-dist/webclaw.wasm.br
-static/wasm_exec.js
-test/node_modules/
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist-bundle/
+dist/
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Test results
+test-results/
+playwright-report/
+
+# Go build artifacts
+*.wasm
+*.wasm.br
 webclaw
-.env.test
-.env.test.template
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
