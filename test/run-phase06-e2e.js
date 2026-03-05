@@ -7,6 +7,7 @@ import { spawn } from 'child_process';
 import http from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync, existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,6 +15,32 @@ const __dirname = dirname(__filename);
 const DEV_SERVER_URL = 'http://localhost:8080';
 const MAX_WAIT_ATTEMPTS = 60;
 const WAIT_DELAY_MS = 1000;
+
+// Load environment variables from .env.test
+function loadEnvFile() {
+  const envPath = join(__dirname, '..', '.env.test');
+  if (!existsSync(envPath)) {
+    console.log('⚠️  .env.test not found - API keys may not be available');
+    return {};
+  }
+  
+  const env = {};
+  const content = readFileSync(envPath, 'utf-8');
+  const lines = content.split('\n');
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    
+    const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (match) {
+      const [, key, value] = match;
+      env[key] = value;
+    }
+  }
+  
+  return env;
+}
 
 // Colors for terminal output
 const colors = {
@@ -66,14 +93,33 @@ async function startDevServer() {
   logHeader('STARTING DEV SERVER');
   
   const projectRoot = join(__dirname, '..');
+  const envVars = loadEnvFile();
   
   log(`Working directory: ${projectRoot}`, 'dim');
   log('Command: go run ./cmd/devserver/', 'dim');
+  
+  // Check for API keys
+  if (envVars.ANTHROPIC_API_KEY) {
+    log('✓ ANTHROPIC_API_KEY loaded from .env.test', 'green');
+  } else {
+    log('⚠️  ANTHROPIC_API_KEY not found in .env.test', 'yellow');
+  }
+  
+  if (envVars.OPENAI_API_KEY) {
+    log('✓ OPENAI_API_KEY loaded from .env.test', 'green');
+  } else {
+    log('⚠️  OPENAI_API_KEY not found in .env.test', 'yellow');
+  }
+  
   log('');
   
   const server = spawn('go', ['run', './cmd/devserver/'], {
     cwd: projectRoot,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      ...envVars
+    }
   });
   
   // Capture server output
