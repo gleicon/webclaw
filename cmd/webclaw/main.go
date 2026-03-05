@@ -54,6 +54,22 @@ func main() {
 		// Don't exit - we can still run without identity for now
 	}
 
+	// PHASE 7a: Initialize just-bash for browser-only file operations
+	// This provides a virtual filesystem without requiring the local bridge binary
+	go func() {
+		// Wait a moment for the JS scripts to load
+		time.Sleep(500 * time.Millisecond)
+
+		// Try to initialize just-bash in virtual mode (completely sandboxed)
+		// Future: Could add overlay mode for reading real projects
+		if err := jsbridge.InitJustBash("virtual", ""); err != nil {
+			js.Global().Get("console").Call("warn", "webclaw: just-bash initialization failed:", err.Error())
+			js.Global().Get("console").Call("warn", "webclaw: file operations will not be available without bridge binary")
+		} else {
+			js.Global().Get("console").Call("log", "webclaw: just-bash initialized (virtual filesystem)")
+		}
+	}()
+
 	// Initialize worker bridge for streaming.
 	// InitWorkerBridge returns the *WorkerBridge instance for wiring into AgentLoop.
 	workerBridgeInstance := agent.InitWorkerBridge()
@@ -183,6 +199,12 @@ func main() {
 	reg.Register(tools.NewWebSearchTool())
 	reg.Register(tools.NewMemoryStoreTool(agentLoop))
 	reg.Register(tools.NewMemorySearchTool(agentLoop))
+
+	// PHASE 7a: Register just-bash file tools for browser-only file operations
+	// These enable file read/write/list/search without requiring the local bridge binary
+	tools.RegisterJustBashFileTools(reg)
+	js.Global().Get("console").Call("log", "webclaw: file tools registered (just-bash)")
+
 	agentLoop.SetToolRegistry(reg)
 
 	// Wire summarizer for conversation management
