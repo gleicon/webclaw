@@ -66,3 +66,23 @@ func (r *Registry) List() []string {
 	}
 	return names
 }
+
+// Get returns a tool by name, or nil if not found
+func (r *Registry) Get(name string) *Tool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.tools[name]
+}
+
+// GetAll returns all registered tools
+func (r *Registry) GetAll() map[string]*Tool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Return a copy to avoid race conditions
+	result := make(map[string]*Tool, len(r.tools))
+	for name, tool := range r.tools {
+		result[name] = tool
+	}
+	return result
+}

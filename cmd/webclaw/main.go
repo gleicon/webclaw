@@ -203,7 +203,12 @@ func main() {
 	// PHASE 7a: Register just-bash file tools for browser-only file operations
 	// These enable file read/write/list/search without requiring the local bridge binary
 	tools.RegisterJustBashFileTools(reg)
+
+	// Register help tool for documentation and tool discovery
+	reg.Register(tools.NewHelpTool(reg))
+
 	js.Global().Get("console").Call("log", "webclaw: file tools registered (just-bash)")
+	js.Global().Get("console").Call("log", "webclaw: help tool registered")
 
 	agentLoop.SetToolRegistry(reg)
 

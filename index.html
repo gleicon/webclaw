@@ -426,6 +426,21 @@
     const content = userInput.value.trim();
     if (!content) return;
     
+    // Handle slash commands
+    if (content.startsWith('/')) {
+      const match = content.match(/^\/([a-zA-Z]+)(?:\s+(.*))?$/);
+      if (match) {
+        const command = match[1];
+        const args = match[2] || '';
+        
+        if (handleSlashCommand(command, args)) {
+          // Command was handled, clear input and return
+          userInput.value = '';
+          return;
+        }
+      }
+    }
+    
     // Don't allow sending if no providers are available
     if (availableProviders.length === 0) {
       showErrorToast('Please enter your API key in Settings to enable live AI');
@@ -575,6 +590,130 @@
   function abortMessage() {
     if (window.webclawHost) {
       window.webclawHost.abortStream();
+    }
+  }
+
+  // ==========================================
+  // Slash Command Handler
+  // =========================================
+  function handleSlashCommand(command, args) {
+    switch(command) {
+      case 'help':
+        showHelpMessage(args);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function showHelpMessage(args) {
+    // Create help response bubble
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex justify-start';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 bg-gray-700 text-gray-100 text-sm';
+    
+    // Get tool name from args
+    const toolMatch = args.match(/tool="([^"]+)"/);
+    const verbose = args.includes('verbose=true');
+    
+    if (toolMatch) {
+      const toolName = toolMatch[1];
+      // Request help from agent for specific tool
+      const content = `help tool="${toolName}"${verbose ? ' verbose=true' : ''}`;
+      
+      // Create agent bubble for response
+      agentBubble = appendAgentBubble();
+      streamCursor = createStreamingCursor();
+      agentBubble.appendChild(streamCursor);
+      
+      // Add message to conversation and trigger help
+      if (window.webclawHost) {
+        window.webclawHost.addMessage('user', content);
+        
+        const modelValue = modelSelector.value;
+        const slashIdx = modelValue.indexOf('/');
+        const provider = slashIdx > 0 ? modelValue.substring(0, slashIdx) : 'anthropic';
+        const model = slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
+        
+        isStreaming = true;
+        streamStatus.textContent = 'Getting help...';
+        sendBtn.classList.add('hidden');
+        abortBtn.classList.remove('hidden');
+        
+        window.webclawHost.startStream({
+          provider: provider,
+          model: model,
+          messages: [{ role: 'user', content: content }],
+          onToken: function(token) {
+            if (streamCursor && streamCursor.parentNode) {
+              streamCursor.parentNode.removeChild(streamCursor);
+            }
+            if (agentBubble) {
+              agentBubble.textContent += token;
+              agentBubble.appendChild(streamCursor);
+            }
+            scrollToBottom();
+          },
+          onComplete: function(result) {
+            if (streamCursor && streamCursor.parentNode) {
+              streamCursor.parentNode.removeChild(streamCursor);
+            }
+            resetStreamingState();
+            scrollToBottom();
+          },
+          onError: function(err) {
+            if (streamCursor && streamCursor.parentNode) {
+              streamCursor.parentNode.removeChild(streamCursor);
+            }
+            appendErrorBubble('Failed to get help: ' + (err.message || 'Unknown error'));
+            resetStreamingState();
+            scrollToBottom();
+          }
+        });
+      } else {
+        // Fallback when host not ready
+        bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
+<strong>Available Commands:</strong><br>
+/help - Show this help message<br>
+/help tool="&lt;tool_name&gt;" - Get help for a specific tool<br><br>
+<strong>Available Tools:</strong><br>
+• web_fetch - Fetch content from URLs<br>
+• web_search - Search the web<br>
+• file_read - Read files<br>
+• file_write - Write files<br>
+• dir_list - List directories<br>
+• file_search - Search in files<br>
+• memory_store - Store memories<br>
+• memory_search - Search memories<br>
+• help - Get help on tools<br><br>
+See AGENTS.md for full documentation.`;
+        wrapper.appendChild(bubble);
+        messages.appendChild(wrapper);
+        scrollToBottom();
+      }
+    } else {
+      // General help
+      bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
+<strong>Available Commands:</strong><br>
+/help - Show this help message<br>
+/help tool="&lt;tool_name&gt;" - Get help for a specific tool<br>
+/help tool="&lt;tool_name&gt;" verbose=true - Detailed help with schema<br><br>
+<strong>Quick Start:</strong><br>
+• Type any message to chat with the AI<br>
+• The AI can use tools automatically<br>
+• Use Settings tab to configure API keys<br>
+• Use Identity Files tab to edit agent personality<br><br>
+<strong>Available Tool Categories:</strong><br>
+📡 Web & Search: web_fetch, web_search<br>
+📁 File Operations: file_read, file_write, dir_list, file_search<br>
+🧠 Memory: memory_store, memory_search<br>
+❓ Help: help<br><br>
+Type <code>/help tool="file_read"</code> for tool-specific help.`;
+      wrapper.appendChild(bubble);
+      messages.appendChild(wrapper);
+      scrollToBottom();
     }
   }
 
