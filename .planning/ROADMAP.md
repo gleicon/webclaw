@@ -135,6 +135,26 @@ Plans:
   - 08-02 (Single-file mode: inline JS/CSS/WASM, Blob Worker, ultimate standalone)
   - 08-03 (Distribution: npm package, CLI, GitHub Actions, Docker)
 
+### Phase 9: Social & Productivity Integrations
+**Goal**: Enable WebClaw to interact with popular APIs (Twitter/X, GitHub, Google, Notion) for real-world productivity use cases
+**Depends on**: Phase 8 (or can run parallel to Phase 7/7a)
+**Requirements**: INTEG-01, INTEG-02, INTEG-03, INTEG-04, INTEG-05, AUTH-01, AUTH-02
+**Success Criteria** (what must be TRUE):
+  1. User can authenticate with OAuth 2.0 for Twitter/X, Google (Gmail/Calendar), GitHub
+  2. User can post tweets, manage Twitter timeline via WebClaw
+  3. User can check email, send messages via Gmail
+  4. User can view calendar, create events via Google Calendar
+  5. User can list GitHub issues, review PRs, create comments
+  6. User can query Notion databases, update pages
+  7. All OAuth tokens encrypted and stored securely in IndexedDB
+  8. Integration tools follow same pattern as existing tools (web_fetch, web_search)
+**Plans**:
+- [x] 09-01-PLAN.md — OAuth infrastructure (PKCE flow, token storage, refresh handling, JS bridge)
+- [x] 09-02-PLAN.md — Twitter/X integration (tweet, reply, search, timeline tools)
+- [x] 09-03-PLAN.md — Google integration (Gmail send/read, Calendar events)
+- [x] 09-04-PLAN.md — GitHub integration (issues, PRs, repos, comments)
+- [x] 09-05-PLAN.md — Notion integration (databases, pages, queries)
+
 ## Progress
 
 **Execution Order:**
@@ -148,6 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
 | 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
 | 6. Real Agent Loop | 7/7 | Complete | 2026-03-04 |
-| 7a. just-bash Filesystem | 0/5 | Planned |  |
+| 7a. just-bash Filesystem | 5/5 | Complete | 2026-03-05 |
 | 7. Local Bridge Binary | 0/0 | Planned |  |
-| 8. Polish & Release | 0/3 | Planned |  |
+| 8. Polish & Release | 3/3 | Complete | 2026-03-05 |
+| 9. Social & Productivity | 0/5 | Planned |  |
