@@ -89,19 +89,19 @@ Plans:
 **Depends on**: Phase 6
 **Requirements**: BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, TOOL-01, TOOL-02, TOOL-03, TOOL-04, TOOL-05, TOOL-06, UI-01, UI-02, UI-03, UI-04, UI-05
 **Success Criteria** (what must be TRUE):
-  1. just-bash npm dependency added and loaded in browser
-  2. Go→JS bridge enables WASM to call just-bash commands
-  3. File tools work via just-bash: file_read, file_write, file_edit, file_search, dir_list, file_stat
-  4. Filesystem UI provides VS Code-like file explorer with toolbar, tree, and editor
-  5. OverlayFs allows mounting local directories (Chrome/Edge) for safe preview mode
-  6. Smart routing uses just-bash when bridge unavailable
-  7. All file operations work immediately without bridge binary
+  1. ✅ just-bash npm dependency added and loaded in browser
+  2. ✅ Go→JS bridge enables WASM to call just-bash commands
+  3. ⚠️ File tools work via just-bash: file_read, file_write, file_search, dir_list (file_edit, file_stat not built)
+  4. ❌ Filesystem UI provides VS Code-like file explorer with toolbar, tree, and editor (NOT IMPLEMENTED)
+  5. ❌ OverlayFs allows mounting local directories (Chrome/Edge) for safe preview mode (NOT IMPLEMENTED)
+  6. ✅ Smart routing uses just-bash when bridge unavailable
+  7. ✅ All file operations work immediately without bridge binary
 **Plans**: 
-  - 07a-01 (just-bash integration: npm dependency, JS bridge, Go bindings, file tools)
-  - 07a-02 (Filesystem UI: tab, tree view, editor, file operations)
-  - 07a-03 (OverlayFs mounts: File System Access API, mount dialog, virtual/real indicators)
-  - 07a-04 (Advanced tools: sed/awk edit, regex search, batch operations)
-  - 07a-05 (Tests and docs: E2E tests, browser tests, comprehensive README)
+  - ✅ 07a-01 (just-bash integration: npm dependency, JS bridge, Go bindings, file tools)
+  - ❌ 07a-02 (Filesystem UI: tab, tree view, editor, file operations - NOT IMPLEMENTED)
+  - ❌ 07a-03 (OverlayFs mounts: File System Access API, mount dialog - NOT IMPLEMENTED)
+  - ⚠️ 07a-04 (Advanced tools: sed/awk edit - file_edit/file_stat not built)
+  - ⚠️ 07a-05 (Tests and docs: Partial - Phase 6 tests cover, no phase-specific README)
 
 ### Phase 7: Local Bridge Binary
 **Goal**: Unlock capabilities browsers can't do (file I/O, shell commands, git operations) via a local companion binary
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Tools and Webchat UI | 3/3 | Complete | 2026-03-01 |
 | 5. Live AI Provider Connection | 3/3 | Complete | 2026-03-02 |
 | 6. Real Agent Loop | 7/7 | Complete | 2026-03-04 |
-| 7a. just-bash Filesystem | 5/5 | Complete | 2026-03-05 |
+| 7a. just-bash Filesystem | 1/5 | Partial | 2026-03-05 |
 | 7. Local Bridge Binary | 0/0 | Planned |  |
 | 8. Polish & Release | 3/3 | Complete | 2026-03-05 |
 | 9. Social & Productivity | 0/5 | Planned |  |

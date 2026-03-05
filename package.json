@@ -49,5 +49,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "just-bash": "^2.11.15"
   }
 }
