@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WebClaw Custom Styles */
+@layer components {
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+  
+  /* Tab button styles */
+  .tab-btn {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Message bubble styles */
+  .message-bubble {
+    @apply rounded-lg px-4 py-2 max-w-full;
+  }
+  
+  .message-user {
+    @apply bg-indigo-600 text-white ml-auto;
+  }
+  
+  .message-agent {
+    @apply bg-gray-700 text-gray-100;
+  }
+  
+  /* Tool event styles */
+  .tool-event {
+    @apply text-xs border border-gray-600 rounded px-2 py-1 mb-1;
+  }
+  
+  .tool-event-success {
+    @apply bg-green-900/30 border-green-700 text-green-400;
+  }
+  
+  .tool-event-error {
+    @apply bg-red-900/30 border-red-700 text-red-400;
+  }
+  
+  .tool-event-pending {
+    @apply bg-yellow-900/30 border-yellow-700 text-yellow-400;
+  }
+  
+  /* Identity editor styles */
+  .identity-editor {
+    @apply font-mono text-sm leading-relaxed;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Text truncation utilities */
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

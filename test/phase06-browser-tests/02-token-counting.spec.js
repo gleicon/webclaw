@@ -4,14 +4,18 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { sendChatMessage, waitForElement } from './helpers.js';
+import { sendChatMessage, waitForElement, setupTestEnvironment } from './helpers.js';
 
 test.describe('Token Counting Display', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(() => {
-      return window.webclaw && typeof window.webclaw.jsFetch === 'function';
+      return window.webclaw && window.webclaw.keystore && window.webclaw.keystore.setKey;
     }, { timeout: 30000 });
+    
+    // Inject API keys
+    await setupTestEnvironment(page);
+    
     await page.waitForTimeout(2000);
   });
 

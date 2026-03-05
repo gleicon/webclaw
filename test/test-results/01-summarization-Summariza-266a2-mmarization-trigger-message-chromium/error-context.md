@@ -1,0 +1,69 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - button "Chat" [ref=e3] [cursor=pointer]
+    - button "Settings" [ref=e4] [cursor=pointer]
+    - button "Identity Files" [ref=e5] [cursor=pointer]
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]: Model
+        - combobox [ref=e10]:
+          - option "Anthropic / claude-sonnet-4-5" [selected]
+          - option "Anthropic / claude-opus-4"
+          - option "OpenAI / gpt-4o"
+          - option "OpenRouter / claude-sonnet-4-5"
+      - generic [ref=e11]:
+        - generic [ref=e13]: Welcome to WebClaw! Type a message to start chatting.
+        - generic [ref=e15]: Message 1 for logging test
+        - generic [ref=e19]: Stream error
+        - generic [ref=e21]: Stream error
+        - generic [ref=e23]: Message 2 for logging test
+        - generic [ref=e27]: Stream error
+        - generic [ref=e29]: Stream error
+        - generic [ref=e31]: Message 3 for logging test
+        - generic [ref=e35]: Stream error
+        - generic [ref=e37]: Stream error
+        - generic [ref=e39]: Message 4 for logging test
+        - generic [ref=e43]: Stream error
+        - generic [ref=e45]: Stream error
+        - generic [ref=e47]: Message 5 for logging test
+        - generic [ref=e51]: Stream error
+        - generic [ref=e53]: Stream error
+        - generic [ref=e55]: Message 6 for logging test
+        - generic [ref=e59]: Stream error
+        - generic [ref=e61]: Stream error
+        - generic [ref=e63]: Message 7 for logging test
+        - generic [ref=e67]: Stream error
+        - generic [ref=e69]: Stream error
+        - generic [ref=e71]: Message 8 for logging test
+        - generic [ref=e75]: Stream error
+        - generic [ref=e77]: Stream error
+        - generic [ref=e79]: Message 9 for logging test
+        - generic [ref=e83]: Stream error
+        - generic [ref=e85]: Stream error
+        - generic [ref=e87]: Message 10 for logging test
+        - generic [ref=e91]: Stream error
+        - generic [ref=e93]: Stream error
+        - generic [ref=e95]: Message 11 for logging test
+        - generic [ref=e99]: Stream error
+        - generic [ref=e101]: Stream error
+        - generic [ref=e103]: Message 12 for logging test
+        - generic [ref=e107]: Stream error
+        - generic [ref=e109]: Stream error
+        - generic [ref=e111]: Message 13 for logging test
+        - generic [ref=e115]: Stream error
+        - generic [ref=e117]: Stream error
+        - generic [ref=e119]: Message 14 for logging test
+        - generic [ref=e123]: Stream error
+        - generic [ref=e125]: Stream error
+        - generic [ref=e127]: Message 15 for logging test
+        - generic [ref=e131]: Stream error
+        - generic [ref=e133]: Stream error
+      - generic [ref=e135]:
+        - textbox "Type a message... (Enter to send, Shift+Enter for newline)" [ref=e136]
+        - button "Send" [ref=e137] [cursor=pointer]
+    - heading "Tool Activity" [level=2] [ref=e140]
+```

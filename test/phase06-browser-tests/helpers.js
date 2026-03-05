@@ -5,6 +5,9 @@
 
 import { expect } from '@playwright/test';
 
+// Export API key injection functions from test-helpers.js
+export { setupTestEnvironment, injectAPIKeys, loadTestAPIKeys } from '../test-helpers.js';
+
 /**
  * Wait for a specific console log message
  */

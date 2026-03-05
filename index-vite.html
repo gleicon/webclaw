@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebClaw</title>
+  
+  <!-- Tailwind CSS will be injected by Vite during build -->
+  <script type="module" src="/src/main.js"></script>
+  
+  <!-- WebClaw Core (loaded as module for Vite processing) -->
+  <script src="/static/wasm_exec.js"></script>
+  <script src="/static/webclaw-host.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+
+  <!-- Tab Bar -->
+  <nav class="flex border-b border-gray-700 bg-gray-900 shrink-0">
+    <button id="tab-chat"     class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400">Chat</button>
+    <button id="tab-settings" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Settings</button>
+    <button id="tab-identity" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Identity Files</button>
+  </nav>
+
+  <!-- Chat View: two-column layout -->
+  <div id="view-chat" class="flex flex-1 overflow-hidden">
+    <!-- Chat Column -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <!-- Model selector header -->
+      <div class="flex items-center gap-3 px-4 py-2 border-b border-gray-700 shrink-0">
+        <label class="text-xs text-gray-400">Model</label>
+        <select id="model-selector" class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
+          <option value="anthropic/claude-sonnet-4-5">Anthropic / claude-sonnet-4-5</option>
+          <option value="anthropic/claude-opus-4">Anthropic / claude-opus-4</option>
+          <option value="openai/gpt-4o">OpenAI / gpt-4o</option>
+          <option value="openrouter/anthropic/claude-sonnet-4-5">OpenRouter / claude-sonnet-4-5</option>
+        </select>
+        <span id="stream-status" class="text-xs text-gray-500 ml-auto"></span>
+      </div>
+      <!-- Message list -->
+      <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <!-- Input area -->
+      <div class="p-4 border-t border-gray-700 shrink-0">
+        <div class="flex gap-2 items-end">
+          <textarea id="user-input"
+            class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 resize-none focus:outline-none focus:border-indigo-500"
+            rows="3" placeholder="Type a message... (Enter to send, Shift+Enter for newline)"></textarea>
+          <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Send</button>
+          <button id="abort-btn" class="hidden bg-red-700 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Stop</button>
+        </div>
+      </div>
+    </div>
+    <!-- Tool Activity Panel — always visible on right -->
+    <div class="w-72 border-l border-gray-700 flex flex-col overflow-hidden shrink-0">
+      <div class="px-3 py-2 border-b border-gray-700 shrink-0">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tool Activity</h2>
+      </div>
+      <div id="tool-events" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Settings View (hidden) -->
+  <div id="view-settings" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
+    <section>
+      <h2 class="text-sm font-semibold text-gray-300 mb-3">API Keys</h2>
+      <div id="api-keys-container" class="space-y-3">
+        <!-- Built dynamically by buildSettingsUI() -->
+        <p class="text-xs text-gray-500">Loading API key forms...</p>
+      </div>
+    </section>
+    <section>
+      <h2 class="text-sm font-semibold text-gray-300 mb-3">Configuration</h2>
+      <div class="flex gap-3">
+        <button id="export-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Export Config</button>
+        <button id="import-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Import Config</button>
+        <input id="import-file-input" type="file" accept=".json" class="hidden">
+      </div>
+    </section>
+    <section>
+      <h2 class="text-sm font-semibold text-gray-300 mb-3">About</h2>
+      <p class="text-xs text-gray-500">
+        WebClaw v0.1.0 - Browser-native AI assistant<br>
+        Built with Go/WASM, TinyGo, and Tailwind CSS<br>
+        <a href="https://github.com/gleicon/webclaw" class="text-indigo-400 hover:underline" target="_blank">GitHub Repository</a>
+      </p>
+    </section>
+  </div>
+
+  <!-- Identity Files View (hidden) -->
+  <div id="view-identity" class="hidden flex-1 overflow-hidden">
+    <!-- File list (left) -->
+    <div id="identity-file-list" class="w-48 border-r border-gray-700 overflow-y-auto p-2 space-y-1 shrink-0"></div>
+    <!-- Editor (right) -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="px-4 py-2 border-b border-gray-700 flex items-center justify-between shrink-0">
+        <span id="identity-filename" class="text-sm text-gray-400">Select a file</span>
+        <button id="identity-save-btn" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1 text-xs">Save</button>
+      </div>
+      <textarea id="identity-editor"
+        class="flex-1 bg-gray-900 text-gray-100 font-mono text-sm p-4 resize-none focus:outline-none"
+        placeholder="Select a file to edit..."></textarea>
+    </div>
+  </div>
+
+  <!-- WASM File Input (used by webclaw-host.js) -->
+  <input type="file" id="wasm-file-input" class="hidden" accept=".wasm,.wasm.br">
+
+  <!-- Demo Mode Indicator -->
+  <div id="demo-mode-indicator" class="hidden fixed bottom-4 right-4 bg-yellow-900/90 text-yellow-200 px-4 py-2 rounded-lg text-xs border border-yellow-700 shadow-lg z-50">
+    ⚠️ Demo Mode - Enter API key in Settings to enable AI
+  </div>
+
+  <!-- Error Toast Container -->
+  <div id="error-toast-container" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"></div>
+
+  <script>
+    (function() {
+      'use strict';
+      
+      // Initialize WebClaw when DOM is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('[WebClaw] DOM ready, initializing...');
+        
+        // The webclaw-host.js script will handle the rest of the initialization
+        // This ensures proper loading order
+      });
+    })();
+  </script>
+</body>
+</html>

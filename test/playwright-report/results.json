@@ -1,0 +1,1327 @@
+{
+  "config": {
+    "configFile": "/Users/gleicon/code/go/src/github.com/gleicon/webclaw/test/playwright.config.mjs",
+    "rootDir": "/Users/gleicon/code/go/src/github.com/gleicon/webclaw/test/phase06-browser-tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/gleicon/code/go/src/github.com/gleicon/webclaw/test/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/gleicon/code/go/src/github.com/gleicon/webclaw/test/phase06-browser-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 1,
+    "webServer": {
+      "command": "cd .. && go run ./cmd/devserver/",
+      "url": "http://localhost:8080",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "01-summarization.spec.js",
+      "file": "01-summarization.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Summarization Threshold",
+          "file": "01-summarization.spec.js",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should trigger summarization after 20 messages",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "939421dd6f89b056f19d-233819329fae09dddeb3",
+              "file": "01-summarization.spec.js",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "should log summarization trigger message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "939421dd6f89b056f19d-fd9110abe594bca8de4c",
+              "file": "01-summarization.spec.js",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "should maintain message context after summarization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "939421dd6f89b056f19d-42c232483ea78b0a1754",
+              "file": "01-summarization.spec.js",
+              "line": 113,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "02-token-counting.spec.js",
+      "file": "02-token-counting.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Token Counting Display",
+          "file": "02-token-counting.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display token count in UI after sending message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "991cbabefc3efbd7a534-f1c7f5082a77c1429272",
+              "file": "02-token-counting.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should show token metrics in console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "991cbabefc3efbd7a534-07e08fa83bf6754e7dff",
+              "file": "02-token-counting.spec.js",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "should track input vs output tokens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "991cbabefc3efbd7a534-5bf9a358fcafef7bae3c",
+              "file": "02-token-counting.spec.js",
+              "line": 65,
+              "column": 3
+            },
+            {
+              "title": "should update token count display dynamically",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "991cbabefc3efbd7a534-abb0f110e77d7e6b45e7",
+              "file": "02-token-counting.spec.js",
+              "line": 92,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "03-memory-flush.spec.js",
+      "file": "03-memory-flush.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Memory Flush",
+          "file": "03-memory-flush.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should create MEMORY.md entry in IndexedDB",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "13b0ee5f2f98e15665ca-a21dac2074d48cabf421",
+              "file": "03-memory-flush.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should log memory flush operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "13b0ee5f2f98e15665ca-240f0b2af4c072976c03",
+              "file": "03-memory-flush.spec.js",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "should persist data in IndexedDB across operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "13b0ee5f2f98e15665ca-d0bb77c43a36c9b328a7",
+              "file": "03-memory-flush.spec.js",
+              "line": 96,
+              "column": 3
+            },
+            {
+              "title": "should handle IndexedDB quota checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "13b0ee5f2f98e15665ca-3ce5728971b902df302a",
+              "file": "03-memory-flush.spec.js",
+              "line": 155,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "04-tool-registry.spec.js",
+      "file": "04-tool-registry.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Tool Registry",
+          "file": "04-tool-registry.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log tool registration on startup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a3fba6b3f215708c284e-1175c85c185711743fb3",
+              "file": "04-tool-registry.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should display tool activity in side panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a3fba6b3f215708c284e-85d2a6621f0e5ef954f9",
+              "file": "04-tool-registry.spec.js",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "should log tool_use events",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a3fba6b3f215708c284e-f82f4adffc503eeb1df8",
+              "file": "04-tool-registry.spec.js",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "should show tool names in console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a3fba6b3f215708c284e-8450ae55650c740a7d55",
+              "file": "04-tool-registry.spec.js",
+              "line": 102,
+              "column": 3
+            },
+            {
+              "title": "should trigger tool_use for memory operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a3fba6b3f215708c284e-7f54ea93a07b75005104",
+              "file": "04-tool-registry.spec.js",
+              "line": 121,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "05-memory-search.spec.js",
+      "file": "05-memory-search.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Memory Search",
+          "file": "05-memory-search.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should search memory and return results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4fa53c125f8557e1c3f6-c198e89809f9b7b52b1f",
+              "file": "05-memory-search.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should log memory search operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4fa53c125f8557e1c3f6-5a11511bcbe12a11c3e7",
+              "file": "05-memory-search.spec.js",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "should handle memory search with no results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4fa53c125f8557e1c3f6-4185efbadd7e3fcc25ca",
+              "file": "05-memory-search.spec.js",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "should display memory search in tool activity panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4fa53c125f8557e1c3f6-84d0afb60773cbd0df89",
+              "file": "05-memory-search.spec.js",
+              "line": 86,
+              "column": 3
+            },
+            {
+              "title": "should support semantic memory search",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4fa53c125f8557e1c3f6-d6a21641a40b44944ad4",
+              "file": "05-memory-search.spec.js",
+              "line": 103,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "06-provider-failover.spec.js",
+      "file": "06-provider-failover.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Provider Failover",
+          "file": "06-provider-failover.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should initialize primary provider on startup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b2d104ca4fd8d5df4c00-12b3fd2c7f8f83c6a0f1",
+              "file": "06-provider-failover.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should log provider selection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b2d104ca4fd8d5df4c00-a9573665249e3ecd6e7b",
+              "file": "06-provider-failover.spec.js",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "should display selected model in UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b2d104ca4fd8d5df4c00-df941bc3f592a1d38c3b",
+              "file": "06-provider-failover.spec.js",
+              "line": 78,
+              "column": 3
+            },
+            {
+              "title": "should handle model switching",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b2d104ca4fd8d5df4c00-0bef06f9597a1edb0c30",
+              "file": "06-provider-failover.spec.js",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "should show provider status in console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b2d104ca4fd8d5df4c00-8e8b01eeb71aafd5ac2e",
+              "file": "06-provider-failover.spec.js",
+              "line": 109,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "07-fail-fast.spec.js",
+      "file": "07-fail-fast.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Fail-Fast Error Handling",
+          "file": "07-fail-fast.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log errors to console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "739d3699e377d01595e1-372a5f3f77fd8d1d2aae",
+              "file": "07-fail-fast.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should handle network errors gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "739d3699e377d01595e1-e9f71033a852034f67cd",
+              "file": "07-fail-fast.spec.js",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "should show error messages in UI when operations fail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "739d3699e377d01595e1-0378ed4fbd65f3ce6165",
+              "file": "07-fail-fast.spec.js",
+              "line": 73,
+              "column": 3
+            },
+            {
+              "title": "should not crash on invalid input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "739d3699e377d01595e1-464cee224e44d3769bef",
+              "file": "07-fail-fast.spec.js",
+              "line": 87,
+              "column": 3
+            },
+            {
+              "title": "should log fail-fast behavior",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "739d3699e377d01595e1-645a1b334621699fea93",
+              "file": "07-fail-fast.spec.js",
+              "line": 112,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "08-storage-hygiene.spec.js",
+      "file": "08-storage-hygiene.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Storage Hygiene",
+          "file": "08-storage-hygiene.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should report storage quota via browser API",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-1e0be26f8fc92972490d",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should have access to IndexedDB",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-e58bde109ef318cd604a",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "should list IndexedDB databases",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-4a4ab55a40804777943c",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "should handle storage persistence request",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-a8307267e5c33b90645c",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "should allow opening IndexedDB connections",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-1b6e8aea1f73ba038cf3",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 83,
+              "column": 3
+            },
+            {
+              "title": "should clean up test databases",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-4798018451b55ddd47bc",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "should monitor storage growth",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7c6b99f1366e1e14e8fe-0c6a7f567b0684b8dea4",
+              "file": "08-storage-hygiene.spec.js",
+              "line": 156,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "09-smoke-test.spec.js",
+      "file": "09-smoke-test.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Smoke Test",
+          "file": "09-smoke-test.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should show all components ready on startup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86120d603a429c02f2b7-a8846f2ea2b2cd191680",
+              "file": "09-smoke-test.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should have all UI components visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86120d603a429c02f2b7-16ffe21bc08220c57332",
+              "file": "09-smoke-test.spec.js",
+              "line": 64,
+              "column": 3
+            },
+            {
+              "title": "should have working tab navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86120d603a429c02f2b7-f8c64698c0ef6a581cf5",
+              "file": "09-smoke-test.spec.js",
+              "line": 87,
+              "column": 3
+            },
+            {
+              "title": "should load without JavaScript errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86120d603a429c02f2b7-feeb667eb3118b5b31b0",
+              "file": "09-smoke-test.spec.js",
+              "line": 110,
+              "column": 3
+            },
+            {
+              "title": "should have WASM binary loaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "86120d603a429c02f2b7-b4e8c9f798d100a4a2b2",
+              "file": "09-smoke-test.spec.js",
+              "line": 131,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10-health-tracking.spec.js",
+      "file": "10-health-tracking.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Health Tracking",
+          "file": "10-health-tracking.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log health status on startup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "828ade84c59dda83ee4d-7c62fa231705ac2d4837",
+              "file": "10-health-tracking.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should track system health during operation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "828ade84c59dda83ee4d-7ff9244d1bd2d804f632",
+              "file": "10-health-tracking.spec.js",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "should show component health in logs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "828ade84c59dda83ee4d-48b59dca08dd15369d94",
+              "file": "10-health-tracking.spec.js",
+              "line": 78,
+              "column": 3
+            },
+            {
+              "title": "should track memory health",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "828ade84c59dda83ee4d-0fe7407701194e32a5a2",
+              "file": "10-health-tracking.spec.js",
+              "line": 105,
+              "column": 3
+            },
+            {
+              "title": "should report health metrics",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "828ade84c59dda83ee4d-09b3308c102b724cd0a1",
+              "file": "10-health-tracking.spec.js",
+              "line": 126,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "11-async-embedder.spec.js",
+      "file": "11-async-embedder.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Async Embedder",
+          "file": "11-async-embedder.spec.js",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log embedder initialization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f070ccfdac67a9ed625e-a1ab88f63e13d2e19718",
+              "file": "11-async-embedder.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should initialize memory system asynchronously",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f070ccfdac67a9ed625e-0d6f353beb9758294831",
+              "file": "11-async-embedder.spec.js",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "should log vector store operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f070ccfdac67a9ed625e-94a6ecf942eca6467eea",
+              "file": "11-async-embedder.spec.js",
+              "line": 99,
+              "column": 3
+            },
+            {
+              "title": "should support embedding generation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f070ccfdac67a9ed625e-56b4c5718783f25eae7e",
+              "file": "11-async-embedder.spec.js",
+              "line": 124,
+              "column": 3
+            },
+            {
+              "title": "should handle async memory loading",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f070ccfdac67a9ed625e-929a7da1c193f563e3c3",
+              "file": "11-async-embedder.spec.js",
+              "line": 151,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-05T18:39:04.704Z",
+    "duration": 147.37400000000002,
+    "expected": 0,
+    "skipped": 53,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

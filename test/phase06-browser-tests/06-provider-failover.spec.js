@@ -4,14 +4,18 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { sendChatMessage } from './helpers.js';
+import { sendChatMessage, setupTestEnvironment } from './helpers.js';
 
 test.describe('Provider Failover', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(() => {
-      return window.webclaw && typeof window.webclaw.jsFetch === 'function';
+      return window.webclaw && window.webclaw.keystore && window.webclaw.keystore.setKey;
     }, { timeout: 30000 });
+    
+    // Inject API keys
+    await setupTestEnvironment(page);
+    
     await page.waitForTimeout(2000);
   });
 
