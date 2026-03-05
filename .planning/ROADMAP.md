@@ -117,15 +117,23 @@ Plans:
 
 ### Phase 8: Polish & Release
 **Goal**: Production-ready release with documentation, distribution, and stability improvements
-**Depends on**: Phase 7 (or can skip to after Phase 6)
+**Depends on**: Phase 6 (can run parallel to Phase 7a)
 **Requirements**: DOCS-01, DIST-01, STABLE-01, PERF-01
 **Success Criteria** (what must be TRUE):
   1. README with installation and usage instructions
-  2. Static site deployed (GitHub Pages/Netlify) for immediate use
-  3. Binary releases for bridge (macOS/Linux ARM64/x86_64)
-  4. Conversation export/import (save/load chat history)
-  5. Performance: WASM <2s load time, streaming <1s first token
-  6. Error telemetry and graceful degradation
+  2. Static site bundle with zero external dependencies (npm, GitHub releases, Docker)
+  3. Multi-file bundle (~920KB) for web server hosting
+  4. Single-file bundle (~1MB) for folder distribution
+  5. Ultimate standalone HTML (~1.3MB) for email/sharing
+  6. CLI command `npx webclaw-static serve` works without installation
+  7. Binary releases for bridge (macOS/Linux ARM64/x86_64)
+  8. Conversation export/import (save/load chat history)
+  9. Performance: WASM <2s load time, streaming <1s first token
+  10. Error telemetry and graceful degradation
+**Plans**:
+  - 08-01 (Vite bundler setup: multi-file bundle with WASM, Tailwind compilation)
+  - 08-02 (Single-file mode: inline JS/CSS/WASM, Blob Worker, ultimate standalone)
+  - 08-03 (Distribution: npm package, CLI, GitHub Actions, Docker)
 
 ## Progress
 
@@ -142,4 +150,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 6. Real Agent Loop | 7/7 | Complete | 2026-03-04 |
 | 7a. just-bash Filesystem | 0/5 | Planned |  |
 | 7. Local Bridge Binary | 0/0 | Planned |  |
-| 8. Polish & Release | 0/0 | Planned |  |
+| 8. Polish & Release | 0/3 | Planned |  |
