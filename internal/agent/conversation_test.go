@@ -1,5 +1,3 @@
-//go:build js && wasm
-
 package agent
 
 import (
@@ -7,12 +5,14 @@ import (
 )
 
 func TestEstimateTokens(t *testing.T) {
-	// Test chars/4 heuristic
-	if got := estimateTokens("abcd"); got != 1 {
-		t.Errorf("estimateTokens(\"abcd\") = %d, want 1", got)
+	// Test hybrid word-length algorithm (not chars/4)
+	// "abcd" = 4 chars = 1 word (4 chars) = 2 tokens (medium word)
+	if got := estimateTokens("abcd"); got != 2 {
+		t.Errorf("estimateTokens(\"abcd\") = %d, want 2 (medium word)", got)
 	}
+	// "abcdefgh" = 8 chars = 1 word (8 chars) = 2 tokens (long word)
 	if got := estimateTokens("abcdefgh"); got != 2 {
-		t.Errorf("estimateTokens(\"abcdefgh\") = %d, want 2", got)
+		t.Errorf("estimateTokens(\"abcdefgh\") = %d, want 2 (long word)", got)
 	}
 	if got := estimateTokens(""); got != 0 {
 		t.Errorf("estimateTokens(\"\") = %d, want 0", got)
@@ -39,28 +39,32 @@ func TestConversationNeedsSummarization(t *testing.T) {
 
 func TestConversationTokenThreshold(t *testing.T) {
 	conv := NewConversation("test-2")
-	conv.SetThresholds(100, 0.75, 1000) // 75% of 1000 = 750 tokens
+	// Set high message threshold so we only test token threshold
+	conv.SetThresholds(200, 0.75, 1000) // 75% of 1000 = 750 tokens, max 200 messages
 
-	// Add messages that total ~740 tokens (just under 75% threshold)
-	// Each "test" is 4 chars = 1 token
-	// 740 tokens * 4 = 2960 chars
-	content := make([]byte, 2960)
-	for i := range content {
-		content[i] = 'a'
+	// Add messages that total ~700 tokens (under 75% threshold)
+	// With hybrid algorithm: "a" (1 char) = 1 short word = 1 token
+	// "a b c" = 3 short words = 3 tokens + 4 overhead = 7 per message
+	// 100 messages × 7 tokens = 700 tokens (~70%)
+	for i := 0; i < 100; i++ {
+		conv.AddMessage(RoleUser, "a b c")
 	}
-	conv.AddMessage(RoleUser, string(content))
 
-	// 740 tokens is 74%, should NOT trigger
+	// 100 × 7 = 700 tokens is 70%, should NOT trigger
 	if conv.NeedsSummarization() {
-		t.Errorf("NeedsSummarization() = true for 74%% tokens, want false")
+		_, tokens, pct := conv.GetContextUsage()
+		t.Errorf("NeedsSummarization() = true for ~70%% tokens (actual: %d tokens, %.1f%%), want false", tokens, pct*100)
 	}
 
-	// Add more to push over 75%
-	conv.AddMessage(RoleUser, string(make([]byte, 100))) // +25 tokens
+	// Add 10 more messages: 10 × 7 = 70, total 770 (77%)
+	for i := 0; i < 10; i++ {
+		conv.AddMessage(RoleUser, "a b c")
+	}
 
-	// Now at ~765 tokens = 76.5%, should trigger
+	// Now at 770 tokens = 77%, should trigger
 	if !conv.NeedsSummarization() {
-		t.Errorf("NeedsSummarization() = false for 76%%+ tokens, want true")
+		_, tokens, pct := conv.GetContextUsage()
+		t.Errorf("NeedsSummarization() = false for 77%%+ tokens (actual: %d tokens, %.1f%%), want true", tokens, pct*100)
 	}
 }
 
@@ -68,20 +72,23 @@ func TestGetContextUsage(t *testing.T) {
 	conv := NewConversation("test-3")
 	conv.SetThresholds(20, 0.75, 1000)
 
-	// Add 5 messages, each 40 chars = 10 tokens, total 50 tokens
+	// Add 5 messages, each with 10 words of 4 chars each
+	// Each word "0123" = 4 chars (medium word) = 2 tokens
+	// 10 words × 2 tokens = 20 tokens content + 4 overhead = 24 per message
+	// 5 messages = 120 tokens total (12%)
 	for i := 0; i < 5; i++ {
-		conv.AddMessage(RoleUser, "0123456789012345678901234567890123456789") // 40 chars
+		conv.AddMessage(RoleUser, "0123 0123 0123 0123 0123 0123 0123 0123 0123 0123")
 	}
 
 	messages, tokens, pct := conv.GetContextUsage()
 	if messages != 5 {
 		t.Errorf("GetContextUsage() messages = %d, want 5", messages)
 	}
-	if tokens != 50 {
-		t.Errorf("GetContextUsage() tokens = %d, want 50", tokens)
+	if tokens != 120 {
+		t.Errorf("GetContextUsage() tokens = %d, want 120", tokens)
 	}
-	if pct != 0.05 {
-		t.Errorf("GetContextUsage() pct = %f, want 0.05", pct)
+	if pct != 0.12 {
+		t.Errorf("GetContextUsage() pct = %f, want 0.12", pct)
 	}
 }
 

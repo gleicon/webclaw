@@ -67,8 +67,8 @@ func TestEstimateMessageTokensAccuracy(t *testing.T) {
 		minTokens int
 	}{
 		{"user", "Hello", 5},              // 4 overhead + ~1 for content
-		{"system", "You are helpful", 10}, // 6 overhead + ~4 for content
-		{"assistant", "Let me help", 10},  // 4 overhead + ~6 for content
+		{"system", "You are helpful", 10}, // 6 overhead + ~6 for content
+		{"assistant", "Let me help", 8},   // 4 overhead + ~6 for content (3 words × 2)
 	}
 
 	for _, tt := range tests {

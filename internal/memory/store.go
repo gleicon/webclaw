@@ -33,6 +33,10 @@ type Store interface {
 
 	// EvictIfNeeded removes memories if quota is exceeded.
 	EvictIfNeeded() error
+
+	// SetEmbedder sets or updates the embedder for generating embeddings.
+	// PHASE 6-6: Allows async enablement of embeddings after initialization.
+	SetEmbedder(embedder Embedder)
 }
 
 // memoryStore implements Store using IndexedDB.

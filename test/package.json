@@ -4,10 +4,17 @@
   "description": "Automated browser testing for WebClaw WASM",
   "type": "module",
   "scripts": {
-    "test": "node test-wasm.js"
+    "test": "node test-wasm.js",
+    "test:phase06": "node run-phase06-e2e.js",
+    "test:phase06:headed": "HEADLESS=false node run-phase06-e2e.js",
+    "test:phase06:ui": "npx playwright test phase06-browser-tests --ui",
+    "test:phase06:debug": "npx playwright test phase06-browser-tests --debug",
+    "playwright:install": "npx playwright install chromium",
+    "playwright:codegen": "npx playwright codegen http://localhost:8080"
   },
   "devDependencies": {
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^21.0.0",
+    "@playwright/test": "^1.41.0"
   },
   "dependencies": {
     "puppeteer-core": "^24.37.5"

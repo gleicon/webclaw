@@ -135,7 +135,7 @@ func TestFullAgentLoop_TokenEstimateAccuracy(t *testing.T) {
 		},
 		{
 			name:      "code block",
-			text:      "\`\`\`go\nfmt.Println(\"hello\")\n\`\`\`",
+			text:      "```go\nfmt.Println(\"hello\")\n```",
 			minTokens: 8,
 			maxTokens: 20,
 		},
