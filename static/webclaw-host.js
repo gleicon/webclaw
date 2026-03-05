@@ -36,6 +36,160 @@
         TOOL_EVENT: 'TOOL_EVENT'
     };
     
+    // OAuth popup management
+    const oauthState = {
+        pending: new Map(), // state -> { resolve, reject, timeout }
+        popupCheckInterval: null
+    };
+    
+    // Open OAuth popup and wait for callback
+    async function openOAuthPopup(authURL, provider, state) {
+        return new Promise((resolve, reject) => {
+            // Popup configuration
+            const width = 500;
+            const height = 600;
+            const left = (window.screen.width / 2) - (width / 2);
+            const top = (window.screen.height / 2) - (height / 2);
+            
+            const popupFeatures = `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=yes,status=no`;
+            
+            // Open popup
+            const popup = window.open(authURL, 'oauth', popupFeatures);
+            
+            // Check for popup blocker
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                reject(new Error('Popup blocked. Please allow popups for this site.'));
+                return;
+            }
+            
+            // Set up timeout
+            const timeout = setTimeout(() => {
+                cleanup();
+                popup.close();
+                reject(new Error('OAuth timed out after 2 minutes'));
+            }, 2 * 60 * 1000);
+            
+            // Store pending request
+            oauthState.pending.set(state, { resolve, reject, timeout, popup });
+            
+            // Listen for postMessage from popup
+            function handleMessage(event) {
+                // Verify the message is from our popup (check origin or data structure)
+                if (event.data && event.data.type === 'oauth-callback') {
+                    const data = event.data;
+                    
+                    // Verify state matches
+                    if (data.state !== state) {
+                        console.warn('[oauth] State mismatch:', data.state, '!==', state);
+                        return;
+                    }
+                    
+                    cleanup();
+                    popup.close();
+                    
+                    if (data.error) {
+                        reject(new Error(`${data.error}: ${data.error_description || 'Unknown error'}`));
+                    } else {
+                        resolve({
+                            code: data.code,
+                            state: data.state,
+                            provider: provider
+                        });
+                    }
+                }
+            }
+            
+            // Check if popup was closed manually
+            function checkPopup() {
+                if (popup.closed) {
+                    cleanup();
+                    reject(new Error('OAuth popup was closed'));
+                }
+            }
+            
+            // Cleanup function
+            function cleanup() {
+                window.removeEventListener('message', handleMessage);
+                if (oauthState.pending.has(state)) {
+                    const pending = oauthState.pending.get(state);
+                    clearTimeout(pending.timeout);
+                    oauthState.pending.delete(state);
+                }
+            }
+            
+            // Set up listeners
+            window.addEventListener('message', handleMessage);
+            
+            // Check popup status every 500ms
+            const checkInterval = setInterval(() => {
+                if (!oauthState.pending.has(state)) {
+                    clearInterval(checkInterval);
+                    return;
+                }
+                checkPopup();
+            }, 500);
+            
+            // Store cleanup function for timeout
+            oauthState.pending.get(state).cleanup = () => {
+                clearInterval(checkInterval);
+                clearTimeout(timeout);
+            };
+        });
+    }
+    
+    // Handle OAuth callback data (called from popup)
+    function handleOAuthCallback(data) {
+        console.log('[oauth] Received callback:', data);
+        
+        // Dispatch event for Go to receive
+        const event = new CustomEvent('webclaw:oauth-callback', { detail: data });
+        window.dispatchEvent(event);
+    }
+    
+    // Exchange authorization code for access token
+    async function exchangeCodeForToken(provider, code, codeVerifier, config) {
+        const { token_url, client_id } = config;
+        
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: 'about:blank',
+            code_verifier: codeVerifier,
+            client_id: client_id
+        });
+        
+        const response = await fetch(token_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: params.toString()
+        });
+        
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Token exchange failed: ${response.status} ${error}`);
+        }
+        
+        return await response.json();
+    }
+    
+    // Register OAuth bridge on window.webclaw
+    function registerOAuthBridge() {
+        if (!window.webclaw) {
+            window.webclaw = {};
+        }
+        
+        window.webclaw.oauth = {
+            openPopup: openOAuthPopup,
+            handleCallback: handleOAuthCallback,
+            exchangeCode: exchangeCodeForToken
+        };
+        
+        console.log('[host] OAuth bridge registered');
+    }
+    
     // Initialize main thread WASM (for config, identity, crypto)
     async function initMainThreadWASM() {
         const go = new Go();
@@ -281,6 +435,9 @@
             
             // Setup file handling
             setupFileHandling();
+            
+            // Register OAuth bridge
+            registerOAuthBridge();
             
             console.log('[host] WebClaw initialized successfully');
             console.log('[host] Available APIs:', Object.keys(window.webclaw || {}));
