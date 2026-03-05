@@ -450,3 +450,6 @@ func (mms *mockMemoryStore) CheckQuota() (*memory.QuotaInfo, error) {
 	return &memory.QuotaInfo{Usage: 0, Quota: 1000000, Percent: 0}, nil
 }
 func (mms *mockMemoryStore) EvictIfNeeded() error { return nil }
+func (mms *mockMemoryStore) SetEmbedder(embedder memory.Embedder) {
+	// Mock implementation - no-op for tests
+}
