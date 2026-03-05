@@ -3,3 +3,5 @@ dist/webclaw.wasm.br
 static/wasm_exec.js
 test/node_modules/
 webclaw
+.env.test
+.env.test.template
