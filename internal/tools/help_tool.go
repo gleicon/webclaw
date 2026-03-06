@@ -79,15 +79,28 @@ func executeHelp(ctx context.Context, params map[string]interface{}, registry *R
 	tools := registry.GetAll()
 
 	var helpText strings.Builder
-	helpText.WriteString("# Available Tools\n\n")
-	helpText.WriteString(fmt.Sprintf("WebClaw has %d tools available:\n\n", len(tools)))
+	helpText.WriteString("# 🛠️ Available Tools\n\n")
+	helpText.WriteString(fmt.Sprintf("WebClaw has **%d tools** available to help you:\n\n", len(tools)))
+
+	helpText.WriteString("## Quick Start\n\n")
+	helpText.WriteString("🆕 **New to WebClaw?** Here are some things you can try:\n\n")
+	helpText.WriteString("- **Send a tweet:** `twitter_post text=\"Hello world!\"`\n")
+	helpText.WriteString("- **Check your inbox:** `gmail_list count=5`\n")
+	helpText.WriteString("- **Search the web:** `web_search query=\"latest AI news\"`\n")
+	helpText.WriteString("- **Manage files:** `dir_list path=\"/workspace\"`\n")
+	helpText.WriteString("- **Create a calendar event:** `calendar_create title=\"Meeting\" start_time=\"tomorrow 2pm\"`\n\n")
+	helpText.WriteString("📋 **Note:** Some tools require connecting accounts in Settings first.\n\n")
 
 	// Group tools by category
 	categories := map[string][]string{
-		"Web & Search":    {},
-		"File Operations": {},
-		"Memory":          {},
-		"System":          {},
+		"🌐 Web & Search":     {},
+		"📁 File Operations":  {},
+		"💭 Memory":           {},
+		"🐦 Social Media":     {},
+		"📧 Email & Calendar": {},
+		"🔧 Developer Tools":  {},
+		"📝 Knowledge Base":   {},
+		"⚙️ System":          {},
 	}
 
 	for name, tool := range tools {
@@ -109,7 +122,15 @@ func executeHelp(ctx context.Context, params map[string]interface{}, registry *R
 	helpText.WriteString("To get detailed help for a specific tool, use:\n")
 	helpText.WriteString("```\nhelp tool=\"<tool_name>\"\n```\n\n")
 	helpText.WriteString("For verbose output with full schema:\n")
-	helpText.WriteString("```\nhelp tool=\"<tool_name>\" verbose=true\n```\n")
+	helpText.WriteString("```\nhelp tool=\"<tool_name>\" verbose=true\n```\n\n")
+	helpText.WriteString("## Full Documentation\n\n")
+	helpText.WriteString("For complete documentation with examples, open the help page:\n\n")
+	helpText.WriteString("**Click the 'View Full Docs' button in the welcome message, or open `static/help.html` in your browser.**\n\n")
+	helpText.WriteString("The documentation includes:\n")
+	helpText.WriteString("- Complete tool reference\n")
+	helpText.WriteString("- OAuth setup instructions\n")
+	helpText.WriteString("- Usage examples for all 23+ tools\n")
+	helpText.WriteString("- Search syntax guides\n\n")
 
 	content := helpText.String()
 	return &ToolResult{
@@ -153,29 +174,74 @@ func formatSchema(schema map[string]interface{}, indent int) string {
 func categorizeTool(name string) string {
 	switch name {
 	case "web_fetch", "web_search":
-		return "Web & Search"
+		return "🌐 Web & Search"
 	case "file_read", "file_write", "dir_list", "file_search":
-		return "File Operations"
+		return "📁 File Operations"
 	case "memory_store", "memory_search":
-		return "Memory"
+		return "💭 Memory"
+	// Social Media
+	case "twitter_post", "twitter_reply", "twitter_search", "twitter_timeline":
+		return "🐦 Social Media"
+	// Email & Calendar
+	case "gmail_send", "gmail_list", "gmail_read", "gmail_search":
+		return "📧 Email & Calendar"
+	case "calendar_list", "calendar_create", "calendar_delete", "calendar_today":
+		return "📧 Email & Calendar"
+	// Developer Tools
+	case "github_list_issues", "github_list_prs", "github_create_issue", "github_search_code", "github_comment":
+		return "🔧 Developer Tools"
+	// Knowledge Base
+	case "notion_list_databases", "notion_query", "notion_read", "notion_update", "notion_search":
+		return "📝 Knowledge Base"
 	case "help":
-		return "System"
+		return "⚙️ System"
 	default:
-		return "System"
+		return "⚙️ System"
 	}
 }
 
 func getUsageExample(toolName string) string {
 	examples := map[string]string{
-		"web_fetch":     `web_fetch url="https://example.com"`,
-		"web_search":    `web_search query="latest AI developments"`,
-		"file_read":     `file_read path="/workspace/main.go"`,
-		"file_write":    `file_write path="/workspace/README.md" content="# My Project"`,
-		"dir_list":      `dir_list path="/workspace" recursive=true`,
-		"file_search":   `file_search pattern="TODO" path="/workspace" recursive=true`,
+		// Web & Search
+		"web_fetch":  `web_fetch url="https://example.com"`,
+		"web_search": `web_search query="latest AI developments"`,
+		// File Operations
+		"file_read":   `file_read path="/workspace/main.go"`,
+		"file_write":  `file_write path="/workspace/README.md" content="# My Project"`,
+		"dir_list":    `dir_list path="/workspace" recursive=true`,
+		"file_search": `file_search pattern="TODO" path="/workspace" recursive=true`,
+		// Memory
 		"memory_store":  `memory_store content="Important fact to remember" tags=["important"]`,
 		"memory_search": `memory_search query="important fact" limit=5`,
-		"help":          `help tool="file_read" verbose=true`,
+		// Social Media
+		"twitter_post":     `twitter_post text="Hello from WebClaw! 🤖"`,
+		"twitter_reply":    `twitter_reply tweet_id="123456789" text="Great point!"`,
+		"twitter_search":   `twitter_search query="#AI news" count=10`,
+		"twitter_timeline": `twitter_timeline count=20`,
+		// Email
+		"gmail_send":   `gmail_send to="friend@example.com" subject="Hello" body="How are you?"`,
+		"gmail_list":   `gmail_list count=10 label="INBOX"`,
+		"gmail_read":   `gmail_read message_id="abc123"`,
+		"gmail_search": `gmail_search query="from:boss@company.com subject:urgent" count=5`,
+		// Calendar
+		"calendar_list":   `calendar_list days=7 count=10`,
+		"calendar_create": `calendar_create title="Team Meeting" start_time="2024-01-15T14:00:00Z" duration_minutes=60`,
+		"calendar_delete": `calendar_delete event_id="event_123"`,
+		"calendar_today":  `calendar_today`,
+		// Developer Tools
+		"github_list_issues":  `github_list_issues state="open" count=20`,
+		"github_list_prs":     `github_list_prs owner="gleicon" repo="webclaw" state="open"`,
+		"github_create_issue": `github_create_issue owner="gleicon" repo="webclaw" title="Bug: Login fails" body="Steps to reproduce..."`,
+		"github_search_code":  `github_search_code query="repo:gleicon/webclaw TODO"`,
+		"github_comment":      `github_comment owner="gleicon" repo="webclaw" number=42 body="LGTM! 🚀"`,
+		// Knowledge Base
+		"notion_list_databases": `notion_list_databases`,
+		"notion_query":          `notion_query database_id="Tasks" filter_property="Status" filter_value="Not Started"`,
+		"notion_read":           `notion_read page_id="abc123"`,
+		"notion_update":         `notion_update page_id="abc123" properties={"Status": "Done"}`,
+		"notion_search":         `notion_search query="project roadmap"`,
+		// System
+		"help": `help tool="twitter_post" verbose=true`,
 	}
 
 	if example, ok := examples[toolName]; ok {

@@ -18,6 +18,9 @@
     <button id="tab-chat"     class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400">Chat</button>
     <button id="tab-settings" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Settings</button>
     <button id="tab-identity" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Identity Files</button>
+    <button id="help-docs-btn" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-indigo-300 ml-auto flex items-center gap-2" onclick="window.loadHelpDocs()">
+      <span>📚</span> Help
+    </button>
   </nav>
 
   <!-- Chat View: two-column layout -->
@@ -1523,16 +1526,56 @@ Type <code>/help tool="file_read"</code> for tool-specific help.`;
 
     // Add welcome message if empty
     if (messages.children.length === 0) {
-      const welcomeWrapper = document.createElement('div');
-      welcomeWrapper.className = 'flex justify-start';
-
-      const welcomeBubble = document.createElement('div');
-      welcomeBubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
-      welcomeBubble.textContent = 'Welcome to WebClaw! Type a message to start chatting.';
-
-      welcomeWrapper.appendChild(welcomeBubble);
-      messages.appendChild(welcomeWrapper);
+      loadWelcomeMessage();
     }
+    
+    // Function to load welcome message from external HTML
+    function loadWelcomeMessage() {
+      fetch('static/welcome.html')
+        .then(response => response.text())
+        .then(html => {
+          // Create a temporary container to parse the HTML
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = html;
+          
+          // Extract the welcome message div
+          const welcomeContent = tempDiv.querySelector('.welcome-message');
+          if (welcomeContent) {
+            messages.appendChild(welcomeContent);
+            
+            // Execute any scripts in the welcome content
+            const scripts = welcomeContent.querySelectorAll('script');
+            scripts.forEach(script => {
+              const newScript = document.createElement('script');
+              if (script.src) {
+                newScript.src = script.src;
+              } else {
+                newScript.textContent = script.textContent;
+              }
+              document.head.appendChild(newScript);
+            });
+            
+            // Scroll to show welcome message
+            messages.scrollTop = messages.scrollHeight;
+          }
+        })
+        .catch(err => {
+          console.error('[UI] Failed to load welcome message:', err);
+          // Fallback to simple welcome
+          const welcomeWrapper = document.createElement('div');
+          welcomeWrapper.className = 'flex justify-start';
+          const welcomeBubble = document.createElement('div');
+          welcomeBubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
+          welcomeBubble.textContent = 'Welcome to WebClaw! Type a message to start chatting.';
+          welcomeWrapper.appendChild(welcomeBubble);
+          messages.appendChild(welcomeWrapper);
+        });
+    }
+    
+    // Global function to open help docs
+    window.loadHelpDocs = function() {
+      window.open('static/help.html', '_blank', 'width=1200,height=800,scrollbars=yes');
+    };
   });
 
   // ==========================================
