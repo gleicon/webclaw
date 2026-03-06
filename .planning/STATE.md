@@ -3,13 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-03-06T00:02:53Z"
+last_updated: "2026-03-06T00:15:00Z"
 progress:
   total_phases: 10
   completed_phases: 7
-  partial_phases: 0
   total_plans: 38
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 # Project State
@@ -24,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 09 of 10 (Social Integrations)
-Status: **09-01 Complete - OAuth Infrastructure**
-Last activity: 2026-03-05 — OAuth PKCE flow, encrypted token storage, popup bridge, Connected Services UI
+Status: **09-04 Complete - GitHub Integration**
+Last activity: 2026-03-06 — GitHub REST API tools, OAuth-authenticated, 5 tools: issues, PRs, code search, comments + GraphQL foundation
 
 Progress: [████████████████████░░░░] 80%
 
@@ -56,11 +55,11 @@ Progress: [████████████████████░░░
 
 **Completed:**
 - ✅ 09-01: OAuth Infrastructure (PKCE flow, encrypted storage, popup bridge, Connected Services UI)
+- ✅ 09-04: GitHub Integration (REST API v3 tools, GraphQL v4 foundation, OAuth auth, 5 tools)
 
 **In Progress:**
 - 🔄 09-02: Twitter/X integration (post, timeline, search)
 - 🔄 09-03: Google integration (Gmail, Calendar)
-- 🔄 09-04: GitHub integration (issues, PRs)
 - 🔄 09-05: Notion integration (databases, pages)
 
 **What Works:**
@@ -70,9 +69,20 @@ Progress: [████████████████████░░░
 - Popup-based OAuth flow with postMessage callbacks
 - Settings UI for managing connections
 - Provider configs: Twitter, Google, GitHub, Notion
+- GitHub REST API v3 integration:
+  - List issues (assigned to user or in repo)
+  - List pull requests with branch info
+  - Create issues with labels
+  - Search code with GitHub syntax
+  - Comment on issues/PRs
+- GitHub GraphQL v4 foundation (queries, variables, error handling)
+- Rate limit tracking from GitHub API headers
+- OAuth-authenticated API calls with automatic token refresh
 
 **What's Missing:**
-- Actual integration tools (Twitter, Google, GitHub, Notion APIs)
+- Twitter/X integration tools (post, timeline, search APIs)
+- Google integration tools (Gmail send/read, Calendar events)
+- Notion integration tools (databases, pages, queries)
 - OAuth client IDs (must be configured per deployment)
 - Privacy policy page (required for OAuth apps)
 
@@ -118,6 +128,7 @@ Progress: [████████████████████░░░
 | Phase 06-real-agent-loop P06 | 18 min | 6 tasks | 5 files |
 | Phase 06-real-agent-loop P03 | 3min | 5 tasks | 4 files |
 | Phase 06-real-agent-loop P04 | 2min | 5 tasks | 5 files |
+| Phase 09-social-integrations P09-04 | 6 | 5 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -196,14 +207,15 @@ None. Provider tool support is complete across all three providers (Anthropic, O
 
 ## Session Continuity
 
-Last session: 2026-03-05
-Stopped at: Completed 09-social-integrations/09-01-PLAN.md — OAuth Infrastructure
-Resume file: .planning/phases/09-social-integrations/09-01-SUMMARY.md
+Last session: 2026-03-06
+Stopped at: Completed 09-social-integrations/09-04-PLAN.md — GitHub Integration with 5 tools (issues, PRs, code search, comments) + GraphQL foundation
+Resume file: .planning/phases/09-social-integrations/09-04-SUMMARY.md
 
 ## Phase 9 Summary
 
 Plans completed in Phase 9:
 - 09-01: OAuth Infrastructure (PKCE flow, encrypted storage, popup bridge, Connected Services UI)
+- 09-04: GitHub Integration (REST API v3, GraphQL v4 foundation, 5 tools)
 
 **Phase 9 IN PROGRESS** - Social & Productivity Integrations
 - PKCE parameter generation (RFC 7636 compliant)
@@ -217,11 +229,21 @@ Plans completed in Phase 9:
 - OAuth manager with full flow orchestration
 - Connected Services section in Settings view
 
+**NEW: GitHub Integration (09-04)**
+- GitHub REST API v3 client with OAuth authentication
+- 5 WebClaw tools: list_issues, list_prs, create_issue, search_code, comment
+- Rate limit tracking from GitHub API headers (5,000 req/hour)
+- Input schemas with validation and helpful error messages
+- OAuth connectivity checks with "Please connect GitHub in Settings" prompts
+- Formatted output with issue/PR numbers, URLs, labels, assignees
+- GraphQL v4 foundation for future complex queries
+- Comprehensive test coverage (4 test files, ~1,000 lines of tests)
+
 Ready for:
 - Twitter/X integration tools (post, timeline, search)
 - Google integration (Gmail send/read, Calendar events)
-- GitHub integration (issues, PRs, repos)
 - Notion integration (databases, pages, queries)
+- Additional GitHub tools via GraphQL (complex queries, analytics)
 
 Plans completed in Phase 6:
 - 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
