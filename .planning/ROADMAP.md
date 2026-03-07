@@ -190,7 +190,14 @@ Plans:
 3. Tool execution works with local model for simple automation tasks (file operations, memory search)
 4. Seamless fallback: local model when offline, cloud providers when online
 5. Model can be downloaded and cached locally for subsequent sessions
-   **Plans**: TBD
+   **Plans**: 4 plans
+
+Plans:
+
+- [ ] 10-01-PLAN.md — npm deps + test scaffolds + Go stubs (LocalProvider, jsbridge, local-llm-worker)
+- [ ] 10-02-PLAN.md — WebLLM/wllama worker implementation + webclaw-host.js WebGPU detection and worker lifecycle
+- [ ] 10-03-PLAN.md — Go LocalProvider channel bridge + router registration + wllama WASM vendor serving
+- [ ] 10-04-PLAN.md — Settings UI (model selector, progress bar, status) + human verify checkpoint
 
 ## Progress
 
@@ -209,3 +216,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 7. Local Bridge Binary         | 0/0            | Planned     |            |
 | 8. Polish & Release            | 2/3            | In Progress | 2026-03-07 |
 | 9. Social & Productivity       | 5/5            | Complete    | 2026-03-05 |
+| 10. Browser Local Model        | 0/4            | Planned     |            |
