@@ -95,6 +95,18 @@ export default defineConfig({
           src: "static/wasm_exec.js",
           dest: "static",
         },
+        {
+          src: "static/justbash-bridge.js",
+          dest: "static",
+        },
+        {
+          src: "static/webclaw-host.js",
+          dest: "static",
+        },
+        {
+          src: "node_modules/just-bash/dist/bundle/browser.js",
+          dest: "vendor",
+        },
       ],
     }),
 
