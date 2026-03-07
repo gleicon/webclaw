@@ -57,7 +57,7 @@ func MemoryDBOpen() js.Value {
 				db := request.Get("result")
 
 				// Create main memories store with auto-increment
-				if !db.Call("objectStoreNames").Call("contains", MemoryStoreMain).Bool() {
+				if !db.Get("objectStoreNames").Call("contains", MemoryStoreMain).Bool() {
 					store := db.Call("createObjectStore", MemoryStoreMain, map[string]interface{}{
 						"keyPath": "id",
 					})
@@ -68,14 +68,14 @@ func MemoryDBOpen() js.Value {
 				}
 
 				// Create BM25 index store
-				if !db.Call("objectStoreNames").Call("contains", MemoryStoreIndex).Bool() {
+				if !db.Get("objectStoreNames").Call("contains", MemoryStoreIndex).Bool() {
 					db.Call("createObjectStore", MemoryStoreIndex, map[string]interface{}{
 						"keyPath": "term",
 					})
 				}
 
 				// Create archives store
-				if !db.Call("objectStoreNames").Call("contains", MemoryStoreArchives).Bool() {
+				if !db.Get("objectStoreNames").Call("contains", MemoryStoreArchives).Bool() {
 					db.Call("createObjectStore", MemoryStoreArchives, map[string]interface{}{
 						"keyPath": "id",
 					})
