@@ -1,693 +1,862 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WebClaw</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- just-bash for browser-only file operations (Phase 7a) -->
-  <script src="node_modules/just-bash/dist/bundle/browser.js"></script>
-  <script src="static/justbash-bridge.js"></script>
-  <script src="static/wasm_exec.js"></script>
-  <script src="static/webclaw-host.js"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebClaw</title>
 
-  <!-- Tab Bar -->
-  <nav class="flex border-b border-gray-700 bg-gray-900 shrink-0">
-    <button id="tab-chat"     class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400">Chat</button>
-    <button id="tab-settings" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Settings</button>
-    <button id="tab-identity" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200">Identity Files</button>
-    <button id="help-docs-btn" class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-indigo-300 ml-auto flex items-center gap-2" onclick="window.loadHelpDocs()">
-      <span>📚</span> Help
-    </button>
-  </nav>
+    <!-- Bundled Tailwind CSS (compiled by Vite) -->
+    <link rel="stylesheet" href="./src/styles/main.css" />
 
-  <!-- Chat View: two-column layout -->
-  <div id="view-chat" class="flex flex-1 overflow-hidden">
-    <!-- Chat Column -->
-    <div class="flex flex-col flex-1 overflow-hidden">
-      <!-- Model selector header -->
-      <div class="flex items-center gap-3 px-4 py-2 border-b border-gray-700 shrink-0">
-        <label class="text-xs text-gray-400">Model</label>
-        <select id="model-selector" class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
-          <option value="anthropic/claude-sonnet-4-5">Anthropic / claude-sonnet-4-5</option>
-          <option value="anthropic/claude-opus-4">Anthropic / claude-opus-4</option>
-          <option value="openai/gpt-4o">OpenAI / gpt-4o</option>
-          <option value="openrouter/anthropic/claude-sonnet-4-5">OpenRouter / claude-sonnet-4-5</option>
-        </select>
-        <span id="stream-status" class="text-xs text-gray-500 ml-auto"></span>
-      </div>
-      <!-- Message list -->
-      <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-      <!-- Input area -->
-      <div class="p-4 border-t border-gray-700 shrink-0">
-        <div class="flex gap-2 items-end">
-          <textarea id="user-input"
-            class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 resize-none focus:outline-none focus:border-indigo-500"
-            rows="3" placeholder="Type a message... (Enter to send, Shift+Enter for newline)"></textarea>
-          <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Send</button>
-          <button id="abort-btn" class="hidden bg-red-700 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0">Stop</button>
+    <!-- just-bash for browser-only file operations (Phase 7a) -->
+    <script src="node_modules/just-bash/dist/bundle/browser.js"></script>
+    <script src="static/justbash-bridge.js"></script>
+    <script src="static/wasm_exec.js"></script>
+    <script src="static/webclaw-host.js"></script>
+  </head>
+  <body
+    class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden"
+  >
+    <!-- Tab Bar -->
+    <nav class="flex border-b border-gray-700 bg-gray-900 shrink-0">
+      <button
+        id="tab-chat"
+        class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400"
+      >
+        Chat
+      </button>
+      <button
+        id="tab-settings"
+        class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200"
+      >
+        Settings
+      </button>
+      <button
+        id="tab-identity"
+        class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200"
+      >
+        Identity Files
+      </button>
+      <button
+        id="help-docs-btn"
+        class="tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-indigo-300 ml-auto flex items-center gap-2"
+        onclick="window.loadHelpDocs()"
+      >
+        <span>📚</span> Help
+      </button>
+    </nav>
+
+    <!-- Chat View: two-column layout -->
+    <div id="view-chat" class="flex flex-1 overflow-hidden">
+      <!-- Chat Column -->
+      <div class="flex flex-col flex-1 overflow-hidden">
+        <!-- Model selector header -->
+        <div
+          class="flex items-center gap-3 px-4 py-2 border-b border-gray-700 shrink-0"
+        >
+          <label class="text-xs text-gray-400">Model</label>
+          <select
+            id="model-selector"
+            class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="anthropic/claude-sonnet-4-5">
+              Anthropic / claude-sonnet-4-5
+            </option>
+            <option value="anthropic/claude-opus-4">
+              Anthropic / claude-opus-4
+            </option>
+            <option value="openai/gpt-4o">OpenAI / gpt-4o</option>
+            <option value="openrouter/anthropic/claude-sonnet-4-5">
+              OpenRouter / claude-sonnet-4-5
+            </option>
+          </select>
+          <span id="stream-status" class="text-xs text-gray-500 ml-auto"></span>
+        </div>
+        <!-- Message list -->
+        <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+        <!-- Input area -->
+        <div class="p-4 border-t border-gray-700 shrink-0">
+          <div class="flex gap-2 items-end">
+            <textarea
+              id="user-input"
+              class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 resize-none focus:outline-none focus:border-indigo-500"
+              rows="3"
+              placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+            ></textarea>
+            <button
+              id="send-btn"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0"
+            >
+              Send
+            </button>
+            <button
+              id="abort-btn"
+              class="hidden bg-red-700 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-medium shrink-0"
+            >
+              Stop
+            </button>
+          </div>
         </div>
       </div>
+      <!-- Tool Activity Panel — always visible on right -->
+      <div
+        class="w-72 border-l border-gray-700 flex flex-col overflow-hidden shrink-0"
+      >
+        <div class="px-3 py-2 border-b border-gray-700 shrink-0">
+          <h2
+            class="text-xs font-semibold text-gray-400 uppercase tracking-wide"
+          >
+            Tool Activity
+          </h2>
+        </div>
+        <div
+          id="tool-events"
+          class="flex-1 overflow-y-auto p-2 space-y-2"
+        ></div>
+      </div>
     </div>
-    <!-- Tool Activity Panel — always visible on right -->
-    <div class="w-72 border-l border-gray-700 flex flex-col overflow-hidden shrink-0">
-      <div class="px-3 py-2 border-b border-gray-700 shrink-0">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tool Activity</h2>
-      </div>
-      <div id="tool-events" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+
+    <!-- Settings View (hidden) -->
+    <div id="view-settings" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
+      <section>
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">API Keys</h2>
+        <div id="api-keys-container" class="space-y-3">
+          <!-- Built dynamically by buildSettingsUI() -->
+          <p class="text-xs text-gray-500">Loading API key forms...</p>
+        </div>
+      </section>
+      <section>
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">Configuration</h2>
+        <div class="flex gap-3">
+          <button
+            id="export-config-btn"
+            class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm"
+          >
+            Export Config
+          </button>
+          <button
+            id="import-config-btn"
+            class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm"
+          >
+            Import Config
+          </button>
+          <input
+            id="import-file-input"
+            type="file"
+            accept=".json"
+            class="hidden"
+          />
+        </div>
+      </section>
+
+      <!-- Connected Services Section -->
+      <section id="connected-services-section">
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">
+          Connected Services
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">
+          Connect your accounts to enable social and productivity integrations.
+        </p>
+        <div id="connected-services-list" class="space-y-3">
+          <!-- Built dynamically by buildConnectedServicesUI() -->
+          <p class="text-xs text-gray-500">Loading connected services...</p>
+        </div>
+      </section>
     </div>
-  </div>
 
-  <!-- Settings View (hidden) -->
-  <div id="view-settings" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
-    <section>
-      <h2 class="text-sm font-semibold text-gray-300 mb-3">API Keys</h2>
-      <div id="api-keys-container" class="space-y-3">
-        <!-- Built dynamically by buildSettingsUI() -->
-        <p class="text-xs text-gray-500">Loading API key forms...</p>
+    <!-- Identity Files View (hidden) -->
+    <div id="view-identity" class="hidden flex-1 overflow-hidden">
+      <!-- File list (left) -->
+      <div
+        id="identity-file-list"
+        class="w-48 border-r border-gray-700 overflow-y-auto p-2 space-y-1 shrink-0"
+      ></div>
+      <!-- Editor (right) -->
+      <div class="flex flex-col flex-1 overflow-hidden">
+        <div
+          class="px-4 py-2 border-b border-gray-700 flex items-center justify-between shrink-0"
+        >
+          <span id="identity-filename" class="text-sm text-gray-400"
+            >Select a file</span
+          >
+          <button
+            id="identity-save-btn"
+            class="hidden bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1 text-xs"
+          >
+            Save
+          </button>
+        </div>
+        <textarea
+          id="identity-editor"
+          class="flex-1 bg-gray-900 text-gray-100 font-mono text-sm p-4 resize-none focus:outline-none"
+          placeholder="Select a file to edit..."
+        ></textarea>
       </div>
-    </section>
-    <section>
-      <h2 class="text-sm font-semibold text-gray-300 mb-3">Configuration</h2>
-      <div class="flex gap-3">
-        <button id="export-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Export Config</button>
-        <button id="import-config-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-200 rounded px-4 py-2 text-sm">Import Config</button>
-        <input id="import-file-input" type="file" accept=".json" class="hidden">
-      </div>
-    </section>
-    
-    <!-- Connected Services Section -->
-    <section id="connected-services-section">
-      <h2 class="text-sm font-semibold text-gray-300 mb-3">Connected Services</h2>
-      <p class="text-xs text-gray-500 mb-4">Connect your accounts to enable social and productivity integrations.</p>
-      <div id="connected-services-list" class="space-y-3">
-        <!-- Built dynamically by buildConnectedServicesUI() -->
-        <p class="text-xs text-gray-500">Loading connected services...</p>
-      </div>
-    </section>
-  </div>
-
-  <!-- Identity Files View (hidden) -->
-  <div id="view-identity" class="hidden flex-1 overflow-hidden">
-    <!-- File list (left) -->
-    <div id="identity-file-list" class="w-48 border-r border-gray-700 overflow-y-auto p-2 space-y-1 shrink-0"></div>
-    <!-- Editor (right) -->
-    <div class="flex flex-col flex-1 overflow-hidden">
-      <div class="px-4 py-2 border-b border-gray-700 flex items-center justify-between shrink-0">
-        <span id="identity-filename" class="text-sm text-gray-400">Select a file</span>
-        <button id="identity-save-btn" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1 text-xs">Save</button>
-      </div>
-      <textarea id="identity-editor"
-        class="flex-1 bg-gray-900 text-gray-100 font-mono text-sm p-4 resize-none focus:outline-none"
-        placeholder="Select a file to edit..."></textarea>
     </div>
-  </div>
 
-<script>
-(function() {
-  'use strict';
+    <script>
+      (function () {
+        "use strict";
 
-  // State
-  let isStreaming = false;
-  let activeIdentityFile = null;
-  let agentBubble = null;
-  let streamCursor = null;
+        // State
+        let isStreaming = false;
+        let activeIdentityFile = null;
+        let agentBubble = null;
+        let streamCursor = null;
 
-  // DOM refs
-  const tabChat = document.getElementById('tab-chat');
-  const tabSettings = document.getElementById('tab-settings');
-  const tabIdentity = document.getElementById('tab-identity');
-  const viewChat = document.getElementById('view-chat');
-  const viewSettings = document.getElementById('view-settings');
-  const viewIdentity = document.getElementById('view-identity');
-  const modelSelector = document.getElementById('model-selector');
-  const messages = document.getElementById('messages');
-  const userInput = document.getElementById('user-input');
-  const sendBtn = document.getElementById('send-btn');
-  const abortBtn = document.getElementById('abort-btn');
-  const streamStatus = document.getElementById('stream-status');
-  const toolEvents = document.getElementById('tool-events');
-  const apiKeysContainer = document.getElementById('api-keys-container');
-  const identityFileList = document.getElementById('identity-file-list');
-  const identityFilename = document.getElementById('identity-filename');
-  const identitySaveBtn = document.getElementById('identity-save-btn');
-  const identityEditor = document.getElementById('identity-editor');
-  const exportConfigBtn = document.getElementById('export-config-btn');
-  const importConfigBtn = document.getElementById('import-config-btn');
-  const importFileInput = document.getElementById('import-file-input');
+        // DOM refs
+        const tabChat = document.getElementById("tab-chat");
+        const tabSettings = document.getElementById("tab-settings");
+        const tabIdentity = document.getElementById("tab-identity");
+        const viewChat = document.getElementById("view-chat");
+        const viewSettings = document.getElementById("view-settings");
+        const viewIdentity = document.getElementById("view-identity");
+        const modelSelector = document.getElementById("model-selector");
+        const messages = document.getElementById("messages");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+        const abortBtn = document.getElementById("abort-btn");
+        const streamStatus = document.getElementById("stream-status");
+        const toolEvents = document.getElementById("tool-events");
+        const apiKeysContainer = document.getElementById("api-keys-container");
+        const identityFileList = document.getElementById("identity-file-list");
+        const identityFilename = document.getElementById("identity-filename");
+        const identitySaveBtn = document.getElementById("identity-save-btn");
+        const identityEditor = document.getElementById("identity-editor");
+        const exportConfigBtn = document.getElementById("export-config-btn");
+        const importConfigBtn = document.getElementById("import-config-btn");
+        const importFileInput = document.getElementById("import-file-input");
 
-  // ==========================================
-  // Provider Status Indicators
-  // ==========================================
-  let availableProviders = [];
-  let failedProviders = []; // Track providers that failed (invalid key, no credits)
-  let pausedProviders = []; // Track providers manually paused by user
+        // ==========================================
+        // Provider Status Indicators
+        // ==========================================
+        let availableProviders = [];
+        let failedProviders = []; // Track providers that failed (invalid key, no credits)
+        let pausedProviders = []; // Track providers manually paused by user
 
-  window.addEventListener('webclaw:providers-ready', function(e) {
-    const detail = e.detail || {};
-    availableProviders = detail.providers || [];
-    const count = detail.count || 0;
-    console.log('[UI] Providers ready event:', e);
-    console.log('[UI] Event detail:', detail);
-    console.log('[UI] Providers array:', availableProviders);
-    console.log('[UI] Count:', count);
-    console.log('[UI] Providers ready:', count, 'providers available');
+        window.addEventListener("webclaw:providers-ready", function (e) {
+          const detail = e.detail || {};
+          availableProviders = detail.providers || [];
+          const count = detail.count || 0;
+          console.log("[UI] Providers ready event:", e);
+          console.log("[UI] Event detail:", detail);
+          console.log("[UI] Providers array:", availableProviders);
+          console.log("[UI] Count:", count);
+          console.log("[UI] Providers ready:", count, "providers available");
 
-    // Update provider status indicators in settings
-    updateProviderStatusIndicators();
-    
-    // Update model selector to disable failed/paused providers
-    updateModelSelector();
-    
-    // Auto-select first available provider if current selection has no key or is paused/failed
-    if (count > 0 && modelSelector) {
-      const currentModel = modelSelector.value;
-      const currentProvider = currentModel.split('/')[0];
-      const isCurrentPaused = pausedProviders.includes(currentProvider);
-      const isCurrentFailed = failedProviders.includes(currentProvider);
-      const isCurrentAvailable = availableProviders.includes(currentProvider);
-      
-      if (!isCurrentAvailable || isCurrentPaused || isCurrentFailed) {
-        // Current provider not available, paused, or failed - switch to first working provider
-        const firstWorking = availableProviders.find(p => !pausedProviders.includes(p) && !failedProviders.includes(p));
-        if (firstWorking) {
-          console.log('[UI] Auto-switching to working provider:', firstWorking);
-          // Find model for this provider
-          const options = modelSelector.querySelectorAll('option');
-          for (let i = 0; i < options.length; i++) {
-            if (options[i].value.startsWith(firstWorking + '/')) {
-              modelSelector.selectedIndex = i;
-              console.log('[UI] Selected model:', options[i].value);
-              break;
+          // Update provider status indicators in settings
+          updateProviderStatusIndicators();
+
+          // Update model selector to disable failed/paused providers
+          updateModelSelector();
+
+          // Auto-select first available provider if current selection has no key or is paused/failed
+          if (count > 0 && modelSelector) {
+            const currentModel = modelSelector.value;
+            const currentProvider = currentModel.split("/")[0];
+            const isCurrentPaused = pausedProviders.includes(currentProvider);
+            const isCurrentFailed = failedProviders.includes(currentProvider);
+            const isCurrentAvailable =
+              availableProviders.includes(currentProvider);
+
+            if (!isCurrentAvailable || isCurrentPaused || isCurrentFailed) {
+              // Current provider not available, paused, or failed - switch to first working provider
+              const firstWorking = availableProviders.find(
+                (p) =>
+                  !pausedProviders.includes(p) && !failedProviders.includes(p),
+              );
+              if (firstWorking) {
+                console.log(
+                  "[UI] Auto-switching to working provider:",
+                  firstWorking,
+                );
+                // Find model for this provider
+                const options = modelSelector.querySelectorAll("option");
+                for (let i = 0; i < options.length; i++) {
+                  if (options[i].value.startsWith(firstWorking + "/")) {
+                    modelSelector.selectedIndex = i;
+                    console.log("[UI] Selected model:", options[i].value);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        function updateProviderStatusIndicators() {
+          API_PROVIDERS.forEach(function (provider) {
+            const statusEl = document.getElementById(
+              "provider-status-" + provider.id,
+            );
+            const testBtn = document.getElementById("test-btn-" + provider.id);
+            const pauseBtn = document.getElementById(
+              "pause-btn-" + provider.id,
+            );
+            const row = statusEl ? statusEl.closest(".flex") : null;
+
+            if (statusEl) {
+              const isAvailable = availableProviders.includes(provider.id);
+              const isFailed = failedProviders.includes(provider.id);
+              const isPaused = pausedProviders.includes(provider.id);
+
+              if (isPaused) {
+                // Paused provider - yellow/orange
+                statusEl.innerHTML =
+                  '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Paused</span>';
+                statusEl.className = "text-xs text-yellow-400";
+                if (row) {
+                  row.classList.remove("opacity-50");
+                }
+              } else if (isFailed) {
+                // Failed provider - grey out
+                statusEl.innerHTML =
+                  '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Failed</span>';
+                statusEl.className = "text-xs text-gray-400";
+                if (row) {
+                  row.classList.add("opacity-50");
+                }
+              } else if (isAvailable) {
+                // Available provider - green
+                statusEl.innerHTML =
+                  '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
+                statusEl.className = "text-xs text-green-400";
+                if (row) {
+                  row.classList.remove("opacity-50");
+                }
+              } else {
+                // No key - red
+                statusEl.innerHTML =
+                  '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
+                statusEl.className = "text-xs text-red-400";
+                if (row) {
+                  row.classList.remove("opacity-50");
+                }
+              }
+            }
+
+            // Show/hide test button based on provider status
+            if (testBtn) {
+              const isAvailable = availableProviders.includes(provider.id);
+              const isFailed = failedProviders.includes(provider.id);
+              const isPaused = pausedProviders.includes(provider.id);
+              if (isAvailable && !isFailed && !isPaused) {
+                testBtn.classList.remove("hidden");
+              } else {
+                testBtn.classList.add("hidden");
+              }
+            }
+
+            // Show/hide pause button based on provider availability
+            if (pauseBtn) {
+              const isAvailable = availableProviders.includes(provider.id);
+              const isPaused = pausedProviders.includes(provider.id);
+
+              if (isAvailable) {
+                pauseBtn.classList.remove("hidden");
+                if (isPaused) {
+                  pauseBtn.innerHTML = "▶️";
+                  pauseBtn.title = "Resume provider";
+                  pauseBtn.classList.remove(
+                    "bg-yellow-700",
+                    "hover:bg-yellow-600",
+                  );
+                  pauseBtn.classList.add("bg-green-700", "hover:bg-green-600");
+                } else {
+                  pauseBtn.innerHTML = "⏸️";
+                  pauseBtn.title = "Pause provider";
+                  pauseBtn.classList.remove(
+                    "bg-green-700",
+                    "hover:bg-green-600",
+                  );
+                  pauseBtn.classList.add(
+                    "bg-yellow-700",
+                    "hover:bg-yellow-600",
+                  );
+                }
+              } else {
+                pauseBtn.classList.add("hidden");
+              }
+            }
+          });
+
+          // Update demo mode indicator
+          updateDemoModeIndicator();
+        }
+
+        function updateModelSelector() {
+          // Grey out models from failed or paused providers in the dropdown
+          const options = modelSelector.querySelectorAll("option");
+          options.forEach(function (option) {
+            const provider = option.value.split("/")[0];
+            const originalText =
+              option.getAttribute("data-original-text") || option.textContent;
+
+            if (!option.getAttribute("data-original-text")) {
+              option.setAttribute("data-original-text", originalText);
+            }
+
+            const isFailed = failedProviders.includes(provider);
+            const isPaused = pausedProviders.includes(provider);
+
+            if (isFailed) {
+              option.disabled = true;
+              option.textContent =
+                "[Failed] " + originalText + " (invalid key/no credits)";
+              option.classList.add("text-gray-500");
+            } else if (isPaused) {
+              option.disabled = true;
+              option.textContent = "[Paused] " + originalText;
+              option.classList.add("text-yellow-600");
+            } else {
+              option.disabled = false;
+              option.textContent = originalText;
+              option.classList.remove("text-gray-500", "text-yellow-600");
+            }
+          });
+        }
+
+        function updateDemoModeIndicator() {
+          const demoIndicator = document.getElementById("demo-mode-indicator");
+          if (demoIndicator) {
+            if (availableProviders.length === 0) {
+              demoIndicator.classList.remove("hidden");
+            } else {
+              demoIndicator.classList.add("hidden");
             }
           }
         }
-      }
-    }
-  });
 
-  function updateProviderStatusIndicators() {
-    API_PROVIDERS.forEach(function(provider) {
-      const statusEl = document.getElementById('provider-status-' + provider.id);
-      const testBtn = document.getElementById('test-btn-' + provider.id);
-      const pauseBtn = document.getElementById('pause-btn-' + provider.id);
-      const row = statusEl ? statusEl.closest('.flex') : null;
-      
-      if (statusEl) {
-        const isAvailable = availableProviders.includes(provider.id);
-        const isFailed = failedProviders.includes(provider.id);
-        const isPaused = pausedProviders.includes(provider.id);
-        
-        if (isPaused) {
-          // Paused provider - yellow/orange
-          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Paused</span>';
-          statusEl.className = 'text-xs text-yellow-400';
-          if (row) {
-            row.classList.remove('opacity-50');
+        // ==========================================
+        // Error Toast Notifications
+        // ==========================================
+        function showErrorToast(message) {
+          // Remove existing toast if present
+          const existingToast = document.getElementById("error-toast");
+          if (existingToast) {
+            existingToast.remove();
           }
-        } else if (isFailed) {
-          // Failed provider - grey out
-          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Failed</span>';
-          statusEl.className = 'text-xs text-gray-400';
-          if (row) {
-            row.classList.add('opacity-50');
+
+          // Create toast element
+          const toast = document.createElement("div");
+          toast.id = "error-toast";
+          toast.className =
+            "fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-900 text-red-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md";
+          toast.innerHTML =
+            '<span class="text-red-400">⚠</span><span>' + message + "</span>";
+
+          document.body.appendChild(toast);
+
+          // Auto-remove after 5 seconds
+          setTimeout(function () {
+            if (toast.parentNode) {
+              toast.remove();
+            }
+          }, 5000);
+        }
+
+        // ==========================================
+        // Tab Switching
+        // ==========================================
+        function switchTab(name) {
+          // Reset all tabs
+          tabChat.className =
+            "tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200";
+          tabSettings.className =
+            "tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200";
+          tabIdentity.className =
+            "tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200";
+          viewChat.classList.add("hidden");
+          viewChat.classList.remove("flex");
+          viewSettings.classList.add("hidden");
+          viewIdentity.classList.add("hidden");
+          viewIdentity.classList.remove("flex");
+
+          // Activate selected tab
+          if (name === "chat") {
+            tabChat.className =
+              "tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400";
+            viewChat.classList.remove("hidden");
+            viewChat.classList.add("flex");
+          } else if (name === "settings") {
+            tabSettings.className =
+              "tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400";
+            viewSettings.classList.remove("hidden");
+          } else if (name === "identity") {
+            tabIdentity.className =
+              "tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400";
+            viewIdentity.classList.remove("hidden");
+            viewIdentity.classList.add("flex");
+            buildIdentityFileList();
           }
-        } else if (isAvailable) {
-          // Available provider - green
-          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
-          statusEl.className = 'text-xs text-green-400';
-          if (row) {
-            row.classList.remove('opacity-50');
+        }
+
+        tabChat.addEventListener("click", () => switchTab("chat"));
+        tabSettings.addEventListener("click", () => switchTab("settings"));
+        tabIdentity.addEventListener("click", () => switchTab("identity"));
+
+        // ==========================================
+        // Message Bubbles (DOM-safe, no string injection)
+        // ==========================================
+        function scrollToBottom() {
+          messages.scrollTop = messages.scrollHeight;
+        }
+
+        function appendUserBubble(content) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex justify-end";
+
+          const bubble = document.createElement("div");
+          bubble.className =
+            "max-w-[70%] rounded-2xl rounded-tr-sm px-4 py-2 bg-indigo-600 text-white text-sm";
+          bubble.textContent = content;
+
+          wrapper.appendChild(bubble);
+          messages.appendChild(wrapper);
+          scrollToBottom();
+        }
+
+        function appendAgentBubble() {
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex justify-start";
+
+          const bubble = document.createElement("div");
+          bubble.className =
+            "max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm";
+
+          wrapper.appendChild(bubble);
+          messages.appendChild(wrapper);
+          scrollToBottom();
+
+          return bubble;
+        }
+
+        function appendErrorBubble(message) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex justify-start";
+
+          const bubble = document.createElement("div");
+          bubble.className =
+            "max-w-[70%] rounded-2xl px-4 py-2 bg-red-900 text-red-200 text-sm";
+          bubble.textContent = message;
+
+          wrapper.appendChild(bubble);
+          messages.appendChild(wrapper);
+          scrollToBottom();
+        }
+
+        function createStreamingCursor() {
+          const cursor = document.createElement("span");
+          cursor.id = "stream-cursor";
+          cursor.className =
+            "inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 align-middle";
+          return cursor;
+        }
+
+        // ==========================================
+        // Send Message Flow
+        // ==========================================
+        function sendMessage() {
+          // Prevent sending if already streaming (e.g., during test connection)
+          if (isStreaming) {
+            console.log(
+              "[UI] Cannot send message - stream already in progress",
+            );
+            return;
           }
-        } else {
-          // No key - red
-          statusEl.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
-          statusEl.className = 'text-xs text-red-400';
-          if (row) {
-            row.classList.remove('opacity-50');
-          }
-        }
-      }
-      
-      // Show/hide test button based on provider status
-      if (testBtn) {
-        const isAvailable = availableProviders.includes(provider.id);
-        const isFailed = failedProviders.includes(provider.id);
-        const isPaused = pausedProviders.includes(provider.id);
-        if (isAvailable && !isFailed && !isPaused) {
-          testBtn.classList.remove('hidden');
-        } else {
-          testBtn.classList.add('hidden');
-        }
-      }
-      
-      // Show/hide pause button based on provider availability
-      if (pauseBtn) {
-        const isAvailable = availableProviders.includes(provider.id);
-        const isPaused = pausedProviders.includes(provider.id);
-        
-        if (isAvailable) {
-          pauseBtn.classList.remove('hidden');
-          if (isPaused) {
-            pauseBtn.innerHTML = '▶️';
-            pauseBtn.title = 'Resume provider';
-            pauseBtn.classList.remove('bg-yellow-700', 'hover:bg-yellow-600');
-            pauseBtn.classList.add('bg-green-700', 'hover:bg-green-600');
-          } else {
-            pauseBtn.innerHTML = '⏸️';
-            pauseBtn.title = 'Pause provider';
-            pauseBtn.classList.remove('bg-green-700', 'hover:bg-green-600');
-            pauseBtn.classList.add('bg-yellow-700', 'hover:bg-yellow-600');
-          }
-        } else {
-          pauseBtn.classList.add('hidden');
-        }
-      }
-    });
 
-    // Update demo mode indicator
-    updateDemoModeIndicator();
-  }
+          const content = userInput.value.trim();
+          if (!content) return;
 
-  function updateModelSelector() {
-    // Grey out models from failed or paused providers in the dropdown
-    const options = modelSelector.querySelectorAll('option');
-    options.forEach(function(option) {
-      const provider = option.value.split('/')[0];
-      const originalText = option.getAttribute('data-original-text') || option.textContent;
-      
-      if (!option.getAttribute('data-original-text')) {
-        option.setAttribute('data-original-text', originalText);
-      }
-      
-      const isFailed = failedProviders.includes(provider);
-      const isPaused = pausedProviders.includes(provider);
-      
-      if (isFailed) {
-        option.disabled = true;
-        option.textContent = '[Failed] ' + originalText + ' (invalid key/no credits)';
-        option.classList.add('text-gray-500');
-      } else if (isPaused) {
-        option.disabled = true;
-        option.textContent = '[Paused] ' + originalText;
-        option.classList.add('text-yellow-600');
-      } else {
-        option.disabled = false;
-        option.textContent = originalText;
-        option.classList.remove('text-gray-500', 'text-yellow-600');
-      }
-    });
-  }
+          // Handle slash commands
+          if (content.startsWith("/")) {
+            const match = content.match(/^\/([a-zA-Z]+)(?:\s+(.*))?$/);
+            if (match) {
+              const command = match[1];
+              const args = match[2] || "";
 
-  function updateDemoModeIndicator() {
-    const demoIndicator = document.getElementById('demo-mode-indicator');
-    if (demoIndicator) {
-      if (availableProviders.length === 0) {
-        demoIndicator.classList.remove('hidden');
-      } else {
-        demoIndicator.classList.add('hidden');
-      }
-    }
-  }
-
-  // ==========================================
-  // Error Toast Notifications
-  // ==========================================
-  function showErrorToast(message) {
-    // Remove existing toast if present
-    const existingToast = document.getElementById('error-toast');
-    if (existingToast) {
-      existingToast.remove();
-    }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.id = 'error-toast';
-    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-900 text-red-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
-    toast.innerHTML = '<span class="text-red-400">⚠</span><span>' + message + '</span>';
-
-    document.body.appendChild(toast);
-
-    // Auto-remove after 5 seconds
-    setTimeout(function() {
-      if (toast.parentNode) {
-        toast.remove();
-      }
-    }, 5000);
-  }
-
-  // ==========================================
-  // Tab Switching
-  // ==========================================
-  function switchTab(name) {
-    // Reset all tabs
-    tabChat.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
-    tabSettings.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
-    tabIdentity.className = 'tab-btn px-6 py-3 text-sm font-medium text-gray-400 hover:text-gray-200';
-    viewChat.classList.add('hidden');
-    viewChat.classList.remove('flex');
-    viewSettings.classList.add('hidden');
-    viewIdentity.classList.add('hidden');
-    viewIdentity.classList.remove('flex');
-
-    // Activate selected tab
-    if (name === 'chat') {
-      tabChat.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
-      viewChat.classList.remove('hidden');
-      viewChat.classList.add('flex');
-    } else if (name === 'settings') {
-      tabSettings.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
-      viewSettings.classList.remove('hidden');
-    } else if (name === 'identity') {
-      tabIdentity.className = 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400';
-      viewIdentity.classList.remove('hidden');
-      viewIdentity.classList.add('flex');
-      buildIdentityFileList();
-    }
-  }
-
-  tabChat.addEventListener('click', () => switchTab('chat'));
-  tabSettings.addEventListener('click', () => switchTab('settings'));
-  tabIdentity.addEventListener('click', () => switchTab('identity'));
-
-  // ==========================================
-  // Message Bubbles (DOM-safe, no string injection)
-  // ==========================================
-  function scrollToBottom() {
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function appendUserBubble(content) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-end';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'max-w-[70%] rounded-2xl rounded-tr-sm px-4 py-2 bg-indigo-600 text-white text-sm';
-    bubble.textContent = content;
-
-    wrapper.appendChild(bubble);
-    messages.appendChild(wrapper);
-    scrollToBottom();
-  }
-
-  function appendAgentBubble() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-start';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
-
-    wrapper.appendChild(bubble);
-    messages.appendChild(wrapper);
-    scrollToBottom();
-
-    return bubble;
-  }
-
-  function appendErrorBubble(message) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-start';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'max-w-[70%] rounded-2xl px-4 py-2 bg-red-900 text-red-200 text-sm';
-    bubble.textContent = message;
-
-    wrapper.appendChild(bubble);
-    messages.appendChild(wrapper);
-    scrollToBottom();
-  }
-
-  function createStreamingCursor() {
-    const cursor = document.createElement('span');
-    cursor.id = 'stream-cursor';
-    cursor.className = 'inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 align-middle';
-    return cursor;
-  }
-
-  // ==========================================
-  // Send Message Flow
-  // ==========================================
-  function sendMessage() {
-    // Prevent sending if already streaming (e.g., during test connection)
-    if (isStreaming) {
-      console.log('[UI] Cannot send message - stream already in progress');
-      return;
-    }
-    
-    const content = userInput.value.trim();
-    if (!content) return;
-    
-    // Handle slash commands
-    if (content.startsWith('/')) {
-      const match = content.match(/^\/([a-zA-Z]+)(?:\s+(.*))?$/);
-      if (match) {
-        const command = match[1];
-        const args = match[2] || '';
-        
-        if (handleSlashCommand(command, args)) {
-          // Command was handled, clear input and return
-          userInput.value = '';
-          return;
-        }
-      }
-    }
-    
-    // Don't allow sending if no providers are available
-    if (availableProviders.length === 0) {
-      showErrorToast('Please enter your API key in Settings to enable live AI');
-      return;
-    }
-
-    // Parse model selector (vendor/model-id format)
-    const modelValue = modelSelector.value;
-    const slashIdx = modelValue.indexOf('/');
-    const provider = slashIdx > 0 ? modelValue.substring(0, slashIdx) : 'anthropic';
-    const model = slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
-
-    // Validate provider is available
-    if (availableProviders.length === 0) {
-      showErrorToast('Please enter your API key in Settings to enable live AI');
-      return;
-    }
-
-    // Check if selected provider is available
-    if (!availableProviders.includes(provider)) {
-      // Try to suggest alternative
-      const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
-      showErrorToast('Please enter your ' + providerName + ' API key in Settings, or select a different model');
-      return;
-    }
-
-    // Clear input and show user bubble
-    userInput.value = '';
-    appendUserBubble(content);
-
-    // Create agent bubble for streaming
-    agentBubble = appendAgentBubble();
-    streamCursor = createStreamingCursor();
-    agentBubble.appendChild(streamCursor);
-
-    // Set streaming state
-    isStreaming = true;
-    streamStatus.textContent = 'Streaming...';
-    sendBtn.classList.add('hidden');
-    abortBtn.classList.remove('hidden');
-
-    // Guard webclawHost availability
-    if (!window.webclawHost) {
-      appendErrorBubble('WebClaw host not initialized');
-      resetStreamingState();
-      return;
-    }
-
-    // Add message to conversation history
-    window.webclawHost.addMessage('user', content);
-
-    // Start stream with live provider routing
-    window.webclawHost.startStream({
-      provider: provider,
-      model: model,
-      messages: [{ role: 'user', content: content }],
-      onToken: function(token) {
-        if (streamCursor && streamCursor.parentNode) {
-          streamCursor.parentNode.removeChild(streamCursor);
-        }
-        if (agentBubble) {
-          agentBubble.textContent += token;
-          agentBubble.appendChild(streamCursor);
-        }
-        scrollToBottom();
-      },
-      onComplete: function(result) {
-        if (streamCursor && streamCursor.parentNode) {
-          streamCursor.parentNode.removeChild(streamCursor);
-        }
-        resetStreamingState();
-        scrollToBottom();
-      },
-      onError: function(err) {
-        if (streamCursor && streamCursor.parentNode) {
-          streamCursor.parentNode.removeChild(streamCursor);
-        }
-
-        // Handle specific error cases
-        const errorMessage = err && err.message ? err.message : 'Stream error';
-        let userMessage = errorMessage;
-        let shouldSwitchProvider = false;
-
-        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid') || errorMessage.includes('credit balance is too low')) {
-          userMessage = 'Invalid API key or no credits - switching to available provider';
-          shouldSwitchProvider = true;
-        } else if (errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('RateLimit')) {
-          userMessage = 'Rate limited - please wait a moment';
-        } else if (errorMessage.includes('No provider') || errorMessage.includes('not found')) {
-          userMessage = 'Please enter your API key in Settings to enable live AI';
-        }
-
-        appendErrorBubble(userMessage);
-        resetStreamingState();
-        scrollToBottom();
-        
-        // If provider failed, try to switch to another available provider and retry
-        if (shouldSwitchProvider && availableProviders.length > 1) {
-          // Mark current provider as failed
-          if (!failedProviders.includes(provider)) {
-            failedProviders.push(provider);
-            console.log('[UI] Provider', provider, 'marked as failed');
-            updateProviderStatusIndicators();
-            updateModelSelector();
-          }
-          
-          // Remove current failed provider from available list temporarily
-          const currentProviderIdx = availableProviders.indexOf(provider);
-          if (currentProviderIdx > -1) {
-            console.log('[UI] Provider', provider, 'failed, removing from available list');
-            availableProviders.splice(currentProviderIdx, 1);
-          }
-          
-          // Find next available provider
-          const nextProvider = availableProviders.find(p => !failedProviders.includes(p));
-          if (nextProvider) {
-            console.log('[UI] Auto-switching to next available provider:', nextProvider);
-            // Find model for this provider
-            const options = modelSelector.querySelectorAll('option');
-            for (let i = 0; i < options.length; i++) {
-              if (options[i].value.startsWith(nextProvider + '/')) {
-                modelSelector.selectedIndex = i;
-                console.log('[UI] Switched to model:', options[i].value);
-                // Retry the message after a brief delay
-                setTimeout(function() {
-                  userInput.value = content; // Restore the message
-                  sendMessage();
-                }, 500);
+              if (handleSlashCommand(command, args)) {
+                // Command was handled, clear input and return
+                userInput.value = "";
                 return;
               }
             }
           }
-        }
-      }
-    });
-  }
 
-  function resetStreamingState() {
-    isStreaming = false;
-    streamStatus.textContent = '';
-    sendBtn.classList.remove('hidden');
-    abortBtn.classList.add('hidden');
-    agentBubble = null;
-    streamCursor = null;
-  }
-
-  function abortMessage() {
-    if (window.webclawHost) {
-      window.webclawHost.abortStream();
-    }
-  }
-
-  // ==========================================
-  // Slash Command Handler
-  // =========================================
-  function handleSlashCommand(command, args) {
-    switch(command) {
-      case 'help':
-        showHelpMessage(args);
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function showHelpMessage(args) {
-    // Create help response bubble
-    const wrapper = document.createElement('div');
-    wrapper.className = 'flex justify-start';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 bg-gray-700 text-gray-100 text-sm';
-    
-    // Get tool name from args
-    const toolMatch = args.match(/tool="([^"]+)"/);
-    const verbose = args.includes('verbose=true');
-    
-    if (toolMatch) {
-      const toolName = toolMatch[1];
-      // Request help from agent for specific tool
-      const content = `help tool="${toolName}"${verbose ? ' verbose=true' : ''}`;
-      
-      // Create agent bubble for response
-      agentBubble = appendAgentBubble();
-      streamCursor = createStreamingCursor();
-      agentBubble.appendChild(streamCursor);
-      
-      // Add message to conversation and trigger help
-      if (window.webclawHost) {
-        window.webclawHost.addMessage('user', content);
-        
-        const modelValue = modelSelector.value;
-        const slashIdx = modelValue.indexOf('/');
-        const provider = slashIdx > 0 ? modelValue.substring(0, slashIdx) : 'anthropic';
-        const model = slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
-        
-        isStreaming = true;
-        streamStatus.textContent = 'Getting help...';
-        sendBtn.classList.add('hidden');
-        abortBtn.classList.remove('hidden');
-        
-        window.webclawHost.startStream({
-          provider: provider,
-          model: model,
-          messages: [{ role: 'user', content: content }],
-          onToken: function(token) {
-            if (streamCursor && streamCursor.parentNode) {
-              streamCursor.parentNode.removeChild(streamCursor);
-            }
-            if (agentBubble) {
-              agentBubble.textContent += token;
-              agentBubble.appendChild(streamCursor);
-            }
-            scrollToBottom();
-          },
-          onComplete: function(result) {
-            if (streamCursor && streamCursor.parentNode) {
-              streamCursor.parentNode.removeChild(streamCursor);
-            }
-            resetStreamingState();
-            scrollToBottom();
-          },
-          onError: function(err) {
-            if (streamCursor && streamCursor.parentNode) {
-              streamCursor.parentNode.removeChild(streamCursor);
-            }
-            appendErrorBubble('Failed to get help: ' + (err.message || 'Unknown error'));
-            resetStreamingState();
-            scrollToBottom();
+          // Don't allow sending if no providers are available
+          if (availableProviders.length === 0) {
+            showErrorToast(
+              "Please enter your API key in Settings to enable live AI",
+            );
+            return;
           }
-        });
-      } else {
-        // Fallback when host not ready
-        bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
+
+          // Parse model selector (vendor/model-id format)
+          const modelValue = modelSelector.value;
+          const slashIdx = modelValue.indexOf("/");
+          const provider =
+            slashIdx > 0 ? modelValue.substring(0, slashIdx) : "anthropic";
+          const model =
+            slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
+
+          // Validate provider is available
+          if (availableProviders.length === 0) {
+            showErrorToast(
+              "Please enter your API key in Settings to enable live AI",
+            );
+            return;
+          }
+
+          // Check if selected provider is available
+          if (!availableProviders.includes(provider)) {
+            // Try to suggest alternative
+            const providerName =
+              provider.charAt(0).toUpperCase() + provider.slice(1);
+            showErrorToast(
+              "Please enter your " +
+                providerName +
+                " API key in Settings, or select a different model",
+            );
+            return;
+          }
+
+          // Clear input and show user bubble
+          userInput.value = "";
+          appendUserBubble(content);
+
+          // Create agent bubble for streaming
+          agentBubble = appendAgentBubble();
+          streamCursor = createStreamingCursor();
+          agentBubble.appendChild(streamCursor);
+
+          // Set streaming state
+          isStreaming = true;
+          streamStatus.textContent = "Streaming...";
+          sendBtn.classList.add("hidden");
+          abortBtn.classList.remove("hidden");
+
+          // Guard webclawHost availability
+          if (!window.webclawHost) {
+            appendErrorBubble("WebClaw host not initialized");
+            resetStreamingState();
+            return;
+          }
+
+          // Add message to conversation history
+          window.webclawHost.addMessage("user", content);
+
+          // Start stream with live provider routing
+          window.webclawHost.startStream({
+            provider: provider,
+            model: model,
+            messages: [{ role: "user", content: content }],
+            onToken: function (token) {
+              if (streamCursor && streamCursor.parentNode) {
+                streamCursor.parentNode.removeChild(streamCursor);
+              }
+              if (agentBubble) {
+                agentBubble.textContent += token;
+                agentBubble.appendChild(streamCursor);
+              }
+              scrollToBottom();
+            },
+            onComplete: function (result) {
+              if (streamCursor && streamCursor.parentNode) {
+                streamCursor.parentNode.removeChild(streamCursor);
+              }
+              resetStreamingState();
+              scrollToBottom();
+            },
+            onError: function (err) {
+              if (streamCursor && streamCursor.parentNode) {
+                streamCursor.parentNode.removeChild(streamCursor);
+              }
+
+              // Handle specific error cases
+              const errorMessage =
+                err && err.message ? err.message : "Stream error";
+              let userMessage = errorMessage;
+              let shouldSwitchProvider = false;
+
+              if (
+                errorMessage.includes("401") ||
+                errorMessage.includes("Unauthorized") ||
+                errorMessage.includes("Invalid") ||
+                errorMessage.includes("credit balance is too low")
+              ) {
+                userMessage =
+                  "Invalid API key or no credits - switching to available provider";
+                shouldSwitchProvider = true;
+              } else if (
+                errorMessage.includes("429") ||
+                errorMessage.includes("rate limit") ||
+                errorMessage.includes("RateLimit")
+              ) {
+                userMessage = "Rate limited - please wait a moment";
+              } else if (
+                errorMessage.includes("No provider") ||
+                errorMessage.includes("not found")
+              ) {
+                userMessage =
+                  "Please enter your API key in Settings to enable live AI";
+              }
+
+              appendErrorBubble(userMessage);
+              resetStreamingState();
+              scrollToBottom();
+
+              // If provider failed, try to switch to another available provider and retry
+              if (shouldSwitchProvider && availableProviders.length > 1) {
+                // Mark current provider as failed
+                if (!failedProviders.includes(provider)) {
+                  failedProviders.push(provider);
+                  console.log("[UI] Provider", provider, "marked as failed");
+                  updateProviderStatusIndicators();
+                  updateModelSelector();
+                }
+
+                // Remove current failed provider from available list temporarily
+                const currentProviderIdx = availableProviders.indexOf(provider);
+                if (currentProviderIdx > -1) {
+                  console.log(
+                    "[UI] Provider",
+                    provider,
+                    "failed, removing from available list",
+                  );
+                  availableProviders.splice(currentProviderIdx, 1);
+                }
+
+                // Find next available provider
+                const nextProvider = availableProviders.find(
+                  (p) => !failedProviders.includes(p),
+                );
+                if (nextProvider) {
+                  console.log(
+                    "[UI] Auto-switching to next available provider:",
+                    nextProvider,
+                  );
+                  // Find model for this provider
+                  const options = modelSelector.querySelectorAll("option");
+                  for (let i = 0; i < options.length; i++) {
+                    if (options[i].value.startsWith(nextProvider + "/")) {
+                      modelSelector.selectedIndex = i;
+                      console.log("[UI] Switched to model:", options[i].value);
+                      // Retry the message after a brief delay
+                      setTimeout(function () {
+                        userInput.value = content; // Restore the message
+                        sendMessage();
+                      }, 500);
+                      return;
+                    }
+                  }
+                }
+              }
+            },
+          });
+        }
+
+        function resetStreamingState() {
+          isStreaming = false;
+          streamStatus.textContent = "";
+          sendBtn.classList.remove("hidden");
+          abortBtn.classList.add("hidden");
+          agentBubble = null;
+          streamCursor = null;
+        }
+
+        function abortMessage() {
+          if (window.webclawHost) {
+            window.webclawHost.abortStream();
+          }
+        }
+
+        // ==========================================
+        // Slash Command Handler
+        // =========================================
+        function handleSlashCommand(command, args) {
+          switch (command) {
+            case "help":
+              showHelpMessage(args);
+              return true;
+            default:
+              return false;
+          }
+        }
+
+        function showHelpMessage(args) {
+          // Create help response bubble
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex justify-start";
+
+          const bubble = document.createElement("div");
+          bubble.className =
+            "max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 bg-gray-700 text-gray-100 text-sm";
+
+          // Get tool name from args
+          const toolMatch = args.match(/tool="([^"]+)"/);
+          const verbose = args.includes("verbose=true");
+
+          if (toolMatch) {
+            const toolName = toolMatch[1];
+            // Request help from agent for specific tool
+            const content = `help tool="${toolName}"${verbose ? " verbose=true" : ""}`;
+
+            // Create agent bubble for response
+            agentBubble = appendAgentBubble();
+            streamCursor = createStreamingCursor();
+            agentBubble.appendChild(streamCursor);
+
+            // Add message to conversation and trigger help
+            if (window.webclawHost) {
+              window.webclawHost.addMessage("user", content);
+
+              const modelValue = modelSelector.value;
+              const slashIdx = modelValue.indexOf("/");
+              const provider =
+                slashIdx > 0 ? modelValue.substring(0, slashIdx) : "anthropic";
+              const model =
+                slashIdx > 0 ? modelValue.substring(slashIdx + 1) : modelValue;
+
+              isStreaming = true;
+              streamStatus.textContent = "Getting help...";
+              sendBtn.classList.add("hidden");
+              abortBtn.classList.remove("hidden");
+
+              window.webclawHost.startStream({
+                provider: provider,
+                model: model,
+                messages: [{ role: "user", content: content }],
+                onToken: function (token) {
+                  if (streamCursor && streamCursor.parentNode) {
+                    streamCursor.parentNode.removeChild(streamCursor);
+                  }
+                  if (agentBubble) {
+                    agentBubble.textContent += token;
+                    agentBubble.appendChild(streamCursor);
+                  }
+                  scrollToBottom();
+                },
+                onComplete: function (result) {
+                  if (streamCursor && streamCursor.parentNode) {
+                    streamCursor.parentNode.removeChild(streamCursor);
+                  }
+                  resetStreamingState();
+                  scrollToBottom();
+                },
+                onError: function (err) {
+                  if (streamCursor && streamCursor.parentNode) {
+                    streamCursor.parentNode.removeChild(streamCursor);
+                  }
+                  appendErrorBubble(
+                    "Failed to get help: " + (err.message || "Unknown error"),
+                  );
+                  resetStreamingState();
+                  scrollToBottom();
+                },
+              });
+            } else {
+              // Fallback when host not ready
+              bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
 <strong>Available Commands:</strong><br>
 /help - Show this help message<br>
 /help tool="&lt;tool_name&gt;" - Get help for a specific tool<br><br>
@@ -702,13 +871,13 @@
 • memory_search - Search memories<br>
 • help - Get help on tools<br><br>
 See AGENTS.md for full documentation.`;
-        wrapper.appendChild(bubble);
-        messages.appendChild(wrapper);
-        scrollToBottom();
-      }
-    } else {
-      // General help
-      bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
+              wrapper.appendChild(bubble);
+              messages.appendChild(wrapper);
+              scrollToBottom();
+            }
+          } else {
+            // General help
+            bubble.innerHTML = `<strong>WebClaw Help</strong><br><br>
 <strong>Available Commands:</strong><br>
 /help - Show this help message<br>
 /help tool="&lt;tool_name&gt;" - Get help for a specific tool<br>
@@ -724,545 +893,675 @@ See AGENTS.md for full documentation.`;
 🧠 Memory: memory_store, memory_search<br>
 ❓ Help: help<br><br>
 Type <code>/help tool="file_read"</code> for tool-specific help.`;
-      wrapper.appendChild(bubble);
-      messages.appendChild(wrapper);
-      scrollToBottom();
-    }
-  }
-
-  // Event handlers
-  userInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  sendBtn.addEventListener('click', sendMessage);
-  abortBtn.addEventListener('click', abortMessage);
-
-  // ==========================================
-  // Tool Event Panel
-  // ==========================================
-  window.addEventListener('webclaw:tool-event', function(e) {
-    const detail = e.detail || {};
-    const toolName = detail.toolName || 'Unknown';
-    const status = detail.status || 'running';
-    const summary = detail.summary || '';
-    const full = detail.full || '';
-
-    // Create card
-    const card = document.createElement('div');
-    card.className = 'bg-gray-800 rounded-lg p-2 text-xs';
-
-    // Header row
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between mb-1';
-
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'font-mono text-indigo-400';
-    nameSpan.textContent = toolName;
-
-    const statusBadge = document.createElement('span');
-    if (status === 'running') {
-      statusBadge.className = 'text-yellow-400';
-      statusBadge.textContent = '● running';
-    } else if (status === 'done') {
-      statusBadge.className = 'text-green-400';
-      statusBadge.textContent = '● done';
-    } else {
-      statusBadge.className = 'text-red-400';
-      statusBadge.textContent = '● error';
-    }
-
-    header.appendChild(nameSpan);
-    header.appendChild(statusBadge);
-    card.appendChild(header);
-
-    // Summary paragraph
-    if (summary) {
-      const summaryP = document.createElement('p');
-      summaryP.className = 'text-gray-400';
-      summaryP.textContent = summary;
-      card.appendChild(summaryP);
-    }
-
-    // Expandable details
-    if (full) {
-      const details = document.createElement('details');
-      const summaryEl = document.createElement('summary');
-      summaryEl.className = 'text-gray-500 cursor-pointer hover:text-gray-300 mt-1';
-      summaryEl.textContent = 'Details';
-
-      const pre = document.createElement('pre');
-      pre.className = 'mt-2 p-2 bg-gray-900 rounded text-gray-500 overflow-x-auto';
-      pre.textContent = full;
-
-      details.appendChild(summaryEl);
-      details.appendChild(pre);
-      card.appendChild(details);
-    }
-
-    // Insert at top
-    toolEvents.insertBefore(card, toolEvents.firstChild);
-
-    // Trim to max 20 entries
-    while (toolEvents.children.length > 20) {
-      toolEvents.removeChild(toolEvents.lastChild);
-    }
-  });
-
-  // ==========================================
-  // Settings UI
-  // ==========================================
-  const API_PROVIDERS = [
-    { id: 'anthropic', name: 'Anthropic' },
-    { id: 'openai', name: 'OpenAI' },
-    { id: 'openrouter', name: 'OpenRouter' }
-  ];
-
-  function buildSettingsUI() {
-    // Clear existing content
-    apiKeysContainer.innerHTML = '';
-
-    // Check if webclaw APIs are available
-    if (!window.webclaw || !window.webclaw.keystore) {
-      apiKeysContainer.innerHTML = '<p class="text-xs text-gray-500">API key management not available. Please wait for WASM to initialize.</p>';
-      return;
-    }
-
-    // Demo mode indicator
-    const demoIndicator = document.createElement('div');
-    demoIndicator.id = 'demo-mode-indicator';
-    demoIndicator.className = 'hidden mb-4 p-3 bg-yellow-900/30 border border-yellow-700 rounded-lg';
-    demoIndicator.innerHTML = '<p class="text-sm text-yellow-200"><strong>Demo Mode</strong> — Enter an API key in Settings to enable live AI</p>';
-    apiKeysContainer.appendChild(demoIndicator);
-
-    // Build saved keys summary section
-    const summaryDiv = document.createElement('div');
-    summaryDiv.className = 'mb-4 p-3 bg-gray-800 rounded-lg';
-    summaryDiv.innerHTML = '<h3 class="text-xs font-semibold text-gray-300 mb-2">Provider Status</h3><div id="saved-keys-list" class="flex flex-wrap gap-2"></div>';
-    apiKeysContainer.appendChild(summaryDiv);
-
-    const savedKeysList = summaryDiv.querySelector('#saved-keys-list');
-
-    // Build rows for each provider
-    API_PROVIDERS.forEach(function(provider) {
-      const row = document.createElement('div');
-      row.className = 'flex items-center gap-3 mb-3';
-
-      const label = document.createElement('label');
-      label.className = 'w-24 text-xs text-gray-400';
-      label.textContent = provider.name;
-
-      const input = document.createElement('input');
-      input.type = 'password';
-      input.id = 'api-key-' + provider.id;
-      input.className = 'flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500';
-      input.placeholder = 'Enter API key...';
-
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-2 text-xs font-medium';
-      saveBtn.textContent = 'Save';
-
-      const statusSpan = document.createElement('span');
-      statusSpan.id = 'provider-status-' + provider.id;
-      statusSpan.className = 'text-xs text-gray-500 w-20';
-      statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
-
-      // Test connection button
-      const testBtn = document.createElement('button');
-      testBtn.id = 'test-btn-' + provider.id;
-      testBtn.className = 'hidden bg-gray-700 hover:bg-gray-600 text-gray-300 rounded px-2 py-2 text-xs font-medium';
-      testBtn.title = 'Test connection';
-      testBtn.innerHTML = '🧪';
-
-      // Pause/Resume button
-      const pauseBtn = document.createElement('button');
-      pauseBtn.id = 'pause-btn-' + provider.id;
-      pauseBtn.className = 'hidden bg-yellow-700 hover:bg-yellow-600 text-yellow-100 rounded px-2 py-2 text-xs font-medium';
-      pauseBtn.title = 'Pause provider';
-      pauseBtn.innerHTML = '⏸️';
-
-      // Save handler
-      saveBtn.addEventListener('click', function() {
-        const value = input.value.trim();
-        if (!value) return;
-
-        if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.setKey) {
-          saveBtn.textContent = 'Saving...';
-          saveBtn.disabled = true;
-          window.webclaw.keystore.setKey(provider.id, value)
-            .then(function() {
-              input.value = '';
-              // Key stored successfully, but provider registration is async
-              // The webclaw:providers-ready event will update status to "Connected"
-              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Saved</span>';
-              statusSpan.className = 'text-xs text-yellow-400 w-20';
-              saveBtn.textContent = 'Save';
-              saveBtn.disabled = false;
-              // Test button will be shown by updateProviderStatusIndicators() when provider is registered
-              // Refresh saved keys list
-              refreshSavedKeysList();
-            })
-            .catch(function(err) {
-              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Error</span>';
-              statusSpan.className = 'text-xs text-red-400 w-20';
-              saveBtn.textContent = 'Save';
-              saveBtn.disabled = false;
-              console.error('Failed to save key:', err);
-              showErrorToast('Failed to save API key: ' + (err.message || err));
-            });
-        } else {
-          statusSpan.textContent = 'Not ready';
-        }
-      });
-
-      // Test connection handler
-      testBtn.addEventListener('click', function() {
-        if (!availableProviders.includes(provider.id)) {
-          showErrorToast('Please save ' + provider.name + ' API key first');
-          return;
-        }
-        testProviderConnection(provider.id);
-      });
-
-      // Pause/Resume handler
-      pauseBtn.addEventListener('click', function() {
-        const isPaused = pausedProviders.includes(provider.id);
-        if (isPaused) {
-          // Resume
-          const idx = pausedProviders.indexOf(provider.id);
-          if (idx > -1) {
-            pausedProviders.splice(idx, 1);
+            wrapper.appendChild(bubble);
+            messages.appendChild(wrapper);
+            scrollToBottom();
           }
-          pauseBtn.innerHTML = '⏸️';
-          pauseBtn.title = 'Pause provider';
-          pauseBtn.classList.remove('bg-green-700', 'hover:bg-green-600');
-          pauseBtn.classList.add('bg-yellow-700', 'hover:bg-yellow-600');
-          showErrorToast(provider.name + ' resumed');
-        } else {
-          // Pause
-          pausedProviders.push(provider.id);
-          pauseBtn.innerHTML = '▶️';
-          pauseBtn.title = 'Resume provider';
-          pauseBtn.classList.remove('bg-yellow-700', 'hover:bg-yellow-600');
-          pauseBtn.classList.add('bg-green-700', 'hover:bg-green-600');
-          showErrorToast(provider.name + ' paused - will skip in auto-selection');
         }
-        updateProviderStatusIndicators();
-        updateModelSelector();
-      });
 
-      row.appendChild(label);
-      row.appendChild(input);
-      row.appendChild(saveBtn);
-      row.appendChild(testBtn);
-      row.appendChild(pauseBtn);
-      row.appendChild(statusSpan);
-      apiKeysContainer.appendChild(row);
-
-      // Check if key already exists AND provider is registered
-      if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
-        window.webclaw.keystore.hasKey(provider.id)
-          .then(function(hasKey) {
-            // Show test button only if provider is actually registered (in availableProviders)
-            const isRegistered = availableProviders.includes(provider.id);
-            if (hasKey && isRegistered) {
-              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
-              statusSpan.className = 'text-xs text-green-400 w-20';
-              // Show test button
-              testBtn.classList.remove('hidden');
-              // Add to saved keys list
-              const keyBadge = document.createElement('span');
-              keyBadge.className = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300';
-              keyBadge.textContent = provider.name;
-              keyBadge.id = 'saved-key-badge-' + provider.id;
-              savedKeysList.appendChild(keyBadge);
-            } else if (hasKey) {
-              // Key exists but not registered yet (async loading in progress)
-              statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Loading...</span>';
-              statusSpan.className = 'text-xs text-yellow-400 w-20';
-            }
-          })
-          .catch(function(err) {
-            console.warn('Failed to check key status for', provider.id, err);
-          });
-      }
-    });
-
-    // Function to refresh saved keys list
-    function refreshSavedKeysList() {
-      savedKeysList.innerHTML = '';
-      API_PROVIDERS.forEach(function(provider) {
-        if (window.webclaw && window.webclaw.keystore && window.webclaw.keystore.hasKey) {
-          window.webclaw.keystore.hasKey(provider.id)
-            .then(function(hasKey) {
-              if (hasKey) {
-                const keyBadge = document.createElement('span');
-                keyBadge.className = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300';
-                keyBadge.textContent = provider.name;
-                keyBadge.id = 'saved-key-badge-' + provider.id;
-                savedKeysList.appendChild(keyBadge);
-              }
-            })
-            .catch(function(err) {
-              console.warn('Failed to refresh key status for', provider.id, err);
-            });
-        }
-      });
-    }
-
-    // Initial demo mode check
-    updateDemoModeIndicator();
-  }
-
-  // ==========================================
-  // Test Provider Connection
-  // ==========================================
-  function testProviderConnection(providerId) {
-    const provider = API_PROVIDERS.find(function(p) { return p.id === providerId; });
-    if (!provider) return;
-
-    // Prevent test if already streaming
-    if (isStreaming) {
-      showErrorToast('A stream is already in progress. Please wait.');
-      return;
-    }
-
-    const testBtn = document.getElementById('test-btn-' + providerId);
-    if (testBtn) {
-      testBtn.disabled = true;
-      testBtn.innerHTML = '⏳';
-    }
-
-    // Set streaming state to prevent chat during test
-    isStreaming = true;
-
-    // Use a cheap model for testing (haiku for Anthropic, gpt-3.5-turbo for OpenAI)
-    let testModel;
-    if (providerId === 'anthropic') {
-      testModel = 'claude-3-haiku-20240307';
-    } else if (providerId === 'openai') {
-      testModel = 'gpt-3.5-turbo';
-    } else {
-      testModel = 'openrouter/anthropic/claude-3-haiku-20240307';
-    }
-
-    console.log('[UI] Testing connection to', providerId, 'with model', testModel);
-
-    let testComplete = false;
-    let tokenReceived = false;
-
-    // Set a timeout to detect stuck streams
-    const timeoutId = setTimeout(function() {
-      if (!testComplete) {
-        testComplete = true;
-        
-        // Reset streaming state
-        isStreaming = false;
-        
-        console.error('[UI] Test connection timed out after 30 seconds');
-        if (testBtn) {
-          testBtn.disabled = false;
-          testBtn.innerHTML = '🧪';
-        }
-        if (!tokenReceived) {
-          showErrorToast('Connection test timed out. Check console for [DEBUG] logs.');
-        }
-      }
-    }, 30000);
-
-    // Make a minimal test call
-    window.webclawHost.startStream({
-      provider: providerId,
-      model: testModel,
-      messages: [{ role: 'user', content: "Say 'test'" }],
-      onToken: function(token) {
-        tokenReceived = true;
-        console.log('[UI] Token received:', token);
-      },
-      onComplete: function() {
-        if (testComplete) return;
-        testComplete = true;
-        clearTimeout(timeoutId);
-        
-        // Reset streaming state
-        isStreaming = false;
-        
-        if (testBtn) {
-          testBtn.disabled = false;
-          testBtn.innerHTML = '🧪';
-        }
-        
-        if (tokenReceived) {
-          showErrorToast('Connection to ' + provider.name + ' successful!');
-          // Change toast to success style
-          const toast = document.getElementById('error-toast');
-          if (toast) {
-            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900 text-green-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md';
-            toast.innerHTML = '<span class="text-green-400">✓</span><span>Connection to ' + provider.name + ' successful!</span>';
+        // Event handlers
+        userInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
           }
-        } else {
-          showErrorToast('Stream completed but no tokens received');
-        }
-      },
-      onError: function(err) {
-        if (testComplete) return;
-        testComplete = true;
-        clearTimeout(timeoutId);
-        
-        // Reset streaming state
-        isStreaming = false;
-        
-        if (testBtn) {
-          testBtn.disabled = false;
-          testBtn.innerHTML = '🧪';
-        }
-
-        // Handle specific error types
-        const errorMsg = err && err.message ? err.message : String(err);
-        console.error('[UI] Test connection error:', errorMsg);
-        
-        // Mark provider as failed if invalid key or no credits
-        if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('invalid') || errorMsg.includes('credit balance is too low')) {
-          if (!failedProviders.includes(providerId)) {
-            failedProviders.push(providerId);
-            console.log('[UI] Marked provider as failed:', providerId);
-            updateProviderStatusIndicators();
-            updateModelSelector();
-          }
-          showErrorToast('Invalid API key or no credits for ' + provider.name + ' — please check Settings');
-        } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
-          showErrorToast('Rate limited on ' + provider.name + ' — please wait a moment');
-        } else if (errorMsg.includes('missing') || errorMsg.includes('No provider')) {
-          showErrorToast('Please enter your ' + provider.name + ' API key in Settings');
-        } else {
-          showErrorToast('Connection failed: ' + errorMsg);
-        }
-      }
-    });
-  }
-
-  // Config export/import
-  exportConfigBtn.addEventListener('click', function() {
-    if (window.webclaw && window.webclaw.exportImport && window.webclaw.exportImport.exportConfig) {
-      window.webclaw.exportImport.exportConfig()
-        .then(function() {
-          console.log('Config exported');
-        })
-        .catch(function(err) {
-          console.error('Export failed:', err);
-          alert('Export failed: ' + (err && err.message ? err.message : 'Unknown error'));
         });
-    } else {
-      alert('Export not available');
-    }
-  });
 
-  importConfigBtn.addEventListener('click', function() {
-    importFileInput.click();
-  });
+        sendBtn.addEventListener("click", sendMessage);
+        abortBtn.addEventListener("click", abortMessage);
 
-  importFileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+        // ==========================================
+        // Tool Event Panel
+        // ==========================================
+        window.addEventListener("webclaw:tool-event", function (e) {
+          const detail = e.detail || {};
+          const toolName = detail.toolName || "Unknown";
+          const status = detail.status || "running";
+          const summary = detail.summary || "";
+          const full = detail.full || "";
 
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      const content = event.target.result;
-      if (window.webclaw && window.webclaw.exportImport && window.webclaw.exportImport.importConfig) {
-        window.webclaw.exportImport.importConfig(content)
-          .then(function() {
-            console.log('Config imported');
-            alert('Config imported successfully');
-            // Rebuild settings UI to reflect new keys
-            buildSettingsUI();
-          })
-          .catch(function(err) {
-            console.error('Import failed:', err);
-            alert('Import failed: ' + (err && err.message ? err.message : 'Unknown error'));
+          // Create card
+          const card = document.createElement("div");
+          card.className = "bg-gray-800 rounded-lg p-2 text-xs";
+
+          // Header row
+          const header = document.createElement("div");
+          header.className = "flex items-center justify-between mb-1";
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "font-mono text-indigo-400";
+          nameSpan.textContent = toolName;
+
+          const statusBadge = document.createElement("span");
+          if (status === "running") {
+            statusBadge.className = "text-yellow-400";
+            statusBadge.textContent = "● running";
+          } else if (status === "done") {
+            statusBadge.className = "text-green-400";
+            statusBadge.textContent = "● done";
+          } else {
+            statusBadge.className = "text-red-400";
+            statusBadge.textContent = "● error";
+          }
+
+          header.appendChild(nameSpan);
+          header.appendChild(statusBadge);
+          card.appendChild(header);
+
+          // Summary paragraph
+          if (summary) {
+            const summaryP = document.createElement("p");
+            summaryP.className = "text-gray-400";
+            summaryP.textContent = summary;
+            card.appendChild(summaryP);
+          }
+
+          // Expandable details
+          if (full) {
+            const details = document.createElement("details");
+            const summaryEl = document.createElement("summary");
+            summaryEl.className =
+              "text-gray-500 cursor-pointer hover:text-gray-300 mt-1";
+            summaryEl.textContent = "Details";
+
+            const pre = document.createElement("pre");
+            pre.className =
+              "mt-2 p-2 bg-gray-900 rounded text-gray-500 overflow-x-auto";
+            pre.textContent = full;
+
+            details.appendChild(summaryEl);
+            details.appendChild(pre);
+            card.appendChild(details);
+          }
+
+          // Insert at top
+          toolEvents.insertBefore(card, toolEvents.firstChild);
+
+          // Trim to max 20 entries
+          while (toolEvents.children.length > 20) {
+            toolEvents.removeChild(toolEvents.lastChild);
+          }
+        });
+
+        // ==========================================
+        // Settings UI
+        // ==========================================
+        const API_PROVIDERS = [
+          { id: "anthropic", name: "Anthropic" },
+          { id: "openai", name: "OpenAI" },
+          { id: "openrouter", name: "OpenRouter" },
+        ];
+
+        function buildSettingsUI() {
+          // Clear existing content
+          apiKeysContainer.innerHTML = "";
+
+          // Check if webclaw APIs are available
+          if (!window.webclaw || !window.webclaw.keystore) {
+            apiKeysContainer.innerHTML =
+              '<p class="text-xs text-gray-500">API key management not available. Please wait for WASM to initialize.</p>';
+            return;
+          }
+
+          // Demo mode indicator
+          const demoIndicator = document.createElement("div");
+          demoIndicator.id = "demo-mode-indicator";
+          demoIndicator.className =
+            "hidden mb-4 p-3 bg-yellow-900/30 border border-yellow-700 rounded-lg";
+          demoIndicator.innerHTML =
+            '<p class="text-sm text-yellow-200"><strong>Demo Mode</strong> — Enter an API key in Settings to enable live AI</p>';
+          apiKeysContainer.appendChild(demoIndicator);
+
+          // Build saved keys summary section
+          const summaryDiv = document.createElement("div");
+          summaryDiv.className = "mb-4 p-3 bg-gray-800 rounded-lg";
+          summaryDiv.innerHTML =
+            '<h3 class="text-xs font-semibold text-gray-300 mb-2">Provider Status</h3><div id="saved-keys-list" class="flex flex-wrap gap-2"></div>';
+          apiKeysContainer.appendChild(summaryDiv);
+
+          const savedKeysList = summaryDiv.querySelector("#saved-keys-list");
+
+          // Build rows for each provider
+          API_PROVIDERS.forEach(function (provider) {
+            const row = document.createElement("div");
+            row.className = "flex items-center gap-3 mb-3";
+
+            const label = document.createElement("label");
+            label.className = "w-24 text-xs text-gray-400";
+            label.textContent = provider.name;
+
+            const input = document.createElement("input");
+            input.type = "password";
+            input.id = "api-key-" + provider.id;
+            input.className =
+              "flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500";
+            input.placeholder = "Enter API key...";
+
+            const saveBtn = document.createElement("button");
+            saveBtn.className =
+              "bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-2 text-xs font-medium";
+            saveBtn.textContent = "Save";
+
+            const statusSpan = document.createElement("span");
+            statusSpan.id = "provider-status-" + provider.id;
+            statusSpan.className = "text-xs text-gray-500 w-20";
+            statusSpan.innerHTML =
+              '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>No key</span>';
+
+            // Test connection button
+            const testBtn = document.createElement("button");
+            testBtn.id = "test-btn-" + provider.id;
+            testBtn.className =
+              "hidden bg-gray-700 hover:bg-gray-600 text-gray-300 rounded px-2 py-2 text-xs font-medium";
+            testBtn.title = "Test connection";
+            testBtn.innerHTML = "🧪";
+
+            // Pause/Resume button
+            const pauseBtn = document.createElement("button");
+            pauseBtn.id = "pause-btn-" + provider.id;
+            pauseBtn.className =
+              "hidden bg-yellow-700 hover:bg-yellow-600 text-yellow-100 rounded px-2 py-2 text-xs font-medium";
+            pauseBtn.title = "Pause provider";
+            pauseBtn.innerHTML = "⏸️";
+
+            // Save handler
+            saveBtn.addEventListener("click", function () {
+              const value = input.value.trim();
+              if (!value) return;
+
+              if (
+                window.webclaw &&
+                window.webclaw.keystore &&
+                window.webclaw.keystore.setKey
+              ) {
+                saveBtn.textContent = "Saving...";
+                saveBtn.disabled = true;
+                window.webclaw.keystore
+                  .setKey(provider.id, value)
+                  .then(function () {
+                    input.value = "";
+                    // Key stored successfully, but provider registration is async
+                    // The webclaw:providers-ready event will update status to "Connected"
+                    statusSpan.innerHTML =
+                      '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Saved</span>';
+                    statusSpan.className = "text-xs text-yellow-400 w-20";
+                    saveBtn.textContent = "Save";
+                    saveBtn.disabled = false;
+                    // Test button will be shown by updateProviderStatusIndicators() when provider is registered
+                    // Refresh saved keys list
+                    refreshSavedKeysList();
+                  })
+                  .catch(function (err) {
+                    statusSpan.innerHTML =
+                      '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Error</span>';
+                    statusSpan.className = "text-xs text-red-400 w-20";
+                    saveBtn.textContent = "Save";
+                    saveBtn.disabled = false;
+                    console.error("Failed to save key:", err);
+                    showErrorToast(
+                      "Failed to save API key: " + (err.message || err),
+                    );
+                  });
+              } else {
+                statusSpan.textContent = "Not ready";
+              }
+            });
+
+            // Test connection handler
+            testBtn.addEventListener("click", function () {
+              if (!availableProviders.includes(provider.id)) {
+                showErrorToast(
+                  "Please save " + provider.name + " API key first",
+                );
+                return;
+              }
+              testProviderConnection(provider.id);
+            });
+
+            // Pause/Resume handler
+            pauseBtn.addEventListener("click", function () {
+              const isPaused = pausedProviders.includes(provider.id);
+              if (isPaused) {
+                // Resume
+                const idx = pausedProviders.indexOf(provider.id);
+                if (idx > -1) {
+                  pausedProviders.splice(idx, 1);
+                }
+                pauseBtn.innerHTML = "⏸️";
+                pauseBtn.title = "Pause provider";
+                pauseBtn.classList.remove("bg-green-700", "hover:bg-green-600");
+                pauseBtn.classList.add("bg-yellow-700", "hover:bg-yellow-600");
+                showErrorToast(provider.name + " resumed");
+              } else {
+                // Pause
+                pausedProviders.push(provider.id);
+                pauseBtn.innerHTML = "▶️";
+                pauseBtn.title = "Resume provider";
+                pauseBtn.classList.remove(
+                  "bg-yellow-700",
+                  "hover:bg-yellow-600",
+                );
+                pauseBtn.classList.add("bg-green-700", "hover:bg-green-600");
+                showErrorToast(
+                  provider.name + " paused - will skip in auto-selection",
+                );
+              }
+              updateProviderStatusIndicators();
+              updateModelSelector();
+            });
+
+            row.appendChild(label);
+            row.appendChild(input);
+            row.appendChild(saveBtn);
+            row.appendChild(testBtn);
+            row.appendChild(pauseBtn);
+            row.appendChild(statusSpan);
+            apiKeysContainer.appendChild(row);
+
+            // Check if key already exists AND provider is registered
+            if (
+              window.webclaw &&
+              window.webclaw.keystore &&
+              window.webclaw.keystore.hasKey
+            ) {
+              window.webclaw.keystore
+                .hasKey(provider.id)
+                .then(function (hasKey) {
+                  // Show test button only if provider is actually registered (in availableProviders)
+                  const isRegistered = availableProviders.includes(provider.id);
+                  if (hasKey && isRegistered) {
+                    statusSpan.innerHTML =
+                      '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
+                    statusSpan.className = "text-xs text-green-400 w-20";
+                    // Show test button
+                    testBtn.classList.remove("hidden");
+                    // Add to saved keys list
+                    const keyBadge = document.createElement("span");
+                    keyBadge.className =
+                      "inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300";
+                    keyBadge.textContent = provider.name;
+                    keyBadge.id = "saved-key-badge-" + provider.id;
+                    savedKeysList.appendChild(keyBadge);
+                  } else if (hasKey) {
+                    // Key exists but not registered yet (async loading in progress)
+                    statusSpan.innerHTML =
+                      '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Loading...</span>';
+                    statusSpan.className = "text-xs text-yellow-400 w-20";
+                  }
+                })
+                .catch(function (err) {
+                  console.warn(
+                    "Failed to check key status for",
+                    provider.id,
+                    err,
+                  );
+                });
+            }
           });
-      } else {
-        alert('Import not available');
-      }
-    };
-    reader.readAsText(file);
-    importFileInput.value = '';
-  });
 
-  // ==========================================
-  // Connected Services UI
-  // ==========================================
-  const OAUTH_PROVIDERS = [
-    { id: 'twitter', name: 'Twitter / X', icon: '🐦', description: 'Post tweets and read timeline', scopes: ['tweet.read', 'tweet.write', 'users.read'] },
-    { id: 'google', name: 'Google', icon: '🔍', description: 'Gmail and Calendar access', scopes: ['gmail.modify', 'calendar.events'] },
-    { id: 'github', name: 'GitHub', icon: '🐙', description: 'Repository and issue access', scopes: ['repo', 'read:user'] },
-    { id: 'notion', name: 'Notion', icon: '📝', description: 'Database and page access', scopes: [] }
-  ];
+          // Function to refresh saved keys list
+          function refreshSavedKeysList() {
+            savedKeysList.innerHTML = "";
+            API_PROVIDERS.forEach(function (provider) {
+              if (
+                window.webclaw &&
+                window.webclaw.keystore &&
+                window.webclaw.keystore.hasKey
+              ) {
+                window.webclaw.keystore
+                  .hasKey(provider.id)
+                  .then(function (hasKey) {
+                    if (hasKey) {
+                      const keyBadge = document.createElement("span");
+                      keyBadge.className =
+                        "inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-900 text-green-300";
+                      keyBadge.textContent = provider.name;
+                      keyBadge.id = "saved-key-badge-" + provider.id;
+                      savedKeysList.appendChild(keyBadge);
+                    }
+                  })
+                  .catch(function (err) {
+                    console.warn(
+                      "Failed to refresh key status for",
+                      provider.id,
+                      err,
+                    );
+                  });
+              }
+            });
+          }
 
-  function buildConnectedServicesUI() {
-    const container = document.getElementById('connected-services-list');
-    if (!container) return;
+          // Initial demo mode check
+          updateDemoModeIndicator();
+        }
 
-    // Clear existing content
-    container.innerHTML = '';
+        // ==========================================
+        // Test Provider Connection
+        // ==========================================
+        function testProviderConnection(providerId) {
+          const provider = API_PROVIDERS.find(function (p) {
+            return p.id === providerId;
+          });
+          if (!provider) return;
 
-    // Check if OAuth API is available
-    if (!window.webclaw || !window.webclaw.oauth) {
-      container.innerHTML = '<p class="text-xs text-gray-500">OAuth not available. Please wait for WASM to initialize.</p>';
-      return;
-    }
+          // Prevent test if already streaming
+          if (isStreaming) {
+            showErrorToast("A stream is already in progress. Please wait.");
+            return;
+          }
 
-    // Build rows for each provider
-    OAUTH_PROVIDERS.forEach(function(provider) {
-      const row = document.createElement('div');
-      row.className = 'flex items-center justify-between p-3 bg-gray-800 rounded-lg';
-      row.id = 'oauth-provider-' + provider.id;
+          const testBtn = document.getElementById("test-btn-" + providerId);
+          if (testBtn) {
+            testBtn.disabled = true;
+            testBtn.innerHTML = "⏳";
+          }
 
-      // Left side: icon and info
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'flex items-center gap-3';
+          // Set streaming state to prevent chat during test
+          isStreaming = true;
 
-      const iconSpan = document.createElement('span');
-      iconSpan.className = 'text-2xl';
-      iconSpan.textContent = provider.icon;
+          // Use a cheap model for testing (haiku for Anthropic, gpt-3.5-turbo for OpenAI)
+          let testModel;
+          if (providerId === "anthropic") {
+            testModel = "claude-3-haiku-20240307";
+          } else if (providerId === "openai") {
+            testModel = "gpt-3.5-turbo";
+          } else {
+            testModel = "openrouter/anthropic/claude-3-haiku-20240307";
+          }
 
-      const textDiv = document.createElement('div');
-      
-      const nameSpan = document.createElement('div');
-      nameSpan.className = 'text-sm font-medium text-gray-200';
-      nameSpan.textContent = provider.name;
+          console.log(
+            "[UI] Testing connection to",
+            providerId,
+            "with model",
+            testModel,
+          );
 
-      const descSpan = document.createElement('div');
-      descSpan.className = 'text-xs text-gray-500';
-      descSpan.textContent = provider.description;
+          let testComplete = false;
+          let tokenReceived = false;
 
-      textDiv.appendChild(nameSpan);
-      textDiv.appendChild(descSpan);
+          // Set a timeout to detect stuck streams
+          const timeoutId = setTimeout(function () {
+            if (!testComplete) {
+              testComplete = true;
 
-      infoDiv.appendChild(iconSpan);
-      infoDiv.appendChild(textDiv);
+              // Reset streaming state
+              isStreaming = false;
 
-      // Right side: status and button
-      const actionDiv = document.createElement('div');
-      actionDiv.className = 'flex items-center gap-3';
+              console.error("[UI] Test connection timed out after 30 seconds");
+              if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = "🧪";
+              }
+              if (!tokenReceived) {
+                showErrorToast(
+                  "Connection test timed out. Check console for [DEBUG] logs.",
+                );
+              }
+            }
+          }, 30000);
 
-      const statusSpan = document.createElement('span');
-      statusSpan.id = 'oauth-status-' + provider.id;
-      statusSpan.className = 'text-xs text-gray-500';
-      statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
+          // Make a minimal test call
+          window.webclawHost.startStream({
+            provider: providerId,
+            model: testModel,
+            messages: [{ role: "user", content: "Say 'test'" }],
+            onToken: function (token) {
+              tokenReceived = true;
+              console.log("[UI] Token received:", token);
+            },
+            onComplete: function () {
+              if (testComplete) return;
+              testComplete = true;
+              clearTimeout(timeoutId);
 
-      const connectBtn = document.createElement('button');
-      connectBtn.id = 'oauth-btn-' + provider.id;
-      connectBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium';
-      connectBtn.textContent = 'Connect';
+              // Reset streaming state
+              isStreaming = false;
 
-      // Disconnect confirmation modal
-      const disconnectModal = document.createElement('div');
-      disconnectModal.id = 'oauth-disconnect-modal-' + provider.id;
-      disconnectModal.className = 'hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-      disconnectModal.innerHTML = `
+              if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = "🧪";
+              }
+
+              if (tokenReceived) {
+                showErrorToast(
+                  "Connection to " + provider.name + " successful!",
+                );
+                // Change toast to success style
+                const toast = document.getElementById("error-toast");
+                if (toast) {
+                  toast.className =
+                    "fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900 text-green-100 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 max-w-md";
+                  toast.innerHTML =
+                    '<span class="text-green-400">✓</span><span>Connection to ' +
+                    provider.name +
+                    " successful!</span>";
+                }
+              } else {
+                showErrorToast("Stream completed but no tokens received");
+              }
+            },
+            onError: function (err) {
+              if (testComplete) return;
+              testComplete = true;
+              clearTimeout(timeoutId);
+
+              // Reset streaming state
+              isStreaming = false;
+
+              if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = "🧪";
+              }
+
+              // Handle specific error types
+              const errorMsg = err && err.message ? err.message : String(err);
+              console.error("[UI] Test connection error:", errorMsg);
+
+              // Mark provider as failed if invalid key or no credits
+              if (
+                errorMsg.includes("401") ||
+                errorMsg.includes("Unauthorized") ||
+                errorMsg.includes("invalid") ||
+                errorMsg.includes("credit balance is too low")
+              ) {
+                if (!failedProviders.includes(providerId)) {
+                  failedProviders.push(providerId);
+                  console.log("[UI] Marked provider as failed:", providerId);
+                  updateProviderStatusIndicators();
+                  updateModelSelector();
+                }
+                showErrorToast(
+                  "Invalid API key or no credits for " +
+                    provider.name +
+                    " — please check Settings",
+                );
+              } else if (
+                errorMsg.includes("429") ||
+                errorMsg.includes("rate limit")
+              ) {
+                showErrorToast(
+                  "Rate limited on " +
+                    provider.name +
+                    " — please wait a moment",
+                );
+              } else if (
+                errorMsg.includes("missing") ||
+                errorMsg.includes("No provider")
+              ) {
+                showErrorToast(
+                  "Please enter your " + provider.name + " API key in Settings",
+                );
+              } else {
+                showErrorToast("Connection failed: " + errorMsg);
+              }
+            },
+          });
+        }
+
+        // Config export/import
+        exportConfigBtn.addEventListener("click", function () {
+          if (
+            window.webclaw &&
+            window.webclaw.exportImport &&
+            window.webclaw.exportImport.exportConfig
+          ) {
+            window.webclaw.exportImport
+              .exportConfig()
+              .then(function () {
+                console.log("Config exported");
+              })
+              .catch(function (err) {
+                console.error("Export failed:", err);
+                alert(
+                  "Export failed: " +
+                    (err && err.message ? err.message : "Unknown error"),
+                );
+              });
+          } else {
+            alert("Export not available");
+          }
+        });
+
+        importConfigBtn.addEventListener("click", function () {
+          importFileInput.click();
+        });
+
+        importFileInput.addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const content = event.target.result;
+            if (
+              window.webclaw &&
+              window.webclaw.exportImport &&
+              window.webclaw.exportImport.importConfig
+            ) {
+              window.webclaw.exportImport
+                .importConfig(content)
+                .then(function () {
+                  console.log("Config imported");
+                  alert("Config imported successfully");
+                  // Rebuild settings UI to reflect new keys
+                  buildSettingsUI();
+                })
+                .catch(function (err) {
+                  console.error("Import failed:", err);
+                  alert(
+                    "Import failed: " +
+                      (err && err.message ? err.message : "Unknown error"),
+                  );
+                });
+            } else {
+              alert("Import not available");
+            }
+          };
+          reader.readAsText(file);
+          importFileInput.value = "";
+        });
+
+        // ==========================================
+        // Connected Services UI
+        // ==========================================
+        const OAUTH_PROVIDERS = [
+          {
+            id: "twitter",
+            name: "Twitter / X",
+            icon: "🐦",
+            description: "Post tweets and read timeline",
+            scopes: ["tweet.read", "tweet.write", "users.read"],
+          },
+          {
+            id: "google",
+            name: "Google",
+            icon: "🔍",
+            description: "Gmail and Calendar access",
+            scopes: ["gmail.modify", "calendar.events"],
+          },
+          {
+            id: "github",
+            name: "GitHub",
+            icon: "🐙",
+            description: "Repository and issue access",
+            scopes: ["repo", "read:user"],
+          },
+          {
+            id: "notion",
+            name: "Notion",
+            icon: "📝",
+            description: "Database and page access",
+            scopes: [],
+          },
+        ];
+
+        function buildConnectedServicesUI() {
+          const container = document.getElementById("connected-services-list");
+          if (!container) return;
+
+          // Clear existing content
+          container.innerHTML = "";
+
+          // Check if OAuth API is available
+          if (!window.webclaw || !window.webclaw.oauth) {
+            container.innerHTML =
+              '<p class="text-xs text-gray-500">OAuth not available. Please wait for WASM to initialize.</p>';
+            return;
+          }
+
+          // Build rows for each provider
+          OAUTH_PROVIDERS.forEach(function (provider) {
+            const row = document.createElement("div");
+            row.className =
+              "flex items-center justify-between p-3 bg-gray-800 rounded-lg";
+            row.id = "oauth-provider-" + provider.id;
+
+            // Left side: icon and info
+            const infoDiv = document.createElement("div");
+            infoDiv.className = "flex items-center gap-3";
+
+            const iconSpan = document.createElement("span");
+            iconSpan.className = "text-2xl";
+            iconSpan.textContent = provider.icon;
+
+            const textDiv = document.createElement("div");
+
+            const nameSpan = document.createElement("div");
+            nameSpan.className = "text-sm font-medium text-gray-200";
+            nameSpan.textContent = provider.name;
+
+            const descSpan = document.createElement("div");
+            descSpan.className = "text-xs text-gray-500";
+            descSpan.textContent = provider.description;
+
+            textDiv.appendChild(nameSpan);
+            textDiv.appendChild(descSpan);
+
+            infoDiv.appendChild(iconSpan);
+            infoDiv.appendChild(textDiv);
+
+            // Right side: status and button
+            const actionDiv = document.createElement("div");
+            actionDiv.className = "flex items-center gap-3";
+
+            const statusSpan = document.createElement("span");
+            statusSpan.id = "oauth-status-" + provider.id;
+            statusSpan.className = "text-xs text-gray-500";
+            statusSpan.innerHTML =
+              '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
+
+            const connectBtn = document.createElement("button");
+            connectBtn.id = "oauth-btn-" + provider.id;
+            connectBtn.className =
+              "bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium";
+            connectBtn.textContent = "Connect";
+
+            // Disconnect confirmation modal
+            const disconnectModal = document.createElement("div");
+            disconnectModal.id = "oauth-disconnect-modal-" + provider.id;
+            disconnectModal.className =
+              "hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50";
+            disconnectModal.innerHTML = `
         <div class="bg-gray-800 rounded-lg p-6 max-w-sm mx-4">
           <h3 class="text-sm font-semibold text-gray-200 mb-2">Disconnect from ${provider.name}?</h3>
           <p class="text-xs text-gray-400 mb-4">This will remove your stored credentials. You can reconnect anytime.</p>
@@ -1272,318 +1571,391 @@ Type <code>/help tool="file_read"</code> for tool-specific help.`;
           </div>
         </div>
       `;
-      document.body.appendChild(disconnectModal);
+            document.body.appendChild(disconnectModal);
 
-      // Connect/Disconnect handler
-      connectBtn.addEventListener('click', function() {
-        const isConnected = connectBtn.textContent === 'Disconnect';
-        
-        if (isConnected) {
-          // Show confirmation modal
-          disconnectModal.classList.remove('hidden');
-        } else {
-          // Initiate connection
-          initiateOAuth(provider.id, connectBtn, statusSpan);
-        }
-      });
+            // Connect/Disconnect handler
+            connectBtn.addEventListener("click", function () {
+              const isConnected = connectBtn.textContent === "Disconnect";
 
-      // Modal button handlers
-      document.getElementById('oauth-cancel-disconnect-' + provider.id).addEventListener('click', function() {
-        disconnectModal.classList.add('hidden');
-      });
-
-      document.getElementById('oauth-confirm-disconnect-' + provider.id).addEventListener('click', function() {
-        disconnectModal.classList.add('hidden');
-        disconnectOAuth(provider.id, connectBtn, statusSpan);
-      });
-
-      actionDiv.appendChild(statusSpan);
-      actionDiv.appendChild(connectBtn);
-
-      row.appendChild(infoDiv);
-      row.appendChild(actionDiv);
-      container.appendChild(row);
-    });
-
-    // Load initial connection status
-    updateAllConnectionStatus();
-  }
-
-  // Initiate OAuth connection
-  async function initiateOAuth(providerId, btn, statusSpan) {
-    btn.disabled = true;
-    btn.textContent = 'Connecting...';
-    statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Connecting...</span>';
-    statusSpan.className = 'text-xs text-yellow-400';
-
-    try {
-      // Call Go OAuth manager via WASM export
-      if (window.webclaw && window.webclaw.oauth && window.webclaw.oauth.initiateConnection) {
-        await window.webclaw.oauth.initiateConnection(providerId);
-        
-        // Success
-        statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
-        statusSpan.className = 'text-xs text-green-400';
-        btn.textContent = 'Disconnect';
-        btn.className = 'bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1.5 text-xs font-medium';
-        showToast('Connected to ' + providerId, 'success');
-      } else {
-        throw new Error('OAuth manager not available');
-      }
-    } catch (err) {
-      console.error('[oauth] Connection failed:', err);
-      statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Failed</span>';
-      statusSpan.className = 'text-xs text-red-400';
-      btn.textContent = 'Connect';
-      showToast('Connection failed: ' + (err.message || 'Unknown error'), 'error');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  // Disconnect OAuth
-  async function disconnectOAuth(providerId, btn, statusSpan) {
-    btn.disabled = true;
-    
-    try {
-      if (window.webclaw && window.webclaw.oauth && window.webclaw.oauth.disconnect) {
-        await window.webclaw.oauth.disconnect(providerId);
-        
-        // Success
-        statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
-        statusSpan.className = 'text-xs text-gray-500';
-        btn.textContent = 'Connect';
-        btn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium';
-        showToast('Disconnected from ' + providerId, 'info');
-      }
-    } catch (err) {
-      console.error('[oauth] Disconnect failed:', err);
-      showToast('Disconnect failed: ' + (err.message || 'Unknown error'), 'error');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  // Update all connection statuses
-  async function updateAllConnectionStatus() {
-    if (!window.webclaw || !window.webclaw.oauth || !window.webclaw.oauth.getConnectionStatus) {
-      return;
-    }
-
-    try {
-      const statuses = await window.webclaw.oauth.getConnectionStatus();
-      
-      if (Array.isArray(statuses)) {
-        statuses.forEach(function(status) {
-          const btn = document.getElementById('oauth-btn-' + status.provider);
-          const statusSpan = document.getElementById('oauth-status-' + status.provider);
-          
-          if (!btn || !statusSpan) return;
-
-          if (status.connected) {
-            const username = status.username ? ' (' + status.username + ')' : '';
-            statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected' + username + '</span>';
-            statusSpan.className = 'text-xs text-green-400';
-            btn.textContent = 'Disconnect';
-            btn.className = 'bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1.5 text-xs font-medium';
-          } else {
-            statusSpan.innerHTML = '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
-            statusSpan.className = 'text-xs text-gray-500';
-            btn.textContent = 'Connect';
-            btn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium';
-          }
-        });
-      }
-    } catch (err) {
-      console.error('[oauth] Failed to update connection status:', err);
-    }
-  }
-
-  // Toast notification helper
-  function showToast(message, type) {
-    const toast = document.createElement('div');
-    const colors = {
-      success: 'bg-green-600',
-      error: 'bg-red-600',
-      info: 'bg-blue-600'
-    };
-    
-    toast.className = 'fixed bottom-4 right-4 ' + (colors[type] || colors.info) + ' text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50';
-    toast.textContent = message;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(function() {
-      toast.remove();
-    }, 3000);
-  }
-
-  // ==========================================
-  // Identity Files UI
-  // ==========================================
-  const IDENTITY_FILES = ['IDENTITY.md', 'SOUL.md', 'USER.md', 'AGENTS.md', 'TOOLS.md', 'HEARTBEAT.md'];
-
-  function buildIdentityFileList() {
-    // Clear existing
-    identityFileList.innerHTML = '';
-
-    IDENTITY_FILES.forEach(function(filename) {
-      const btn = document.createElement('button');
-      btn.className = 'w-full text-left px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-800 hover:text-gray-100';
-      btn.textContent = filename;
-
-      if (activeIdentityFile === filename) {
-        btn.classList.add('bg-gray-800', 'text-indigo-400');
-      }
-
-      btn.addEventListener('click', function() {
-        // Remove active class from all
-        Array.from(identityFileList.children).forEach(function(child) {
-          child.classList.remove('bg-gray-800', 'text-indigo-400');
-        });
-        btn.classList.add('bg-gray-800', 'text-indigo-400');
-        loadIdentityFile(filename);
-      });
-
-      identityFileList.appendChild(btn);
-    });
-  }
-
-  function loadIdentityFile(filename) {
-    activeIdentityFile = filename;
-    identityFilename.textContent = filename;
-    identitySaveBtn.classList.remove('hidden');
-    identityEditor.value = 'Loading...';
-
-    // Check if webclaw.identity API is available
-    if (!window.webclaw || !window.webclaw.identity || !window.webclaw.identity.getFile) {
-      console.warn('[UI] webclaw.identity.getFile not available');
-      identityEditor.value = 'Error: Identity API not available. Please wait for WASM to initialize.';
-      return;
-    }
-
-    window.webclaw.identity.getFile(filename)
-      .then(function(content) {
-        identityEditor.value = content || '';
-      })
-      .catch(function(err) {
-        console.error('[UI] Failed to load file:', err);
-        identityEditor.value = 'Error loading file: ' + (err && err.message ? err.message : String(err));
-      });
-  }
-
-  identitySaveBtn.addEventListener('click', function() {
-    if (!activeIdentityFile) return;
-
-    const content = identityEditor.value;
-    identitySaveBtn.textContent = 'Saving...';
-    identitySaveBtn.disabled = true;
-
-    if (window.webclaw && window.webclaw.identity && window.webclaw.identity.putFile) {
-      window.webclaw.identity.putFile(activeIdentityFile, content)
-        .then(function() {
-          identitySaveBtn.textContent = 'Saved';
-          identitySaveBtn.disabled = false;
-          setTimeout(function() {
-            identitySaveBtn.textContent = 'Save';
-          }, 1500);
-        })
-        .catch(function(err) {
-          console.error('[UI] Failed to save file:', err);
-          identitySaveBtn.textContent = 'Error';
-          identitySaveBtn.disabled = false;
-          setTimeout(function() {
-            identitySaveBtn.textContent = 'Save';
-          }, 1500);
-        });
-    } else {
-      identitySaveBtn.textContent = 'Not ready';
-      identitySaveBtn.disabled = false;
-      setTimeout(function() {
-        identitySaveBtn.textContent = 'Save';
-      }, 1500);
-    }
-  });
-
-  // ==========================================
-  // WASM Ready Handler
-  // ==========================================
-  window.addEventListener('webclaw:host-ready', function() {
-    console.log('[UI] Host ready, initializing UI components...');
-    console.log('[UI] webclaw APIs:', window.webclaw ? Object.keys(window.webclaw) : 'not available');
-
-    buildSettingsUI();
-    buildConnectedServicesUI();
-    buildIdentityFileList();
-    
-    // Store original model option texts for later restoration
-    const options = modelSelector.querySelectorAll('option');
-    options.forEach(function(option) {
-      if (!option.getAttribute('data-original-text')) {
-        option.setAttribute('data-original-text', option.textContent);
-      }
-    });
-
-    // Add welcome message if empty
-    if (messages.children.length === 0) {
-      loadWelcomeMessage();
-    }
-    
-    // Function to load welcome message from external HTML
-    function loadWelcomeMessage() {
-      fetch('static/welcome.html')
-        .then(response => response.text())
-        .then(html => {
-          // Create a temporary container to parse the HTML
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = html;
-          
-          // Extract the welcome message div
-          const welcomeContent = tempDiv.querySelector('.welcome-message');
-          if (welcomeContent) {
-            messages.appendChild(welcomeContent);
-            
-            // Execute any scripts in the welcome content
-            const scripts = welcomeContent.querySelectorAll('script');
-            scripts.forEach(script => {
-              const newScript = document.createElement('script');
-              if (script.src) {
-                newScript.src = script.src;
+              if (isConnected) {
+                // Show confirmation modal
+                disconnectModal.classList.remove("hidden");
               } else {
-                newScript.textContent = script.textContent;
+                // Initiate connection
+                initiateOAuth(provider.id, connectBtn, statusSpan);
               }
-              document.head.appendChild(newScript);
             });
-            
-            // Scroll to show welcome message
-            messages.scrollTop = messages.scrollHeight;
+
+            // Modal button handlers
+            document
+              .getElementById("oauth-cancel-disconnect-" + provider.id)
+              .addEventListener("click", function () {
+                disconnectModal.classList.add("hidden");
+              });
+
+            document
+              .getElementById("oauth-confirm-disconnect-" + provider.id)
+              .addEventListener("click", function () {
+                disconnectModal.classList.add("hidden");
+                disconnectOAuth(provider.id, connectBtn, statusSpan);
+              });
+
+            actionDiv.appendChild(statusSpan);
+            actionDiv.appendChild(connectBtn);
+
+            row.appendChild(infoDiv);
+            row.appendChild(actionDiv);
+            container.appendChild(row);
+          });
+
+          // Load initial connection status
+          updateAllConnectionStatus();
+        }
+
+        // Initiate OAuth connection
+        async function initiateOAuth(providerId, btn, statusSpan) {
+          btn.disabled = true;
+          btn.textContent = "Connecting...";
+          statusSpan.innerHTML =
+            '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Connecting...</span>';
+          statusSpan.className = "text-xs text-yellow-400";
+
+          try {
+            // Call Go OAuth manager via WASM export
+            if (
+              window.webclaw &&
+              window.webclaw.oauth &&
+              window.webclaw.oauth.initiateConnection
+            ) {
+              await window.webclaw.oauth.initiateConnection(providerId);
+
+              // Success
+              statusSpan.innerHTML =
+                '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected</span>';
+              statusSpan.className = "text-xs text-green-400";
+              btn.textContent = "Disconnect";
+              btn.className =
+                "bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1.5 text-xs font-medium";
+              showToast("Connected to " + providerId, "success");
+            } else {
+              throw new Error("OAuth manager not available");
+            }
+          } catch (err) {
+            console.error("[oauth] Connection failed:", err);
+            statusSpan.innerHTML =
+              '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Failed</span>';
+            statusSpan.className = "text-xs text-red-400";
+            btn.textContent = "Connect";
+            showToast(
+              "Connection failed: " + (err.message || "Unknown error"),
+              "error",
+            );
+          } finally {
+            btn.disabled = false;
           }
-        })
-        .catch(err => {
-          console.error('[UI] Failed to load welcome message:', err);
-          // Fallback to simple welcome
-          const welcomeWrapper = document.createElement('div');
-          welcomeWrapper.className = 'flex justify-start';
-          const welcomeBubble = document.createElement('div');
-          welcomeBubble.className = 'max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm';
-          welcomeBubble.textContent = 'Welcome to WebClaw! Type a message to start chatting.';
-          welcomeWrapper.appendChild(welcomeBubble);
-          messages.appendChild(welcomeWrapper);
+        }
+
+        // Disconnect OAuth
+        async function disconnectOAuth(providerId, btn, statusSpan) {
+          btn.disabled = true;
+
+          try {
+            if (
+              window.webclaw &&
+              window.webclaw.oauth &&
+              window.webclaw.oauth.disconnect
+            ) {
+              await window.webclaw.oauth.disconnect(providerId);
+
+              // Success
+              statusSpan.innerHTML =
+                '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
+              statusSpan.className = "text-xs text-gray-500";
+              btn.textContent = "Connect";
+              btn.className =
+                "bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium";
+              showToast("Disconnected from " + providerId, "info");
+            }
+          } catch (err) {
+            console.error("[oauth] Disconnect failed:", err);
+            showToast(
+              "Disconnect failed: " + (err.message || "Unknown error"),
+              "error",
+            );
+          } finally {
+            btn.disabled = false;
+          }
+        }
+
+        // Update all connection statuses
+        async function updateAllConnectionStatus() {
+          if (
+            !window.webclaw ||
+            !window.webclaw.oauth ||
+            !window.webclaw.oauth.getConnectionStatus
+          ) {
+            return;
+          }
+
+          try {
+            const statuses = await window.webclaw.oauth.getConnectionStatus();
+
+            if (Array.isArray(statuses)) {
+              statuses.forEach(function (status) {
+                const btn = document.getElementById(
+                  "oauth-btn-" + status.provider,
+                );
+                const statusSpan = document.getElementById(
+                  "oauth-status-" + status.provider,
+                );
+
+                if (!btn || !statusSpan) return;
+
+                if (status.connected) {
+                  const username = status.username
+                    ? " (" + status.username + ")"
+                    : "";
+                  statusSpan.innerHTML =
+                    '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected' +
+                    username +
+                    "</span>";
+                  statusSpan.className = "text-xs text-green-400";
+                  btn.textContent = "Disconnect";
+                  btn.className =
+                    "bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1.5 text-xs font-medium";
+                } else {
+                  statusSpan.innerHTML =
+                    '<span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>Not connected</span>';
+                  statusSpan.className = "text-xs text-gray-500";
+                  btn.textContent = "Connect";
+                  btn.className =
+                    "bg-indigo-600 hover:bg-indigo-500 text-white rounded px-3 py-1.5 text-xs font-medium";
+                }
+              });
+            }
+          } catch (err) {
+            console.error("[oauth] Failed to update connection status:", err);
+          }
+        }
+
+        // Toast notification helper
+        function showToast(message, type) {
+          const toast = document.createElement("div");
+          const colors = {
+            success: "bg-green-600",
+            error: "bg-red-600",
+            info: "bg-blue-600",
+          };
+
+          toast.className =
+            "fixed bottom-4 right-4 " +
+            (colors[type] || colors.info) +
+            " text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50";
+          toast.textContent = message;
+
+          document.body.appendChild(toast);
+
+          setTimeout(function () {
+            toast.remove();
+          }, 3000);
+        }
+
+        // ==========================================
+        // Identity Files UI
+        // ==========================================
+        const IDENTITY_FILES = [
+          "IDENTITY.md",
+          "SOUL.md",
+          "USER.md",
+          "AGENTS.md",
+          "TOOLS.md",
+          "HEARTBEAT.md",
+        ];
+
+        function buildIdentityFileList() {
+          // Clear existing
+          identityFileList.innerHTML = "";
+
+          IDENTITY_FILES.forEach(function (filename) {
+            const btn = document.createElement("button");
+            btn.className =
+              "w-full text-left px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-800 hover:text-gray-100";
+            btn.textContent = filename;
+
+            if (activeIdentityFile === filename) {
+              btn.classList.add("bg-gray-800", "text-indigo-400");
+            }
+
+            btn.addEventListener("click", function () {
+              // Remove active class from all
+              Array.from(identityFileList.children).forEach(function (child) {
+                child.classList.remove("bg-gray-800", "text-indigo-400");
+              });
+              btn.classList.add("bg-gray-800", "text-indigo-400");
+              loadIdentityFile(filename);
+            });
+
+            identityFileList.appendChild(btn);
+          });
+        }
+
+        function loadIdentityFile(filename) {
+          activeIdentityFile = filename;
+          identityFilename.textContent = filename;
+          identitySaveBtn.classList.remove("hidden");
+          identityEditor.value = "Loading...";
+
+          // Check if webclaw.identity API is available
+          if (
+            !window.webclaw ||
+            !window.webclaw.identity ||
+            !window.webclaw.identity.getFile
+          ) {
+            console.warn("[UI] webclaw.identity.getFile not available");
+            identityEditor.value =
+              "Error: Identity API not available. Please wait for WASM to initialize.";
+            return;
+          }
+
+          window.webclaw.identity
+            .getFile(filename)
+            .then(function (content) {
+              identityEditor.value = content || "";
+            })
+            .catch(function (err) {
+              console.error("[UI] Failed to load file:", err);
+              identityEditor.value =
+                "Error loading file: " +
+                (err && err.message ? err.message : String(err));
+            });
+        }
+
+        identitySaveBtn.addEventListener("click", function () {
+          if (!activeIdentityFile) return;
+
+          const content = identityEditor.value;
+          identitySaveBtn.textContent = "Saving...";
+          identitySaveBtn.disabled = true;
+
+          if (
+            window.webclaw &&
+            window.webclaw.identity &&
+            window.webclaw.identity.putFile
+          ) {
+            window.webclaw.identity
+              .putFile(activeIdentityFile, content)
+              .then(function () {
+                identitySaveBtn.textContent = "Saved";
+                identitySaveBtn.disabled = false;
+                setTimeout(function () {
+                  identitySaveBtn.textContent = "Save";
+                }, 1500);
+              })
+              .catch(function (err) {
+                console.error("[UI] Failed to save file:", err);
+                identitySaveBtn.textContent = "Error";
+                identitySaveBtn.disabled = false;
+                setTimeout(function () {
+                  identitySaveBtn.textContent = "Save";
+                }, 1500);
+              });
+          } else {
+            identitySaveBtn.textContent = "Not ready";
+            identitySaveBtn.disabled = false;
+            setTimeout(function () {
+              identitySaveBtn.textContent = "Save";
+            }, 1500);
+          }
         });
-    }
-    
-    // Global function to open help docs
-    window.loadHelpDocs = function() {
-      window.open('static/help.html', '_blank', 'width=1200,height=800,scrollbars=yes');
-    };
-  });
 
-  // ==========================================
-  // Init
-  // ==========================================
-  switchTab('chat');
-})();
-</script>
+        // ==========================================
+        // WASM Ready Handler
+        // ==========================================
+        window.addEventListener("webclaw:host-ready", function () {
+          console.log("[UI] Host ready, initializing UI components...");
+          console.log(
+            "[UI] webclaw APIs:",
+            window.webclaw ? Object.keys(window.webclaw) : "not available",
+          );
 
-</body>
+          buildSettingsUI();
+          buildConnectedServicesUI();
+          buildIdentityFileList();
+
+          // Store original model option texts for later restoration
+          const options = modelSelector.querySelectorAll("option");
+          options.forEach(function (option) {
+            if (!option.getAttribute("data-original-text")) {
+              option.setAttribute("data-original-text", option.textContent);
+            }
+          });
+
+          // Add welcome message if empty
+          if (messages.children.length === 0) {
+            loadWelcomeMessage();
+          }
+
+          // Function to load welcome message from external HTML
+          function loadWelcomeMessage() {
+            fetch("static/welcome.html")
+              .then((response) => response.text())
+              .then((html) => {
+                // Create a temporary container to parse the HTML
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = html;
+
+                // Extract the welcome message div
+                const welcomeContent =
+                  tempDiv.querySelector(".welcome-message");
+                if (welcomeContent) {
+                  messages.appendChild(welcomeContent);
+
+                  // Execute any scripts in the welcome content
+                  const scripts = welcomeContent.querySelectorAll("script");
+                  scripts.forEach((script) => {
+                    const newScript = document.createElement("script");
+                    if (script.src) {
+                      newScript.src = script.src;
+                    } else {
+                      newScript.textContent = script.textContent;
+                    }
+                    document.head.appendChild(newScript);
+                  });
+
+                  // Scroll to show welcome message
+                  messages.scrollTop = messages.scrollHeight;
+                }
+              })
+              .catch((err) => {
+                console.error("[UI] Failed to load welcome message:", err);
+                // Fallback to simple welcome
+                const welcomeWrapper = document.createElement("div");
+                welcomeWrapper.className = "flex justify-start";
+                const welcomeBubble = document.createElement("div");
+                welcomeBubble.className =
+                  "max-w-[70%] rounded-2xl rounded-tl-sm px-4 py-2 bg-gray-700 text-gray-100 text-sm";
+                welcomeBubble.textContent =
+                  "Welcome to WebClaw! Type a message to start chatting.";
+                welcomeWrapper.appendChild(welcomeBubble);
+                messages.appendChild(welcomeWrapper);
+              });
+          }
+
+          // Global function to open help docs
+          window.loadHelpDocs = function () {
+            window.open(
+              "static/help.html",
+              "_blank",
+              "width=1200,height=800,scrollbars=yes",
+            );
+          };
+        });
+
+        // ==========================================
+        // Init
+        // ==========================================
+        switchTab("chat");
+      })();
+    </script>
+  </body>
 </html>
