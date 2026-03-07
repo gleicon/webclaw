@@ -105,109 +105,141 @@ async function buildSingleFile() {
 
 /**
  * Inline external script references into the HTML
+ * Uses a one-pass replacement strategy to avoid duplication issues
  */
 async function inlineScripts(html) {
   console.log("[build-singlefile] Step 3: Inlining external scripts...");
 
+  // Track unique scripts to inline (by src path)
+  const scriptsToInline = new Map(); // src -> { content, typeAttr }
+  const inlineReplacements = []; // { placeholder, inlineCode }
+
   // Find all external script references
   const scriptRegex = /<script[^>]+src=["']([^"']+)["'][^>]*><\/script>/g;
   let match;
-  let inlinedCount = 0;
+  let uniqueId = 0;
 
-  // Collect all matches first
-  const matches = [];
+  // First pass: identify all unique scripts and create placeholders
   while ((match = scriptRegex.exec(html)) !== null) {
-    matches.push({ fullMatch: match[0], src: match[1] });
-  }
+    const fullMatch = match[0];
+    const src = match[1];
 
-  // Process each script
-  for (const { fullMatch, src } of matches) {
+    // Skip if we've already processed this src
+    if (scriptsToInline.has(src)) {
+      continue;
+    }
+
     // Resolve the script path
-    let scriptPath;
-    if (src.startsWith("./")) {
-      scriptPath = path.join(BUILD_DIR, src.slice(2));
-    } else if (src.startsWith("/")) {
-      scriptPath = path.join(".", src);
-    } else {
-      scriptPath = path.join(BUILD_DIR, src);
-    }
+    let scriptPath = resolveAssetPath(src);
 
-    // Also check in static directory for original files
-    if (!fs.existsSync(scriptPath)) {
-      const staticPath = path.join(STATIC_DIR, path.basename(src));
-      if (fs.existsSync(staticPath)) {
-        scriptPath = staticPath;
-      }
-    }
-
-    // Check in vendor directory (for just-bash and other deps)
-    if (!fs.existsSync(scriptPath) && src.includes("vendor/")) {
-      const vendorPath = path.join(".", src.replace("./", ""));
-      if (fs.existsSync(vendorPath)) {
-        scriptPath = vendorPath;
-      }
-      // Also check node_modules for the actual source
-      if (!fs.existsSync(scriptPath) && src.includes("browser.js")) {
-        const nodeModulesPath = path.join(
-          "node_modules",
-          "just-bash",
-          "dist",
-          "bundle",
-          "browser.js",
-        );
-        if (fs.existsSync(nodeModulesPath)) {
-          scriptPath = nodeModulesPath;
-        }
-      }
-    }
-
-    // Also check in static directory for original files
-    if (!fs.existsSync(scriptPath)) {
-      const staticPath = path.join(STATIC_DIR, path.basename(src));
-      if (fs.existsSync(staticPath)) {
-        scriptPath = staticPath;
-      }
-    }
-
-    if (fs.existsSync(scriptPath)) {
+    if (scriptPath && fs.existsSync(scriptPath)) {
       const content = fs.readFileSync(scriptPath, "utf8");
-      // Replace with inline script
       const typeAttr = fullMatch.includes('type="module"')
         ? ' type="module"'
         : "";
-      const inlineScript = `<script${typeAttr}>${content}</script>`;
-      html = html.replace(fullMatch, inlineScript);
-      inlinedCount++;
-      console.log(
-        `  ✓ Inlined: ${src} (${(content.length / 1024).toFixed(2)}KB)`,
-      );
+
+      scriptsToInline.set(src, { content, typeAttr });
+      console.log(`  Found: ${src} (${(content.length / 1024).toFixed(2)}KB)`);
     } else {
-      console.warn(`  ⚠ Script not found: ${scriptPath}`);
+      console.warn(`  ⚠ Script not found: ${src} (looked at ${scriptPath})`);
     }
   }
 
-  console.log(`[build-singlefile] Inlined ${inlinedCount} scripts`);
+  // Second pass: replace all occurrences of each unique script
+  for (const [src, { content, typeAttr }] of scriptsToInline) {
+    const escapedSrc = src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(
+      `<script[^>]+src=["']${escapedSrc}["'][^>]*><\\/script>`,
+      "g",
+    );
+    const inlineScript = `<script${typeAttr}>${content}</script>`;
+
+    const matches = html.match(regex);
+    if (matches) {
+      html = html.replace(regex, inlineScript);
+      console.log(`  ✓ Inlined ${matches.length} occurrence(s) of: ${src}`);
+    }
+  }
+
+  console.log(
+    `[build-singlefile] Inlined ${scriptsToInline.size} unique scripts`,
+  );
   return html;
 }
 
 /**
+ * Resolve asset path for various source types
+ */
+function resolveAssetPath(src) {
+  let scriptPath;
+
+  if (src.startsWith("./")) {
+    scriptPath = path.join(BUILD_DIR, src.slice(2));
+  } else if (src.startsWith("/")) {
+    scriptPath = path.join(".", src);
+  } else {
+    scriptPath = path.join(BUILD_DIR, src);
+  }
+
+  if (fs.existsSync(scriptPath)) {
+    return scriptPath;
+  }
+
+  // Check in static directory
+  const staticPath = path.join(STATIC_DIR, path.basename(src));
+  if (fs.existsSync(staticPath)) {
+    return staticPath;
+  }
+
+  // Check in vendor directory
+  if (src.includes("vendor/")) {
+    const vendorPath = path.join(".", src.replace("./", ""));
+    if (fs.existsSync(vendorPath)) {
+      return vendorPath;
+    }
+    // Check node_modules for just-bash
+    if (src.includes("browser.js")) {
+      const nodeModulesPath = path.join(
+        "node_modules",
+        "just-bash",
+        "dist",
+        "bundle",
+        "browser.js",
+      );
+      if (fs.existsSync(nodeModulesPath)) {
+        return nodeModulesPath;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Inline external stylesheet references into the HTML
+ * Uses a one-pass replacement strategy to avoid duplication issues
  */
 async function inlineStylesheets(html) {
   console.log("[build-singlefile] Step 4: Inlining stylesheets...");
+
+  // Track unique stylesheets to inline (by href path)
+  const stylesheetsToInline = new Map(); // href -> content
 
   // Find all external stylesheet references
   const linkRegex =
     /<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["'][^>]*>/g;
   let match;
-  let inlinedCount = 0;
 
-  const matches = [];
+  // First pass: identify all unique stylesheets
   while ((match = linkRegex.exec(html)) !== null) {
-    matches.push({ fullMatch: match[0], href: match[1] });
-  }
+    const href = match[1];
 
-  for (const { fullMatch, href } of matches) {
+    // Skip if we've already processed this href
+    if (stylesheetsToInline.has(href)) {
+      continue;
+    }
+
+    // Resolve the CSS path
     let cssPath;
     if (href.startsWith("./")) {
       cssPath = path.join(BUILD_DIR, href.slice(2));
@@ -219,18 +251,32 @@ async function inlineStylesheets(html) {
 
     if (fs.existsSync(cssPath)) {
       const content = fs.readFileSync(cssPath, "utf8");
-      const inlineStyle = `<style>${content}</style>`;
-      html = html.replace(fullMatch, inlineStyle);
-      inlinedCount++;
-      console.log(
-        `  ✓ Inlined: ${href} (${(content.length / 1024).toFixed(2)}KB)`,
-      );
+      stylesheetsToInline.set(href, content);
+      console.log(`  Found: ${href} (${(content.length / 1024).toFixed(2)}KB)`);
     } else {
       console.warn(`  ⚠ Stylesheet not found: ${cssPath}`);
     }
   }
 
-  console.log(`[build-singlefile] Inlined ${inlinedCount} stylesheets`);
+  // Second pass: replace all occurrences of each unique stylesheet
+  for (const [href, content] of stylesheetsToInline) {
+    const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(
+      `<link[^>]+rel=["']stylesheet["'][^>]+href=["']${escapedHref}["'][^>]*>`,
+      "g",
+    );
+    const inlineStyle = `<style>${content}</style>`;
+
+    const matches = html.match(regex);
+    if (matches) {
+      html = html.replace(regex, inlineStyle);
+      console.log(`  ✓ Inlined ${matches.length} occurrence(s) of: ${href}`);
+    }
+  }
+
+  console.log(
+    `[build-singlefile] Inlined ${stylesheetsToInline.size} unique stylesheets`,
+  );
   return html;
 }
 
