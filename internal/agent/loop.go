@@ -11,6 +11,7 @@ import (
 
 	"github.com/gleicon/webclaw/internal/memory"
 	"github.com/gleicon/webclaw/internal/provider"
+	"github.com/gleicon/webclaw/internal/telemetry"
 	"github.com/gleicon/webclaw/internal/tools"
 )
 
@@ -201,6 +202,11 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 				return nil
 			}
 			js.Global().Get("console").Call("error", "webclaw: stream error:", streamErr.Error())
+			telemetry.RecordError(telemetry.ErrorLevelError, "provider", streamErr, map[string]interface{}{
+				"provider": al.providerName,
+				"model":    al.model,
+				"iter":     iter,
+			})
 			bridge.EmitError(fmt.Errorf("stream error: %w", streamErr))
 			return streamErr
 		}
@@ -248,6 +254,9 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 		if al.toolRegistry != nil {
 			result, err = al.toolRegistry.Dispatch(ctx, toolName, toolInput)
 			if err != nil {
+				telemetry.RecordError(telemetry.ErrorLevelError, "tool", err, map[string]interface{}{
+					"tool_name": toolName,
+				})
 				result = &tools.ToolResult{
 					IsError:        true,
 					Content:        err.Error(),
@@ -299,9 +308,14 @@ func (al *AgentLoop) Run(ctx context.Context, messages []Message, bridge *Worker
 	}
 
 	// Iteration limit reached — emit what we have and return error
+	limitErr := fmt.Errorf("tool iteration limit (%d) reached", maxToolIterations)
+	telemetry.RecordError(telemetry.ErrorLevelWarning, "agent", limitErr, map[string]interface{}{
+		"max_iterations": maxToolIterations,
+		"provider":       al.providerName,
+	})
 	js.Global().Get("console").Call("warn", "webclaw: tool iteration limit reached", maxToolIterations)
 	bridge.EmitComplete(true, responseContent)
-	return fmt.Errorf("tool iteration limit (%d) reached", maxToolIterations)
+	return limitErr
 }
 
 // getProvider returns a provider instance based on configuration.

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gleicon/webclaw/internal/jsbridge"
+	"github.com/gleicon/webclaw/internal/telemetry"
 )
 
 // RetryConfig holds configuration for retry behavior
@@ -290,18 +291,32 @@ func (pc *ProviderChain) Stream(ctx context.Context, req CompletionRequest) <-ch
 			}
 
 			// Both failed
+			bothFailedMsg := fmt.Sprintf("primary failed after %d attempts: %v; fallback failed: %v",
+				pc.retry.MaxAttempts, streamErr, err)
+			telemetry.RecordError(telemetry.ErrorLevelCritical, "provider",
+				fmt.Errorf("%s", bothFailedMsg),
+				map[string]interface{}{
+					"chain":    "primary+fallback",
+					"attempts": pc.retry.MaxAttempts,
+				})
 			resultChan <- Token{
 				FinishReason: "error",
-				Text: fmt.Sprintf("primary failed after %d attempts: %v; fallback failed: %v",
-					pc.retry.MaxAttempts, streamErr, err),
+				Text:         bothFailedMsg,
 			}
 			return
 		}
 
 		// Primary failed, no fallback or not retryable error
+		noFallbackMsg := fmt.Sprintf("stream failed after %d attempts: %v", pc.retry.MaxAttempts, streamErr)
+		telemetry.RecordError(telemetry.ErrorLevelError, "provider",
+			fmt.Errorf("%s", noFallbackMsg),
+			map[string]interface{}{
+				"chain":    "primary",
+				"attempts": pc.retry.MaxAttempts,
+			})
 		resultChan <- Token{
 			FinishReason: "error",
-			Text:         fmt.Sprintf("stream failed after %d attempts: %v", pc.retry.MaxAttempts, streamErr),
+			Text:         noFallbackMsg,
 		}
 	}()
 
