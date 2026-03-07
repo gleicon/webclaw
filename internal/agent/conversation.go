@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -216,6 +218,53 @@ func (c *Conversation) SetThresholds(maxMessages int, maxTokenPct float64, model
 	c.MaxMessages = maxMessages
 	c.MaxTokenPct = maxTokenPct
 	c.ModelMaxTokens = modelMaxTokens
+}
+
+// ConversationExport is the JSON format for exported conversations
+type ConversationExport struct {
+	Version      string       `json:"version"`
+	ExportedAt   time.Time    `json:"exported_at"`
+	Conversation Conversation `json:"conversation"`
+}
+
+// ExportToJSON exports the conversation to a JSON-serializable format
+func (c *Conversation) ExportToJSON() ([]byte, error) {
+	export := ConversationExport{
+		Version:      "1.0",
+		ExportedAt:   time.Now(),
+		Conversation: *c,
+	}
+
+	return json.MarshalIndent(export, "", "  ")
+}
+
+// ImportFromJSON creates a Conversation from exported JSON data
+func ImportFromJSON(data []byte) (*Conversation, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("empty JSON data")
+	}
+
+	var export ConversationExport
+
+	if err := json.Unmarshal(data, &export); err != nil {
+		return nil, fmt.Errorf("failed to parse export JSON: %w", err)
+	}
+
+	// Validate version
+	if export.Version != "1.0" {
+		return nil, fmt.Errorf("unsupported export version: %s", export.Version)
+	}
+
+	// Validate required fields
+	if export.Conversation.ID == "" {
+		return nil, fmt.Errorf("import data missing conversation ID")
+	}
+
+	// Restore conversation with updated timestamp
+	conv := &export.Conversation
+	conv.UpdatedAt = time.Now()
+
+	return conv, nil
 }
 
 // generateMessageID creates a unique message ID

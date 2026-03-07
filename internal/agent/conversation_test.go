@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -89,6 +90,79 @@ func TestGetContextUsage(t *testing.T) {
 	}
 	if pct != 0.12 {
 		t.Errorf("GetContextUsage() pct = %f, want 0.12", pct)
+	}
+}
+
+func TestConversationExportImport(t *testing.T) {
+	conv := NewConversation("test-export")
+	conv.AddUserMessage("Hello")
+	conv.AddAssistantMessage("Hi there!")
+
+	// Export
+	data, err := conv.ExportToJSON()
+	if err != nil {
+		t.Fatalf("ExportToJSON() error = %v, want nil", err)
+	}
+	if len(data) == 0 {
+		t.Error("ExportToJSON() returned empty data")
+	}
+
+	// Verify JSON structure
+	var export map[string]interface{}
+	if err = json.Unmarshal(data, &export); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v, want nil", err)
+	}
+	if export["version"] != "1.0" {
+		t.Errorf("export version = %v, want 1.0", export["version"])
+	}
+	if export["conversation"] == nil {
+		t.Error("export missing conversation field")
+	}
+	if export["exported_at"] == nil {
+		t.Error("export missing exported_at field")
+	}
+
+	// Import
+	imported, err := ImportFromJSON(data)
+	if err != nil {
+		t.Fatalf("ImportFromJSON() error = %v, want nil", err)
+	}
+	if imported.ID != conv.ID {
+		t.Errorf("imported.ID = %s, want %s", imported.ID, conv.ID)
+	}
+	if len(imported.Messages) != len(conv.Messages) {
+		t.Errorf("imported messages count = %d, want %d", len(imported.Messages), len(conv.Messages))
+	}
+	if len(imported.Messages) > 0 && imported.Messages[0].Content != conv.Messages[0].Content {
+		t.Errorf("imported.Messages[0].Content = %s, want %s", imported.Messages[0].Content, conv.Messages[0].Content)
+	}
+}
+
+func TestImportFromJSONEdgeCases(t *testing.T) {
+	// Empty data
+	_, err := ImportFromJSON([]byte{})
+	if err == nil {
+		t.Error("ImportFromJSON(empty) expected error, got nil")
+	}
+
+	// Invalid JSON
+	_, err = ImportFromJSON([]byte("not-json"))
+	if err == nil {
+		t.Error("ImportFromJSON(invalid JSON) expected error, got nil")
+	}
+
+	// Wrong version
+	wrongVersion := `{"version":"2.0","exported_at":"2026-01-01T00:00:00Z","conversation":{"id":"test"}}`
+	_, err = ImportFromJSON([]byte(wrongVersion))
+	if err == nil {
+		t.Error("ImportFromJSON(wrong version) expected error, got nil")
+	}
+
+	// Missing conversation ID
+	missingID := `{"version":"1.0","exported_at":"2026-01-01T00:00:00Z","conversation":{"id":""}}`
+	_, err = ImportFromJSON([]byte(missingID))
+	if err == nil {
+		t.Error("ImportFromJSON(missing ID) expected error, got nil")
 	}
 }
 
