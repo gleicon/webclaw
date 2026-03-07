@@ -5,8 +5,15 @@ const FIRST_TOKEN_MAX = 1500;    // Hard limit
 
 test.describe('First Token Performance', () => {
   test.beforeEach(async ({ page }) => {
+    // Register listener before navigation — app fires 'webclaw:host-ready' on init
+    await page.addInitScript(() => {
+      window.__webclawHostReady = false;
+      window.addEventListener('webclaw:host-ready', () => {
+        window.__webclawHostReady = true;
+      }, { once: true });
+    });
     await page.goto('/', { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => window.wasmReady, { timeout: 30000 });
+    await page.waitForFunction(() => window.__webclawHostReady === true, { timeout: 30000 });
   });
 
   test('First token arrives within budget', async ({ page }) => {
