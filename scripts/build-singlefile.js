@@ -140,6 +140,35 @@ async function inlineScripts(html) {
       }
     }
 
+    // Check in vendor directory (for just-bash and other deps)
+    if (!fs.existsSync(scriptPath) && src.includes("vendor/")) {
+      const vendorPath = path.join(".", src.replace("./", ""));
+      if (fs.existsSync(vendorPath)) {
+        scriptPath = vendorPath;
+      }
+      // Also check node_modules for the actual source
+      if (!fs.existsSync(scriptPath) && src.includes("browser.js")) {
+        const nodeModulesPath = path.join(
+          "node_modules",
+          "just-bash",
+          "dist",
+          "bundle",
+          "browser.js",
+        );
+        if (fs.existsSync(nodeModulesPath)) {
+          scriptPath = nodeModulesPath;
+        }
+      }
+    }
+
+    // Also check in static directory for original files
+    if (!fs.existsSync(scriptPath)) {
+      const staticPath = path.join(STATIC_DIR, path.basename(src));
+      if (fs.existsSync(staticPath)) {
+        scriptPath = staticPath;
+      }
+    }
+
     if (fs.existsSync(scriptPath)) {
       const content = fs.readFileSync(scriptPath, "utf8");
       // Replace with inline script
@@ -284,20 +313,24 @@ function copyStaticAssets(html) {
 
   // Copy vendor files if referenced
   const vendorFiles = [
-    "vendor/browser.js", // just-bash browser bundle
+    {
+      ref: "vendor/browser.js",
+      src: "node_modules/just-bash/dist/bundle/browser.js",
+      dest: "vendor/browser.js",
+    },
   ];
 
-  for (const file of vendorFiles) {
-    if (html.includes(file)) {
-      const srcPath = path.join(".", file);
-      const destPath = path.join(BUILD_DIR, file);
+  for (const { ref, src, dest } of vendorFiles) {
+    if (html.includes(ref)) {
+      const srcPath = path.join(".", src);
+      const destPath = path.join(BUILD_DIR, dest);
 
       if (fs.existsSync(srcPath)) {
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(srcPath, destPath);
-        console.log(`  ✓ Copied: ${file}`);
+        console.log(`  ✓ Copied: ${dest}`);
       } else {
-        console.warn(`  ⚠ Not found: ${file}`);
+        console.warn(`  ⚠ Source not found: ${srcPath}`);
       }
     }
   }
