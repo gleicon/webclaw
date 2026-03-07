@@ -105,32 +105,34 @@ async function buildSingleFile() {
 
 /**
  * Inline external script references into the HTML
- * Uses a one-pass replacement strategy to avoid duplication issues
+ * Uses index-based replacement to avoid issues with content containing similar patterns
  */
 async function inlineScripts(html) {
   console.log("[build-singlefile] Step 3: Inlining external scripts...");
 
-  // Track unique scripts to inline (by src path)
-  const scriptsToInline = new Map(); // src -> { content, typeAttr }
-  const inlineReplacements = []; // { placeholder, inlineCode }
-
-  // Find all external script references
+  // Collect all script tags with their positions
   const scriptRegex = /<script[^>]+src=["']([^"']+)["'][^>]*><\/script>/g;
   let match;
-  let uniqueId = 0;
+  const scriptsToProcess = [];
 
-  // First pass: identify all unique scripts and create placeholders
   while ((match = scriptRegex.exec(html)) !== null) {
-    const fullMatch = match[0];
-    const src = match[1];
+    scriptsToProcess.push({
+      index: match.index,
+      length: match[0].length,
+      fullMatch: match[0],
+      src: match[1],
+    });
+  }
 
-    // Skip if we've already processed this src
-    if (scriptsToInline.has(src)) {
-      continue;
-    }
+  console.log(`  Found ${scriptsToProcess.length} script tag(s) to process`);
+
+  // Process in reverse order (from end to start) so indices don't shift
+  let inlinedCount = 0;
+  for (let i = scriptsToProcess.length - 1; i >= 0; i--) {
+    const { index, length, fullMatch, src } = scriptsToProcess[i];
 
     // Resolve the script path
-    let scriptPath = resolveAssetPath(src);
+    const scriptPath = resolveAssetPath(src);
 
     if (scriptPath && fs.existsSync(scriptPath)) {
       const content = fs.readFileSync(scriptPath, "utf8");
@@ -138,32 +140,27 @@ async function inlineScripts(html) {
         ? ' type="module"'
         : "";
 
-      scriptsToInline.set(src, { content, typeAttr });
-      console.log(`  Found: ${src} (${(content.length / 1024).toFixed(2)}KB)`);
+      // Escape content to prevent regex issues
+      const escapedContent = content
+        .replace(/</g, "\\x3C")
+        .replace(/>/g, "\\x3E");
+      const inlineScript = `<script${typeAttr}>${escapedContent}</script>`;
+
+      // Replace at specific index
+      html =
+        html.substring(0, index) +
+        inlineScript +
+        html.substring(index + length);
+      inlinedCount++;
+      console.log(
+        `  ✓ Inlined: ${src} (${(content.length / 1024).toFixed(2)}KB)`,
+      );
     } else {
       console.warn(`  ⚠ Script not found: ${src} (looked at ${scriptPath})`);
     }
   }
 
-  // Second pass: replace all occurrences of each unique script
-  for (const [src, { content, typeAttr }] of scriptsToInline) {
-    const escapedSrc = src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(
-      `<script[^>]+src=["']${escapedSrc}["'][^>]*><\\/script>`,
-      "g",
-    );
-    const inlineScript = `<script${typeAttr}>${content}</script>`;
-
-    const matches = html.match(regex);
-    if (matches) {
-      html = html.replace(regex, inlineScript);
-      console.log(`  ✓ Inlined ${matches.length} occurrence(s) of: ${src}`);
-    }
-  }
-
-  console.log(
-    `[build-singlefile] Inlined ${scriptsToInline.size} unique scripts`,
-  );
+  console.log(`[build-singlefile] Inlined ${inlinedCount} scripts`);
   return html;
 }
 
@@ -217,27 +214,34 @@ function resolveAssetPath(src) {
 
 /**
  * Inline external stylesheet references into the HTML
- * Uses a one-pass replacement strategy to avoid duplication issues
+ * Uses index-based replacement to avoid issues with content containing similar patterns
  */
 async function inlineStylesheets(html) {
   console.log("[build-singlefile] Step 4: Inlining stylesheets...");
 
-  // Track unique stylesheets to inline (by href path)
-  const stylesheetsToInline = new Map(); // href -> content
-
-  // Find all external stylesheet references
+  // Collect all stylesheet links with their positions
   const linkRegex =
     /<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["'][^>]*>/g;
   let match;
+  const stylesheetsToProcess = [];
 
-  // First pass: identify all unique stylesheets
   while ((match = linkRegex.exec(html)) !== null) {
-    const href = match[1];
+    stylesheetsToProcess.push({
+      index: match.index,
+      length: match[0].length,
+      fullMatch: match[0],
+      href: match[1],
+    });
+  }
 
-    // Skip if we've already processed this href
-    if (stylesheetsToInline.has(href)) {
-      continue;
-    }
+  console.log(
+    `  Found ${stylesheetsToProcess.length} stylesheet link(s) to process`,
+  );
+
+  // Process in reverse order
+  let inlinedCount = 0;
+  for (let i = stylesheetsToProcess.length - 1; i >= 0; i--) {
+    const { index, length, fullMatch, href } = stylesheetsToProcess[i];
 
     // Resolve the CSS path
     let cssPath;
@@ -251,32 +255,21 @@ async function inlineStylesheets(html) {
 
     if (fs.existsSync(cssPath)) {
       const content = fs.readFileSync(cssPath, "utf8");
-      stylesheetsToInline.set(href, content);
-      console.log(`  Found: ${href} (${(content.length / 1024).toFixed(2)}KB)`);
+      const inlineStyle = `<style>${content}</style>`;
+
+      // Replace at specific index
+      html =
+        html.substring(0, index) + inlineStyle + html.substring(index + length);
+      inlinedCount++;
+      console.log(
+        `  ✓ Inlined: ${href} (${(content.length / 1024).toFixed(2)}KB)`,
+      );
     } else {
       console.warn(`  ⚠ Stylesheet not found: ${cssPath}`);
     }
   }
 
-  // Second pass: replace all occurrences of each unique stylesheet
-  for (const [href, content] of stylesheetsToInline) {
-    const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(
-      `<link[^>]+rel=["']stylesheet["'][^>]+href=["']${escapedHref}["'][^>]*>`,
-      "g",
-    );
-    const inlineStyle = `<style>${content}</style>`;
-
-    const matches = html.match(regex);
-    if (matches) {
-      html = html.replace(regex, inlineStyle);
-      console.log(`  ✓ Inlined ${matches.length} occurrence(s) of: ${href}`);
-    }
-  }
-
-  console.log(
-    `[build-singlefile] Inlined ${stylesheetsToInline.size} unique stylesheets`,
-  );
+  console.log(`[build-singlefile] Inlined ${inlinedCount} stylesheets`);
   return html;
 }
 
