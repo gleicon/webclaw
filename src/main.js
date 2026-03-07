@@ -1,34 +1,39 @@
 // WebClaw Static Bundle Entry Point
 // This file serves as the Vite entry point for the static bundle
 
-// Note: just-bash will be integrated in Phase 7a
-// For now, this file establishes the build structure
-
-// Import CSS (will be processed by Vite)
-import './styles/main.css';
+// Import CSS (processed by Vite + Tailwind)
+import "./styles/main.css";
 
 // Log initialization
-console.log('[WebClaw Static] Entry point loaded');
-console.log('[WebClaw Static] Build: Phase 8 - Static Bundle');
-console.log('[WebClaw Static] Note: just-bash integration planned for Phase 7a');
+console.log("[WebClaw Static] Entry point loaded");
+console.log("[WebClaw Static] Build: Phase 8 - Static Bundle");
+console.log("[WebClaw Static] CSS: Tailwind compiled + minified");
 
-// The existing webclaw-host.js will be loaded via script tag in index.html
-// This ensures backward compatibility with the current architecture
+// Note: wasm_exec.js and webclaw-host.js are loaded via script tags in index.html
+// This ensures proper initialization order (WASM runtime must be available before host)
+// The just-bash integration is available via global window.JustBash
 
 // Export version info for debugging
 window.webclawStatic = {
-  version: '0.1.0',
-  build: 'phase-8-static-bundle',
+  version: "0.1.0",
+  build: "phase-8-static-bundle",
+  buildDate: new Date().toISOString(),
   features: [
-    'WASM runtime',
-    'LLM providers (Anthropic, OpenAI, OpenRouter)',
-    'Memory system (BM25 + embeddings)',
-    'Tool registry',
-    'Identity files',
-    'Webchat UI'
+    "WASM runtime (Go)",
+    "LLM providers (Anthropic, OpenAI, OpenRouter)",
+    "Memory system (BM25 + embeddings)",
+    "Tool registry",
+    "Identity files",
+    "Webchat UI",
+    "File operations (just-bash)",
   ],
-  pending: [
-    'just-bash file operations (Phase 7a)',
-    'Local bridge binary (Phase 7b)'
-  ]
+  tech: {
+    bundler: "Vite",
+    css: "Tailwind CSS (compiled)",
+    wasm: "Go 1.21+",
+    compression: "Brotli + Gzip",
+  },
 };
+
+console.log("[WebClaw Static] Version:", window.webclawStatic.version);
+console.log("[WebClaw Static] Build date:", window.webclawStatic.buildDate);
