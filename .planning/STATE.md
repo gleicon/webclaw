@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-06T00:10:49.094Z"
+status: in_progress
+last_updated: "2026-03-07T01:15:00.000Z"
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 36
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 # Project State
@@ -22,49 +22,79 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 09 of 10 (Social Integrations)
-Status: **09-05 Complete - Notion Integration**
-Last activity: 2026-03-06 — Notion API integration (databases, pages, queries, OAuth auth)
+Phase: 08 of 10 (Polish & Release - Static Bundle)
+Status: **08-01 Complete - Vite Static Bundle**
+Last activity: 2026-03-07 — Vite bundler setup with WASM support, Tailwind compilation, and static distribution
 
 Progress: [████████████████████░░░░] 84%
 
 ## Phase 7a Status
 
 **Completed:**
+
 - ✅ 07a-01: just-bash integration foundation (just-bash bridge, Go bindings, 4 file tools)
 
 **Not Implemented:**
+
 - ❌ 07a-02: Filesystem UI (tree view, editor panel - deferred)
 - ❌ 07a-03: OverlayFs mounts (File System Access API - deferred)
 - ⚠️ 07a-04: Advanced tools (file_edit, file_stat not built - partial)
 - ⚠️ 07a-05: Tests and docs (Phase 6 tests cover - partial)
 
 **What Works:**
+
 - File operations via agent: file_read, file_write, dir_list, file_search
 - 79+ bash commands available in browser
 - Virtual filesystem (InMemoryFs)
 - No bridge binary required
 
 **What's Missing:**
+
 - Visual filesystem UI (file tree, editor panel)
 - Mount real directories (OverlayFs)
 - Advanced editing (sed/awk operations)
 - Phase-specific tests and README
 
+## Phase 08 Status
+
+**Completed:**
+
+- ✅ 08-01: Vite Static Bundle (bundler setup, WASM copy, Tailwind compilation, GitHub Actions workflow)
+
+**In Progress:**
+
+- 🔄 08-02: Single-file bundle mode (inline JS/CSS/WASM, Blob Worker)
+
+**Not Started:**
+
+- ⏳ 08-03: Distribution (npm package, CLI, Docker)
+
+**What Works:**
+
+- Vite bundler configured with vite-plugin-static-copy
+- WASM files copied to dist-bundle/ (webclaw.wasm + webclaw.wasm.br)
+- Static JS files copied (worker.js, wasm_exec.js, justbash-bridge.js, webclaw-host.js)
+- Tailwind CSS compiled to ~15KB (no CDN dependency)
+- Relative paths for file:// protocol compatibility
+- Dual compression (Brotli + Gzip) for all assets
+- GitHub Actions workflow for automated builds and releases
+- Build outputs: dist-bundle/ with index.html, assets/, static/, vendor/
+
 ## Phase 09 Status
 
 **Completed:**
+
 - ✅ 09-01: OAuth Infrastructure (PKCE flow, encrypted storage, popup bridge, Connected Services UI)
-- ✅ 09-02: Twitter/X Integration (post, timeline, search, reply tools with rate limiting and caching)
-- ✅ 09-04: GitHub Integration (REST API v3 tools, GraphQL v4 foundation, OAuth auth, 5 tools)
-- ✅ 09-05: Notion Integration (database queries, page read/update, search, 5 tools, discovery helpers)
+- ✅ 09-02: Twitter/X Integration (post, timeline, search, reply tools with rate limiting)
+- ✅ 09-04: GitHub Integration (REST API v3 tools, GraphQL v4 foundation)
+- ✅ 09-05: Notion Integration (database queries, page read/update, search)
 
 **In Progress:**
+
 - 🔄 09-03: Google integration (Gmail, Calendar)
 
 **What Works:**
-- PKCE parameter generation (RFC 7636 compliant)
-- Encrypted OAuth token storage (AES-256-GCM)
+
 - Automatic token refresh (5-minute proactive window)
 - Popup-based OAuth flow with postMessage callbacks
 - Settings UI for managing connections
@@ -95,6 +125,7 @@ Progress: [████████████████████░░░
   - Rate limiting (3 req/sec with 429 retry)
 
 **What's Missing:**
+
 - Google integration tools (Gmail send/read, Calendar events)
 - OAuth client IDs (must be configured per deployment)
 - Privacy policy page (required for OAuth apps)
@@ -102,25 +133,30 @@ Progress: [████████████████████░░░
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 33
 - Average duration: 26 min
 - Total execution time: ~14 hours
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-wasm-pipeline | 2 | 24 min | 12 min |
-| 02-config-identity | 4 | 155 min | 39 min |
-| 03-intelligence-core | 3 | 14 min | 5 min |
-| 04-tools-and-webchat-ui | 3 | 31 min | 10 min |
-| 05-live-ai-connection | 3 | 4 min | 1 min |
-| 06-real-agent-loop | 1 | 3 min | 3 min |
-| 09-social-integrations | 4 | ~50 min | 12 min |
+| Phase                   | Plans | Total   | Avg/Plan |
+| ----------------------- | ----- | ------- | -------- |
+| 01-wasm-pipeline        | 2     | 24 min  | 12 min   |
+| 02-config-identity      | 4     | 155 min | 39 min   |
+| 03-intelligence-core    | 3     | 14 min  | 5 min    |
+| 04-tools-and-webchat-ui | 3     | 31 min  | 10 min   |
+| 05-live-ai-connection   | 3     | 4 min   | 1 min    |
+| 06-real-agent-loop      | 1     | 3 min   | 3 min    |
+| 08-static-bundle        | 1     | 12 min  | 12 min   |
+| 09-social-integrations  | 4     | ~50 min | 12 min   |
 
 **Recent Trend:**
-- Last 5 plans: 09-05 (17 min), 09-01 (7 min), 06-01 (3 min), 05-03 (3 min), 05-02 (1 min)
-- Trend: Phase 9 integrations progressing - 4 of 5 plans complete
+
+- Last 5 plans: 08-01 (12 min), 09-05 (17 min), 09-01 (7 min), 06-01 (3 min), 05-03 (3 min)
+- Trend: Phase 8 (Static Bundle) started with Vite setup - 1 of 3 plans complete
+
+| Phase 08 P01 | 12 min | 5 tasks | 4 files |
 
 | Phase 06 P01 | 3 min | 5 tasks | 6 files |
 | Phase 05 P03 | 3 min | 13 tasks | 6 files |
@@ -212,33 +248,36 @@ Recent decisions affecting current work:
 - **[Phase 06-04]:** Dual storage strategy: facts stored to both memory store (searchable) and MEMORY.md (human-readable)
 - **[Phase 06-04]:** Metadata tagging for facts includes conversation_id for traceability
 - [Phase 06-real-agent-loop]: Hybrid token estimation better than chars/4 heuristic - uses word length, punctuation, and formatting overhead
-- [Phase 09-social-integrations]: Tools use gmail_ and calendar_ prefixes for clarity and namespacing
+- [Phase 09-social-integrations]: Tools use gmail* and calendar* prefixes for clarity and namespacing
 - [Phase 09-social-integrations]: Both Gmail and Calendar use the same 'google' OAuth provider token
 - [Phase 09-social-integrations]: Email composition uses RFC 2822 format with base64url encoding for Gmail API
 
 ### Pending Todos
 
-None - Phase 06-01 complete. Ready for agent loop integration.
+- 08-02: Single-file bundle mode (inline JS/CSS/WASM, Blob Worker)
+- 08-03: Distribution (npm package, CLI, Docker)
 
 ### Blockers/Concerns
 
-None. Provider tool support is complete across all three providers (Anthropic, OpenAI, OpenRouter).
+None. Phase 08-01 static bundle foundation is complete. Ready for single-file mode experimentation.
 
 ## Session Continuity
 
-Last session: 2026-03-06
-Stopped at: Completed 09-social-integrations/09-05-PLAN.md — Notion Integration with 5 tools (query, read, update, search, list) + discovery helpers + query builder
-Resume file: .planning/phases/09-social-integrations/09-05-SUMMARY.md
+Last session: 2026-03-07
+Stopped at: Completed 08-static-bundle/08-01-PLAN.md — Vite Static Bundle with WASM support, Tailwind compilation, and GitHub Actions workflow
+Resume file: .planning/phases/08-static-bundle/08-01-SUMMARY.md
 
 ## Phase 9 Summary
 
 Plans completed in Phase 9:
+
 - 09-01: OAuth Infrastructure (PKCE flow, encrypted storage, popup bridge, Connected Services UI)
 - 09-02: Twitter/X Integration (API v2, 4 tools: post, reply, search, timeline)
 - 09-04: GitHub Integration (REST API v3, GraphQL v4 foundation, 5 tools)
 - 09-05: Notion Integration (databases, pages, queries, 5 tools, discovery helpers)
 
 **Phase 9 IN PROGRESS** - Social & Productivity Integrations
+
 - PKCE parameter generation (RFC 7636 compliant)
 - Encrypted OAuth token storage (AES-256-GCM via Web Crypto API)
 - Automatic token refresh (5-minute proactive window)
@@ -251,6 +290,7 @@ Plans completed in Phase 9:
 - Connected Services section in Settings view
 
 **NEW: Twitter/X Integration (09-02)**
+
 - Twitter API v2 client with OAuth authentication
 - 4 WebClaw tools: twitter_post, twitter_reply, twitter_search, twitter_timeline
 - Rate limit tracking with preemptive limiting (300 req/15min)
@@ -260,6 +300,7 @@ Plans completed in Phase 9:
 - Comprehensive test coverage (2 test files, ~1,200 lines of tests)
 
 **NEW: GitHub Integration (09-04)**
+
 - GitHub REST API v3 client with OAuth authentication
 - 5 WebClaw tools: list_issues, list_prs, create_issue, search_code, comment
 - Rate limit tracking from GitHub API headers (5,000 req/hour)
@@ -270,6 +311,7 @@ Plans completed in Phase 9:
 - Comprehensive test coverage (4 test files, ~1,000 lines of tests)
 
 Ready for:
+
 - Google integration tools (Gmail, Calendar) - 09-03
 - Notion integration tools (databases, pages) - 09-05
 - Google integration (Gmail send/read, Calendar events)
@@ -277,6 +319,7 @@ Ready for:
 - Additional GitHub tools via GraphQL (complex queries, analytics)
 
 Plans completed in Phase 6:
+
 - 06-01: Provider-Side Tool Support with tool_use/tool_calls parsing
 - 06-02: Tool Registry Wired to Provider (tools flow from registry → agent loop → provider → LLM)
 - 06-03: Real LLM-Based Summarization (20-message threshold, 75% token limit, last 2 messages preserved)
@@ -285,6 +328,7 @@ Plans completed in Phase 6:
 - 06-07: Provider Streaming Failover with exponential backoff and fallback chains
 
 **Phase 6 IN PROGRESS** - Real Agent Loop
+
 - Tool definitions in CompletionRequest (all providers)
 - Anthropic content_block_start/content_block_delta tool_use parsing
 - OpenAI/OpenRouter tool_calls parsing with FinishReason normalization
@@ -312,7 +356,7 @@ Plans completed in Phase 6:
 - **NEW: Async OpenAI embedder loading for non-blocking startup**
 
 Ready for:
+
 - End-to-end testing with live LLM and real tool execution including memory_store and memory_search
 - Additional tool implementations
 - Tool result formatting and UI display refinements
-
