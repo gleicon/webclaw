@@ -152,7 +152,7 @@ Plans:
     **Plans**:
 
 - [x] 08-01 (Vite bundler setup: multi-file bundle with WASM, Tailwind compilation)
-- [ ] 08-02 (Single-file mode: inline JS/CSS/WASM, Blob Worker, ultimate standalone)
+- [x] 08-02 (Single-file mode: inline JS/CSS/WASM, Blob Worker, ultimate standalone)
 - [ ] 08-03 (Distribution: npm package, CLI, GitHub Actions, Docker)
 
 ### Phase 9: Social & Productivity Integrations
@@ -207,5 +207,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 6. Real Agent Loop             | 7/7            | Complete    | 2026-03-04 |
 | 7a. just-bash Filesystem       | 1/5            | Partial     | 2026-03-05 |
 | 7. Local Bridge Binary         | 0/0            | Planned     |            |
-| 8. Polish & Release            | 1/3            | In Progress | 2026-03-07 |
+| 8. Polish & Release            | 2/3            | In Progress | 2026-03-07 |
 | 9. Social & Productivity       | 5/5            | Complete    | 2026-03-05 |
