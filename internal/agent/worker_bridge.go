@@ -106,6 +106,46 @@ func InitWorkerBridge() *WorkerBridge {
 	jsbridge.RegisterCallback(abortStreamFn)
 	bridge.Set("abortStream", abortStreamFn)
 
+	// webclaw.workerBridge.exportConversation(callback)
+	// Exports current conversation as JSON string, calls callback(jsonString, error)
+	exportConversationFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		var callback js.Value
+		if len(args) >= 1 && args[0].Type() == js.TypeFunction {
+			callback = args[0]
+		}
+
+		go func() {
+			handleExportConversation(callback)
+		}()
+
+		return js.Undefined()
+	})
+	jsbridge.RegisterCallback(exportConversationFn)
+	bridge.Set("exportConversation", exportConversationFn)
+
+	// webclaw.workerBridge.importConversation(jsonString, callback)
+	// Imports a conversation from JSON string, calls callback(messageCount, error)
+	importConversationFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 1 {
+			js.Global().Get("console").Call("error", "importConversation: missing json argument")
+			return js.Undefined()
+		}
+
+		jsonString := args[0].String()
+		var callback js.Value
+		if len(args) >= 2 && args[1].Type() == js.TypeFunction {
+			callback = args[1]
+		}
+
+		go func() {
+			handleImportConversation(jsonString, callback)
+		}()
+
+		return js.Undefined()
+	})
+	jsbridge.RegisterCallback(importConversationFn)
+	bridge.Set("importConversation", importConversationFn)
+
 	// Register callback setters (worker.js calls these)
 	// Initial placeholder values so worker.js can detect they're registered
 	bridge.Set("onToken", js.Undefined())
@@ -267,6 +307,87 @@ func handleAbortStream() {
 
 	// Clear the map
 	workerBridge.activeStreams = make(map[string]context.CancelFunc)
+}
+
+// handleExportConversation exports the current conversation to JSON
+// and calls the provided JS callback(jsonString, errorString)
+func handleExportConversation(callback js.Value) {
+	js.Global().Get("console").Call("log", "webclaw: exporting conversation")
+
+	if globalAgentLoop == nil || globalAgentLoop.assembler == nil {
+		errMsg := "No active conversation to export"
+		js.Global().Get("console").Call("error", "webclaw:", errMsg)
+		if callback.Type() == js.TypeFunction {
+			callback.Invoke(js.Null(), errMsg)
+		}
+		return
+	}
+
+	conv := globalAgentLoop.assembler.GetConversation()
+	if conv == nil {
+		errMsg := "No active conversation to export"
+		js.Global().Get("console").Call("error", "webclaw:", errMsg)
+		if callback.Type() == js.TypeFunction {
+			callback.Invoke(js.Null(), errMsg)
+		}
+		return
+	}
+
+	data, err := conv.ExportToJSON()
+	if err != nil {
+		errMsg := "Export failed: " + err.Error()
+		js.Global().Get("console").Call("error", "webclaw:", errMsg)
+		if callback.Type() == js.TypeFunction {
+			callback.Invoke(js.Null(), errMsg)
+		}
+		return
+	}
+
+	js.Global().Get("console").Call("log", "webclaw: conversation exported,",
+		len(conv.Messages), "messages")
+
+	if callback.Type() == js.TypeFunction {
+		callback.Invoke(string(data), js.Null())
+	}
+}
+
+// handleImportConversation restores a conversation from JSON
+// and calls the provided JS callback(messageCount, errorString)
+func handleImportConversation(jsonString string, callback js.Value) {
+	js.Global().Get("console").Call("log", "webclaw: importing conversation")
+
+	if jsonString == "" {
+		errMsg := "No conversation data provided"
+		js.Global().Get("console").Call("error", "webclaw:", errMsg)
+		if callback.Type() == js.TypeFunction {
+			callback.Invoke(js.Null(), errMsg)
+		}
+		return
+	}
+
+	conv, err := ImportFromJSON([]byte(jsonString))
+	if err != nil {
+		errMsg := "Import failed: " + err.Error()
+		js.Global().Get("console").Call("error", "webclaw:", errMsg)
+		if callback.Type() == js.TypeFunction {
+			callback.Invoke(js.Null(), errMsg)
+		}
+		return
+	}
+
+	// Set as current conversation if assembler is available
+	if globalAgentLoop != nil && globalAgentLoop.assembler != nil {
+		globalAgentLoop.assembler.SetConversation(conv)
+		js.Global().Get("console").Call("log", "webclaw: conversation imported,",
+			len(conv.Messages), "messages, id:", conv.ID)
+	} else {
+		js.Global().Get("console").Call("warn",
+			"webclaw: conversation parsed but no active assembler to install it into")
+	}
+
+	if callback.Type() == js.TypeFunction {
+		callback.Invoke(len(conv.Messages), js.Null())
+	}
 }
 
 // generateStreamID creates a unique stream identifier

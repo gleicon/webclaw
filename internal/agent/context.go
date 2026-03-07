@@ -130,6 +130,11 @@ func (ca *ContextAssembler) GetConversation() *Conversation {
 	return ca.conversation
 }
 
+// SetConversation replaces the underlying conversation (used for import)
+func (ca *ContextAssembler) SetConversation(conv *Conversation) {
+	ca.conversation = conv
+}
+
 // SetSummarizer wires the summarizer for conversation management
 func (ca *ContextAssembler) SetSummarizer(s *Summarizer) {
 	ca.summarizer = s
