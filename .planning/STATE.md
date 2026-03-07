@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 08-static-bundle/08-02-PLAN.md — Single-file bundle mode with inline JS/CSS/WASM
-last_updated: "2026-03-07T14:59:13.609Z"
+stopped_at: Completed 09-social-integrations/09-06-PLAN.md — OAuth JS API gap closure, all smoke tests passing
+last_updated: "2026-03-07T20:00:11.798Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
   total_phases: 10
   completed_phases: 8
-  total_plans: 39
-  completed_plans: 39
+  total_plans: 40
+  completed_plans: 40
   percent: 87
 ---
 
@@ -200,6 +200,7 @@ _None - all planned Phase 08 tasks have been started or completed_
 | Phase 09-social-integrations P09-03 | 5 | 6 tasks | 10 files |
 | Phase 09-social-integrations P09-02 | 374 | 6 tasks | 6 files |
 | Phase 08 P03 | 2 | 5 tasks | 6 files |
+| Phase 09-social-integrations P09-06 | 15 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -270,6 +271,8 @@ Recent decisions affecting current work:
 - [Phase 09-social-integrations]: Tools use gmail* and calendar* prefixes for clarity and namespacing
 - [Phase 09-social-integrations]: Both Gmail and Calendar use the same 'google' OAuth provider token
 - [Phase 09-social-integrations]: Email composition uses RFC 2822 format with base64url encoding for Gmail API
+- [Phase 09-social-integrations]: OAuth goroutine runs on main thread WASM (not worker) so js.Global() returns window scope for RegisterJSExports()
+- [Phase 09-social-integrations]: RegisterOAuthBridge() uses webclaw.Get('oauth') get-or-create pattern to preserve JS-side openPopup function
 
 ### Pending Todos
 
@@ -281,9 +284,9 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-07
-Stopped at: Completed 08-static-bundle/08-02-PLAN.md — Single-file bundle mode with inline JS/CSS/WASM
-Resume file: .planning/phases/08-static-bundle/08-02-SUMMARY.md
+Last session: 2026-03-07T20:00:11.795Z
+Stopped at: Completed 09-social-integrations/09-06-PLAN.md — OAuth JS API gap closure, all smoke tests passing
+Resume file: None
 
 ## Phase 9 Summary
 
