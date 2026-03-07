@@ -16,13 +16,13 @@
  *   npm run build:singlefile:ultimate             # Ultimate via package.json
  */
 
-const { build } = require("vite");
-const fs = require("fs");
-const path = require("path");
-const { execSync } = require("child_process");
+import { build } from "vite";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { inlineWASM } from "./inline-wasm.js";
 
-// Import WASM inlining utility
-const { inlineWASM } = require("./inline-wasm.js");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Build configuration
 const BUILD_DIR = "dist-singlefile";
