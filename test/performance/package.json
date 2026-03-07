@@ -1,0 +1,13 @@
+{
+  "name": "webclaw-performance-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:chrome": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:safari": "playwright test --project=webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
