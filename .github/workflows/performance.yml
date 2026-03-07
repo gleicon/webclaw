@@ -1,0 +1,39 @@
+name: Performance Tests
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  wasm-load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm run build:all
+      - name: Install Playwright
+        working-directory: test/performance
+        run: |
+          npm ci
+          npx playwright install chromium
+      - name: Start WebClaw
+        run: |
+          npx webclaw-static serve --port=8080 &
+          sleep 5
+      - name: Run WASM benchmarks
+        working-directory: test/performance
+        run: npx playwright test specs/wasm_load.spec.js --project=chromium
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: test/performance/results/
