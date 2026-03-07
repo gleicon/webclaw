@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-03-07T01:15:00.000Z"
+status: unknown
+last_updated: "2026-03-07T01:08:58.690Z"
 progress:
-  total_phases: 10
-  completed_phases: 7
+  total_phases: 11
+  completed_phases: 8
   total_plans: 36
-  completed_plans: 33
+  completed_plans: 35
 ---
 
 # Project State
@@ -60,6 +60,7 @@ Progress: [████████████████████░░░
 **Completed:**
 
 - ✅ 08-01: Vite Static Bundle (bundler setup, WASM copy, Tailwind compilation, GitHub Actions workflow)
+- ✅ 08-03: Distribution (npm package, CLI, GitHub releases, Docker)
 
 **In Progress:**
 
@@ -67,7 +68,7 @@ Progress: [████████████████████░░░
 
 **Not Started:**
 
-- ⏳ 08-03: Distribution (npm package, CLI, Docker)
+_None - all planned Phase 08 tasks have been started or completed_
 
 **What Works:**
 
@@ -79,6 +80,19 @@ Progress: [████████████████████░░░
 - Dual compression (Brotli + Gzip) for all assets
 - GitHub Actions workflow for automated builds and releases
 - Build outputs: dist-bundle/ with index.html, assets/, static/, vendor/
+- npm package configuration with bin entry for CLI
+- Zero-dependency CLI tool (`webclaw-static serve --port=8080 --open`)
+- GitHub Actions release workflow (build → release → publish → docker)
+- Multi-stage Dockerfile with nginx:alpine (~25MB image)
+- Distribution documentation (4 methods: npx, npm, download, Docker)
+
+**What's New (08-03):**
+
+- `npx webclaw-static serve` works without installation
+- Automated npm publishing on git tag push
+- Docker image serves static files on port 80
+- Brotli compression support in CLI and Docker
+- SPA routing support for all bundle formats
 
 ## Phase 09 Status
 
@@ -153,9 +167,10 @@ Progress: [████████████████████░░░
 
 **Recent Trend:**
 
-- Last 5 plans: 08-01 (12 min), 09-05 (17 min), 09-01 (7 min), 06-01 (3 min), 05-03 (3 min)
-- Trend: Phase 8 (Static Bundle) started with Vite setup - 1 of 3 plans complete
+- Last 5 plans: 08-03 (2 min), 08-01 (12 min), 09-05 (17 min), 09-01 (7 min), 06-01 (3 min)
+- Trend: Phase 8 (Static Bundle) - 2 of 3 plans complete, distribution channels ready
 
+| Phase 08 P03 | 2 min | 5 tasks | 6 files |
 | Phase 08 P01 | 12 min | 5 tasks | 4 files |
 
 | Phase 06 P01 | 3 min | 5 tasks | 6 files |
@@ -181,6 +196,7 @@ Progress: [████████████████████░░░
 | Phase 09-social-integrations P09-04 | 6 | 5 tasks | 9 files |
 | Phase 09-social-integrations P09-03 | 5 | 6 tasks | 10 files |
 | Phase 09-social-integrations P09-02 | 374 | 6 tasks | 6 files |
+| Phase 08 P03 | 2 | 5 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -255,7 +271,6 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - 08-02: Single-file bundle mode (inline JS/CSS/WASM, Blob Worker)
-- 08-03: Distribution (npm package, CLI, Docker)
 
 ### Blockers/Concerns
 
@@ -264,8 +279,8 @@ None. Phase 08-01 static bundle foundation is complete. Ready for single-file mo
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Completed 08-static-bundle/08-01-PLAN.md — Vite Static Bundle with WASM support, Tailwind compilation, and GitHub Actions workflow
-Resume file: .planning/phases/08-static-bundle/08-01-SUMMARY.md
+Stopped at: Completed 08-static-bundle/08-03-PLAN.md — Distribution channels (npm, CLI, GitHub releases, Docker)
+Resume file: .planning/phases/08-static-bundle/08-03-SUMMARY.md
 
 ## Phase 9 Summary
 
