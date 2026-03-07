@@ -1,14 +1,29 @@
 {
   "name": "webclaw-static",
-  "version": "0.1.0",
-  "description": "WebClaw - Browser-native AI assistant (static bundle)",
+  "version": "1.0.0",
+  "description": "WebClaw AI agent - static website bundle. Zero dependencies, runs in browser.",
+  "main": "dist-bundle/index.html",
+  "bin": {
+    "webclaw-static": "./bin/webclaw-static.js"
+  },
+  "files": [
+    "dist-bundle/",
+    "dist-singlefile/",
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:analyze": "vite build --mode analyze",
+    "build:singlefile": "node scripts/build-singlefile.js",
+    "build:singlefile:ultimate": "INLINE_WASM=true node scripts/build-singlefile.js",
+    "build:all": "npm run build && npm run build:singlefile && npm run build:singlefile:ultimate",
     "preview": "vite preview",
     "serve": "vite preview --port 8080",
+    "prepublishOnly": "npm run build:all",
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.ts"
   },
@@ -26,30 +41,30 @@
     "vite-plugin-static-copy": "^1.0.0",
     "vite-plugin-wasm": "^3.3.0"
   },
-  "files": [
-    "dist/",
-    "README.md",
-    "LICENSE"
-  ],
-  "bin": {
-    "webclaw-static": "./bin/serve.js"
-  },
   "keywords": [
+    "webclaw",
     "ai",
     "agent",
     "wasm",
+    "browser",
     "openclaw",
     "llm",
-    "browser"
+    "chat",
+    "static"
   ],
-  "author": "gleicon",
+  "author": "gleicon <gleicon@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gleicon/webclaw.git"
+    "url": "https://github.com/gleicon/webclaw.git",
+    "directory": "webclaw-static"
   },
+  "bugs": {
+    "url": "https://github.com/gleicon/webclaw/issues"
+  },
+  "homepage": "https://github.com/gleicon/webclaw#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=14.0.0"
   },
   "dependencies": {
     "just-bash": "^2.11.15"
