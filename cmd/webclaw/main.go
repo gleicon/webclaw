@@ -11,9 +11,12 @@ import (
 	"github.com/gleicon/webclaw/internal/agent"
 	"github.com/gleicon/webclaw/internal/config"
 	"github.com/gleicon/webclaw/internal/identity"
+	"github.com/gleicon/webclaw/internal/integrations"
+	"github.com/gleicon/webclaw/internal/integrations/notion"
 	"github.com/gleicon/webclaw/internal/jsbridge"
 	"github.com/gleicon/webclaw/internal/keystore"
 	"github.com/gleicon/webclaw/internal/memory"
+	"github.com/gleicon/webclaw/internal/oauth"
 	"github.com/gleicon/webclaw/internal/provider"
 	"github.com/gleicon/webclaw/internal/tools"
 )
@@ -211,6 +214,51 @@ func main() {
 	js.Global().Get("console").Call("log", "webclaw: help tool registered")
 
 	agentLoop.SetToolRegistry(reg)
+
+	// PHASE 9: Initialize OAuth and social integrations
+	// This enables Twitter, GitHub, Google, and Notion integrations
+	go func() {
+		// Wait for keystore to be ready
+		time.Sleep(300 * time.Millisecond)
+
+		// Initialize OAuth providers (Twitter, GitHub, Google, Notion)
+		oauth.Init()
+		js.Global().Get("console").Call("log", "webclaw: OAuth providers initialized")
+
+		// Initialize OAuth bridge for popup flows
+		jsbridge.InitOAuthBridge()
+		js.Global().Get("console").Call("log", "webclaw: OAuth bridge initialized")
+
+		// Create token store with same passphrase as keystore
+		const passphrase = "webclaw-v1-key"
+		tokenStore, err := oauth.NewTokenStore(passphrase)
+		if err != nil {
+			js.Global().Get("console").Call("error", "webclaw: OAuth token store initialization failed:", err.Error())
+			return
+		}
+
+		// Get the OAuth bridge instance
+		oauthBridge := jsbridge.GetOAuthBridge()
+		if oauthBridge == nil {
+			js.Global().Get("console").Call("error", "webclaw: OAuth bridge not available")
+			return
+		}
+
+		// Create OAuth manager
+		oauthMgr := oauth.NewOAuthManager(tokenStore, oauthBridge)
+
+		// Export JavaScript functions for OAuth operations
+		oauthMgr.RegisterJSExports()
+		js.Global().Get("console").Call("log", "webclaw: OAuth manager ready")
+
+		// Register integration tools with OAuth manager
+		integrations.RegisterTwitterTools(reg, oauthMgr)
+		integrations.RegisterGitHubTools(reg, oauthMgr)
+		integrations.RegisterGoogleTools(reg, oauthMgr)
+		notion.RegisterTools(reg, oauthMgr)
+
+		js.Global().Get("console").Call("log", "webclaw: social integrations registered (Twitter, GitHub, Google, Notion)")
+	}()
 
 	// Wire summarizer for conversation management
 	// Create a simple provider adapter for the summarizer

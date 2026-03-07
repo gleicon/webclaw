@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 09-social-integrations
-source: 09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md, 09-04-SUMMARY.md, 09-05-SUMMARY.md
+source: 09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md, 09-04-SUMMARY.md, 09-05-SUMMARY.md, 09-06-SUMMARY.md
 started: 2026-03-07T00:00:00Z
-updated: 2026-03-07T12:30:00Z
+updated: 2026-03-07T17:00:00Z
 automated: true
 test_runner: playwright + browser console analysis
 ---
@@ -16,9 +16,8 @@ test_runner: playwright + browser console analysis
 
 ### 1. Cold Start Smoke Test
 expected: Kill any running webclaw server. Start fresh. Server boots, UI loads, chat and Settings accessible. No crash errors.
-result: issue
-reported: "Main thread WASM panics on startup: `panic: syscall/js: Value.Call: property objectStoreNames is not a function, got object` in internal/jsbridge/idb_memory.go:60. App partially recovers via worker WASM but main thread exits with code 2. Multiple `Go program has already exited` errors in console."
-severity: blocker
+result: pass
+note: Fixed in commit 3653b76 — db.Call('objectStoreNames') changed to db.Get('objectStoreNames') in idb_memory.go. Playwright test confirms no crash errors.
 automated: test/phase06-browser-tests/phase09-smoke.spec.js (test 1), test/phase06-browser-tests/diagnose.spec.js
 
 ### 2. Connected Services Settings UI
@@ -115,46 +114,36 @@ reason: Requires live Notion OAuth credentials.
 
 ### 20. OAuth JS API: window.webclaw.oauth exposed
 expected: After WASM init, window.webclaw.oauth should have isConnected, getConnectionStatus, initiateConnection, and disconnect methods registered by oauthMgr.RegisterJSExports().
-result: issue
-reported: "window.webclaw.oauth only has openPopup, handleCallback, exchangeCode (from JS-side registerOAuthBridge in webclaw-host.js). The Go-side RegisterJSExports() does NOT add isConnected/getConnectionStatus/initiateConnection/disconnect. Root cause: main thread WASM panics before OAuth goroutine runs; worker WASM's js.Global() is worker scope (not window), so RegisterJSExports() sees webclaw as undefined and silently early-returns."
-severity: blocker
-automated: test/phase06-browser-tests/phase09-smoke.spec.js (tests 4-6), test/phase06-browser-tests/diagnose.spec.js
+result: pass
+note: Fixed in 09-06 gap closure — main.go OAuth goroutine wired on main thread; RegisterOAuthBridge() preserves existing JS oauth object using webclaw.Get('oauth') before adding Go functions. Playwright tests 4-6 confirm all 4 methods present and functional.
+automated: test/phase06-browser-tests/phase09-smoke.spec.js (tests 4-6)
 
 ## Summary
 
 total: 20
-passed: 2
-issues: 2
+passed: 4
+issues: 0
 pending: 0
 skipped: 16
 
 ## Gaps
 
 - truth: "App starts cleanly with no WASM panics or console errors"
-  status: failed
-  reason: "User reported: Main thread WASM panics with `Value.Call: property objectStoreNames is not a function` in idb_memory.go:60. objectStoreNames is a DOMStringList property, not a method. Must use db.Get('objectStoreNames') not db.Call('objectStoreNames')."
-  severity: blocker
+  status: resolved
+  resolved_by: "commit 3653b76 — db.Call('objectStoreNames') changed to db.Get('objectStoreNames') in idb_memory.go"
   test: 1
   root_cause: "idb_memory.go:60 calls db.Call('objectStoreNames') but objectStoreNames is a DOMStringList property on IDBDatabase, not a callable method. Go WASM panics when trying to .Call() a non-function JS value."
   artifacts:
     - path: "internal/jsbridge/idb_memory.go"
-      issue: "Lines 60, 71, 78 use db.Call('objectStoreNames') — should be db.Get('objectStoreNames')"
-  missing:
-    - "Change db.Call('objectStoreNames') to db.Get('objectStoreNames') at lines 60, 71, 78 in idb_memory.go"
+      fix: "Lines 60, 71, 78 changed from db.Call('objectStoreNames') to db.Get('objectStoreNames')"
 
 - truth: "window.webclaw.oauth exposes isConnected, getConnectionStatus, initiateConnection, disconnect after WASM init"
-  status: failed
-  reason: "User reported: oauth JS API only has openPopup/handleCallback/exchangeCode (JS-side). Go RegisterJSExports() never runs successfully: main thread panics first, worker's js.Global() is worker scope not window."
-  severity: blocker
+  status: resolved
+  resolved_by: "09-06-PLAN.md gap closure — main.go OAuth goroutine wired on main thread; RegisterOAuthBridge() preserves existing JS oauth object"
   test: 20
   root_cause: "Two causes: (1) main thread WASM panic (idb_memory.go bug) prevents the OAuth goroutine from running on main thread. (2) Even if fixed, the OAuth goroutine runs in the worker WASM where js.Global() returns worker scope, making webclaw undefined — RegisterJSExports() early-returns silently. The OAuth manager initialization must happen on the main thread WASM."
   artifacts:
-    - path: "internal/oauth/js_exports.go"
-      issue: "RegisterJSExports() checks webclaw.IsUndefined() and early-returns — works fine but only if called from main thread WASM, not worker"
     - path: "cmd/webclaw/main.go"
-      issue: "OAuth goroutine at line 220 runs after 300ms sleep — if main thread WASM panics before this goroutine fires, exports are never registered"
-    - path: "internal/jsbridge/idb_memory.go"
-      issue: "Panic at line 60 causes main thread WASM to exit before OAuth goroutine runs"
-  missing:
-    - "Fix idb_memory.go (objectStoreNames Call→Get) to stop main thread panic"
-    - "Verify OAuth goroutine runs on main thread after the fix (not just worker)"
+      fix: "OAuth goroutine with InitOAuthBridge() → NewOAuthManager() → RegisterJSExports() added to main thread init sequence"
+    - path: "internal/jsbridge/oauth_bridge.go"
+      fix: "RegisterOAuthBridge() uses webclaw.Get('oauth') to preserve existing JS-side object (openPopup) before adding Go functions (handleCallback, exchangeCode)"

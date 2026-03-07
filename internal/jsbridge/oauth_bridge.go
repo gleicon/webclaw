@@ -120,8 +120,12 @@ func RegisterOAuthBridge() js.Func {
 		return js.Func{}
 	}
 
-	// Create oauth object
-	oauth := js.Global().Get("Object").New()
+	// Get or create oauth object (preserve existing JS functions like openPopup)
+	oauth := webclaw.Get("oauth")
+	if oauth.IsUndefined() || oauth.IsNull() {
+		oauth = js.Global().Get("Object").New()
+		webclaw.Set("oauth", oauth)
+	}
 
 	// Register callback handler for OAuth results from popup
 	handleCallbackFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -203,8 +207,6 @@ func RegisterOAuthBridge() js.Func {
 		}))
 	})
 	oauth.Set("exchangeCode", exchangeCodeFn)
-
-	webclaw.Set("oauth", oauth)
 
 	return handleCallbackFn
 }
