@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 09.1-02-PLAN.md
-last_updated: "2026-03-08T02:01:20.175Z"
+stopped_at: Completed 09.1-03-PLAN.md (pending checkpoint)
+last_updated: "2026-03-08T18:35:25.795Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 47
-  completed_plans: 42
+  completed_plans: 43
   percent: 87
 ---
 
@@ -285,6 +285,8 @@ Recent decisions affecting current work:
 - [Phase 09.1-02]: AuthType omitempty for backward-compat PAT tokens — existing OAuth tokens keep empty AuthType, no DB migration needed
 - [Phase 09.1-02]: savePATToken async (IndexedDB I/O), markInvalid sync (in-memory flag) — matches operation type
 - [Phase 09.1-02]: invalidTokens map is transient (resets on page reload) — correct for 401/403 recovery flow
+- [Phase 09.1-oauth-ux-api-token-rework]: setStatusDot() helper replaces all status span updates with safe DOM methods — eliminates XSS risk in Connected Services code path
+- [Phase 09.1-oauth-ux-api-token-rework]: WASM export tests wait for savePATToken/markInvalid specifically — exports registered ~300ms after webclaw.oauth initializes (async goroutine)
 
 ### Pending Todos
 
@@ -296,8 +298,8 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-08T02:01:20.171Z
-Stopped at: Completed 09.1-02-PLAN.md
+Last session: 2026-03-08T18:35:17.327Z
+Stopped at: Completed 09.1-03-PLAN.md (pending checkpoint)
 Resume file: None
 
 ## Phase 9 Summary
