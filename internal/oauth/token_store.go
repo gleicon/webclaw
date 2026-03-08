@@ -20,6 +20,7 @@ type Token struct {
 	RefreshToken string    `json:"refresh_token"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	Scope        string    `json:"scope"`
+	AuthType     string    `json:"auth_type,omitempty"` // "pat" for Personal Access Tokens; empty means OAuth
 	// Optional metadata
 	Username string `json:"username,omitempty"`
 	UserID   string `json:"user_id,omitempty"`

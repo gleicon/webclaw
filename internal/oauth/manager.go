@@ -13,17 +13,19 @@ import (
 
 // OAuthManager orchestrates the complete OAuth 2.0 PKCE flow
 type OAuthManager struct {
-	tokenStore *TokenStore
-	jsBridge   JSBridge
-	state      map[string]string // state -> provider mapping for verification
+	tokenStore    *TokenStore
+	jsBridge      JSBridge
+	state         map[string]string // state -> provider mapping for verification
+	invalidTokens map[string]bool   // transient; resets on page reload
 }
 
 // NewOAuthManager creates a new OAuth manager
 func NewOAuthManager(tokenStore *TokenStore, jsBridge JSBridge) *OAuthManager {
 	return &OAuthManager{
-		tokenStore: tokenStore,
-		jsBridge:   jsBridge,
-		state:      make(map[string]string),
+		tokenStore:    tokenStore,
+		jsBridge:      jsBridge,
+		state:         make(map[string]string),
+		invalidTokens: make(map[string]bool),
 	}
 }
 
@@ -42,6 +44,12 @@ type JSBridge interface {
 // 6. Exchange code for token
 // 7. Store token
 func (m *OAuthManager) InitiateConnection(providerName string) error {
+	// PAT providers do not use the OAuth popup flow.
+	// This guard prevents accidental OAuth initiation for these providers.
+	if providerName == "github" || providerName == "notion" {
+		return fmt.Errorf("%s uses a Personal Access Token — use savePATToken instead", providerName)
+	}
+
 	// Get provider configuration
 	provider, err := GetProvider(providerName)
 	if err != nil {
@@ -95,6 +103,38 @@ func (m *OAuthManager) InitiateConnection(providerName string) error {
 	}
 
 	return nil
+}
+
+// SavePAT stores a Personal Access Token for a provider.
+// PATs are stored in the same encrypted token store as OAuth tokens,
+// with AuthType:"pat" to signal skip-refresh behavior.
+func (m *OAuthManager) SavePAT(provider, pat string) error {
+	if provider == "" {
+		return fmt.Errorf("provider name required")
+	}
+	if pat == "" {
+		return fmt.Errorf("token value required")
+	}
+	token := &Token{
+		Provider:     provider,
+		AccessToken:  pat,
+		RefreshToken: "", // PATs do not have refresh tokens
+		ExpiresAt:    time.Time{}, // zero value = never expires
+		AuthType:     "pat",
+	}
+	return m.tokenStore.SaveToken(provider, token)
+}
+
+// MarkInvalid flags a provider's token as invalid (e.g., after a 401/403 from the API).
+// This state is transient — it resets on page reload.
+// Tools should call webclaw.oauth.markInvalid(provider) on 401/403 responses.
+func (m *OAuthManager) MarkInvalid(provider string) {
+	m.invalidTokens[provider] = true
+}
+
+// ClearInvalid removes the invalid flag for a provider (e.g., after token is updated).
+func (m *OAuthManager) ClearInvalid(provider string) {
+	delete(m.invalidTokens, provider)
 }
 
 // exchangeCode exchanges the authorization code for an access token
@@ -210,6 +250,16 @@ func (m *OAuthManager) GetToken(providerName string) (string, error) {
 			displayName = provider.DisplayName
 		}
 		return "", fmt.Errorf("please connect %s in Settings", displayName)
+	}
+
+	// PAT tokens: return immediately, skip all refresh logic.
+	// PATs have empty RefreshToken and zero ExpiresAt, so NeedsRefresh/IsExpired
+	// would already return false — but this explicit guard prevents future regressions.
+	if token.AuthType == "pat" {
+		if token.AccessToken == "" {
+			return "", fmt.Errorf("please update your %s token in Settings", providerName)
+		}
+		return token.AccessToken, nil
 	}
 
 	// Check if token needs refresh
@@ -364,6 +414,7 @@ func (m *OAuthManager) GetConnectionStatus(providerName string) ConnectionStatus
 		return ConnectionStatus{
 			Connected: false,
 			Provider:  providerName,
+			Valid:     true, // not invalid — just not connected
 		}
 	}
 
@@ -376,6 +427,8 @@ func (m *OAuthManager) GetConnectionStatus(providerName string) ConnectionStatus
 		CanRefresh:      token.RefreshToken != "",
 		NeedsRefresh:    token.NeedsRefresh(),
 		TimeUntilExpiry: token.TimeUntilExpiry(),
+		Valid:           !m.invalidTokens[providerName],
+		AuthType:        token.AuthType,
 	}
 }
 
@@ -389,6 +442,8 @@ type ConnectionStatus struct {
 	CanRefresh      bool          `json:"can_refresh"`
 	NeedsRefresh    bool          `json:"needs_refresh"`
 	TimeUntilExpiry time.Duration `json:"time_until_expiry,omitempty"`
+	Valid           bool          `json:"valid"`           // false if MarkInvalid was called
+	AuthType        string        `json:"auth_type,omitempty"` // "pat" or "" (oauth)
 }
 
 // ListConnections returns status for all providers
