@@ -43,9 +43,10 @@ test.describe('PAT save flow', () => {
 
   test('GitHub: savePATToken export exists on webclaw.oauth', async ({ page }) => {
     await page.goto('/');
+    // Wait for the specific WASM export to be registered (registered async, ~300ms after webclaw.oauth)
     await page.waitForFunction(
-      () => window.webclaw && window.webclaw.oauth,
-      { timeout: 10000 }
+      () => window.webclaw && window.webclaw.oauth && typeof window.webclaw.oauth.savePATToken === 'function',
+      { timeout: 15000 }
     );
     const exists = await page.evaluate(() => typeof window.webclaw.oauth.savePATToken === 'function');
     expect(exists).toBe(true);
@@ -53,9 +54,10 @@ test.describe('PAT save flow', () => {
 
   test('markInvalid export exists on webclaw.oauth', async ({ page }) => {
     await page.goto('/');
+    // Wait for the specific WASM export to be registered (registered async, ~300ms after webclaw.oauth)
     await page.waitForFunction(
-      () => window.webclaw && window.webclaw.oauth,
-      { timeout: 10000 }
+      () => window.webclaw && window.webclaw.oauth && typeof window.webclaw.oauth.markInvalid === 'function',
+      { timeout: 15000 }
     );
     const exists = await page.evaluate(() => typeof window.webclaw.oauth.markInvalid === 'function');
     expect(exists).toBe(true);
