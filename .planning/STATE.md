@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 9.1 context gathered
-last_updated: "2026-03-08T01:28:52.645Z"
+stopped_at: Completed 09.1-01-PLAN.md
+last_updated: "2026-03-08T02:00:32.820Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
-  total_phases: 11
+  total_phases: 12
   completed_phases: 8
-  total_plans: 44
-  completed_plans: 40
+  total_plans: 47
+  completed_plans: 41
   percent: 87
 ---
 
@@ -201,12 +201,14 @@ _None - all planned Phase 08 tasks have been started or completed_
 | Phase 09-social-integrations P09-02 | 374 | 6 tasks | 6 files |
 | Phase 08 P03 | 2 | 5 tasks | 6 files |
 | Phase 09-social-integrations P09-06 | 15 | 3 tasks | 5 files |
+| Phase 09.1-oauth-ux-api-token-rework P01 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 09.1 inserted after Phase 9: OAuth UX & API Token Rework (URGENT) — GitHub/Notion OAuth broken (require client_secret, no server), replace with PAT/token inputs; Twitter/Google keep PKCE but need prominent redirect URI UX
+- Phase 11 added: Cron Scheduler — browser-based crontab-style scheduler for automation tasks while browser is open; future extensibility to external scheduling services
 
 ### Decisions
 
@@ -277,6 +279,8 @@ Recent decisions affecting current work:
 - [Phase 09-social-integrations]: Email composition uses RFC 2822 format with base64url encoding for Gmail API
 - [Phase 09-social-integrations]: OAuth goroutine runs on main thread WASM (not worker) so js.Global() returns window scope for RegisterJSExports()
 - [Phase 09-social-integrations]: RegisterOAuthBridge() uses webclaw.Get('oauth') get-or-create pattern to preserve JS-side openPopup function
+- [Phase 09.1-oauth-ux-api-token-rework]: testDir changed to '.' with testMatch glob — zero risk to existing phase06 tests, single playwright command runs all suites
+- [Phase 09.1-oauth-ux-api-token-rework]: Smoke tests skip window.webclaw wait — DOM-only assertions reduce WASM startup flakiness
 
 ### Pending Todos
 
@@ -288,9 +292,9 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-08T01:28:52.641Z
-Stopped at: Phase 9.1 context gathered
-Resume file: .planning/phases/09.1-oauth-ux-api-token-rework/09.1-CONTEXT.md
+Last session: 2026-03-08T02:00:26.594Z
+Stopped at: Completed 09.1-01-PLAN.md
+Resume file: None
 
 ## Phase 9 Summary
 

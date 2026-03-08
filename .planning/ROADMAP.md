@@ -183,7 +183,7 @@ Plans:
 **Goal:** Fix broken OAuth integrations and improve auth UX for all four social providers. GitHub and Notion OAuth flows are replaced with PAT/token inputs. Twitter and Google PKCE stays intact but UX improved with prominent redirect URI guidance and Client ID field on the card.
 **Requirements**: AUTH-UX-01, AUTH-UX-02, AUTH-UX-03, AUTH-UX-04, AUTH-UX-05, AUTH-UX-06, AUTH-UX-07, AUTH-UX-08, AUTH-UX-09, AUTH-UX-10, AUTH-UX-11
 **Depends on:** Phase 9
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 09.1-01-PLAN.md — Playwright test scaffold (DOM smoke tests for card structure, PAT save flow)
