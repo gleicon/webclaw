@@ -178,6 +178,18 @@ Plans:
 - [x] 09-04-PLAN.md — GitHub integration (issues, PRs, repos, comments)
 - [x] 09-05-PLAN.md — Notion integration (databases, pages, queries)
 
+### Phase 09.1: OAuth UX & API Token Rework (INSERTED)
+
+**Goal:** Fix broken OAuth integrations and improve auth UX for all four social providers. GitHub and Notion OAuth flows are replaced with PAT/token inputs. Twitter and Google PKCE stays intact but UX improved with prominent redirect URI guidance and Client ID field on the card.
+**Requirements**: AUTH-UX-01, AUTH-UX-02, AUTH-UX-03, AUTH-UX-04, AUTH-UX-05, AUTH-UX-06, AUTH-UX-07, AUTH-UX-08, AUTH-UX-09, AUTH-UX-10, AUTH-UX-11
+**Depends on:** Phase 9
+**Plans:** 3 plans
+
+Plans:
+- [ ] 09.1-01-PLAN.md — Playwright test scaffold (DOM smoke tests for card structure, PAT save flow)
+- [ ] 09.1-02-PLAN.md — Go/WASM backend (Token.AuthType, SavePAT, MarkInvalid, savePATToken/markInvalid JS exports, WASM rebuild)
+- [ ] 09.1-03-PLAN.md — index.html UI rework (PAT card variant, OAuth card callout, auth-type badges, invalid token state)
+
 ### Phase 10: Browser-Based Local Model (INSERTED)
 
 **Goal**: Enable WebClaw to run a lightweight local AI model directly in the browser for offline/basic chat and automation capabilities
@@ -216,4 +228,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 7. Local Bridge Binary         | 0/0            | Planned     |            |
 | 8. Polish & Release            | 2/3            | In Progress | 2026-03-07 |
 | 9. Social & Productivity       | 5/5            | Complete    | 2026-03-05 |
+| 9.1 OAuth UX & Token Rework    | 0/3            | Planned     |            |
 | 10. Browser Local Model        | 0/4            | Planned     |            |
+
+### Phase 11: Cron Scheduler
+
+**Goal:** Browser-based crontab-style scheduler that runs automation tasks on a user-defined schedule while the browser is open, with future extensibility to external scheduling services (e.g. push-based triggers or a server-side cron proxy).
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11 to break down)
