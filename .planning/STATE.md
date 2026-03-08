@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 09.1-01-PLAN.md
-last_updated: "2026-03-08T02:00:32.820Z"
+stopped_at: Completed 09.1-02-PLAN.md
+last_updated: "2026-03-08T02:01:20.175Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 47
-  completed_plans: 41
+  completed_plans: 42
   percent: 87
 ---
 
@@ -202,6 +202,7 @@ _None - all planned Phase 08 tasks have been started or completed_
 | Phase 08 P03 | 2 | 5 tasks | 6 files |
 | Phase 09-social-integrations P09-06 | 15 | 3 tasks | 5 files |
 | Phase 09.1-oauth-ux-api-token-rework P01 | 8 | 2 tasks | 3 files |
+| Phase 09.1-oauth-ux-api-token-rework P02 | 2 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -281,6 +282,9 @@ Recent decisions affecting current work:
 - [Phase 09-social-integrations]: RegisterOAuthBridge() uses webclaw.Get('oauth') get-or-create pattern to preserve JS-side openPopup function
 - [Phase 09.1-oauth-ux-api-token-rework]: testDir changed to '.' with testMatch glob — zero risk to existing phase06 tests, single playwright command runs all suites
 - [Phase 09.1-oauth-ux-api-token-rework]: Smoke tests skip window.webclaw wait — DOM-only assertions reduce WASM startup flakiness
+- [Phase 09.1-02]: AuthType omitempty for backward-compat PAT tokens — existing OAuth tokens keep empty AuthType, no DB migration needed
+- [Phase 09.1-02]: savePATToken async (IndexedDB I/O), markInvalid sync (in-memory flag) — matches operation type
+- [Phase 09.1-02]: invalidTokens map is transient (resets on page reload) — correct for 401/403 recovery flow
 
 ### Pending Todos
 
@@ -292,8 +296,8 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-08T02:00:26.594Z
-Stopped at: Completed 09.1-01-PLAN.md
+Last session: 2026-03-08T02:01:20.171Z
+Stopped at: Completed 09.1-02-PLAN.md
 Resume file: None
 
 ## Phase 9 Summary
