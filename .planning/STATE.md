@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 09-social-integrations/09-06-PLAN.md — OAuth JS API gap closure, all smoke tests passing
-last_updated: "2026-03-07T20:00:11.798Z"
+stopped_at: Phase 9.1 context gathered
+last_updated: "2026-03-08T01:28:52.645Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 8
-  total_plans: 40
+  total_plans: 44
   completed_plans: 40
   percent: 87
 ---
@@ -204,6 +204,10 @@ _None - all planned Phase 08 tasks have been started or completed_
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 09.1 inserted after Phase 9: OAuth UX & API Token Rework (URGENT) — GitHub/Notion OAuth broken (require client_secret, no server), replace with PAT/token inputs; Twitter/Google keep PKCE but need prominent redirect URI UX
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
@@ -284,9 +288,9 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-07T20:00:11.795Z
-Stopped at: Completed 09-social-integrations/09-06-PLAN.md — OAuth JS API gap closure, all smoke tests passing
-Resume file: None
+Last session: 2026-03-08T01:28:52.641Z
+Stopped at: Phase 9.1 context gathered
+Resume file: .planning/phases/09.1-oauth-ux-api-token-rework/09.1-CONTEXT.md
 
 ## Phase 9 Summary
 
