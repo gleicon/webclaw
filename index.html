@@ -1643,6 +1643,13 @@ Type <code>/help tool="file_read"</code> for tool-specific help.`;
           if (updateBtn) updateBtn.classList.remove("hidden");
         }
 
+        // Revert masked state when a PAT save fails
+        function showMaskedState_revert(providerId, patSection, patInputRow) {
+          const maskedDiv = document.getElementById("oauth-masked-" + providerId);
+          if (maskedDiv) maskedDiv.classList.add("hidden");
+          if (patInputRow) patInputRow.classList.remove("hidden");
+        }
+
         // Build an OAuth card (Twitter, Google) — PKCE flow with redirect URI callout
         function buildOAuthCard(provider, container, storedClientIds) {
           const wrapper = document.createElement("div");
@@ -2018,15 +2025,19 @@ Type <code>/help tool="file_read"</code> for tool-specific help.`;
             patSaveBtn.disabled = true;
             patSaveBtn.textContent = "Saving...";
 
+            // Optimistic UI update — mask input synchronously before the async save
+            patInput.value = "";
+            patInput.type = "password";
+            toggleBtn.textContent = "Show";
+            showMaskedState(provider.id, statusSpan, patSection, patInputRow, updateBtn);
+
             try {
               await window.webclaw.oauth.savePATToken(provider.id, val);
-              patInput.value = "";
-              patInput.type = "password";
-              toggleBtn.textContent = "Show";
-              showMaskedState(provider.id, statusSpan, patSection, patInputRow, updateBtn);
               showToast("Token saved for " + provider.name, "success");
             } catch (err) {
               console.error("[oauth] PAT save failed:", err);
+              // Revert masked state on failure
+              showMaskedState_revert(provider.id, patSection, patInputRow);
               showToast("Failed to save token: " + (err.message || err), "error");
             } finally {
               patSaveBtn.disabled = false;
