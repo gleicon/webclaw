@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 09.1-03-PLAN.md (pending checkpoint)
-last_updated: "2026-03-08T18:35:25.795Z"
+stopped_at: Completed 09.1-03-PLAN.md
+last_updated: "2026-03-09T17:36:33.889Z"
 last_activity: 2026-03-07 — Single-file distribution with inline JS/CSS/WASM, standard and ultimate modes
 progress:
   total_phases: 12
@@ -203,6 +203,7 @@ _None - all planned Phase 08 tasks have been started or completed_
 | Phase 09-social-integrations P09-06 | 15 | 3 tasks | 5 files |
 | Phase 09.1-oauth-ux-api-token-rework P01 | 8 | 2 tasks | 3 files |
 | Phase 09.1-oauth-ux-api-token-rework P02 | 2 | 2 tasks | 5 files |
+| Phase 09.1-oauth-ux-api-token-rework P03 | 45 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -287,6 +288,7 @@ Recent decisions affecting current work:
 - [Phase 09.1-02]: invalidTokens map is transient (resets on page reload) — correct for 401/403 recovery flow
 - [Phase 09.1-oauth-ux-api-token-rework]: setStatusDot() helper replaces all status span updates with safe DOM methods — eliminates XSS risk in Connected Services code path
 - [Phase 09.1-oauth-ux-api-token-rework]: WASM export tests wait for savePATToken/markInvalid specifically — exports registered ~300ms after webclaw.oauth initializes (async goroutine)
+- [Phase 09.1-oauth-ux-api-token-rework]: Optimistic UI masking: showMaskedState() called synchronously before await savePATToken, reverted on error — ensures Playwright assertions see correct DOM state immediately
 
 ### Pending Todos
 
@@ -298,8 +300,8 @@ None. Phase 08-02 single-file bundle mode complete. Ready for distribution packa
 
 ## Session Continuity
 
-Last session: 2026-03-08T18:35:17.327Z
-Stopped at: Completed 09.1-03-PLAN.md (pending checkpoint)
+Last session: 2026-03-09T17:36:33.885Z
+Stopped at: Completed 09.1-03-PLAN.md
 Resume file: None
 
 ## Phase 9 Summary

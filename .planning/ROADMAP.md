@@ -228,7 +228,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 7. Local Bridge Binary         | 0/0            | Planned     |            |
 | 8. Polish & Release            | 2/3            | In Progress | 2026-03-07 |
 | 9. Social & Productivity       | 5/5            | Complete    | 2026-03-05 |
-| 9.1 OAuth UX & Token Rework    | 2/3 | In Progress|  |
+| 9.1 OAuth UX & Token Rework    | 3/3 | Complete   | 2026-03-09 |
 | 10. Browser Local Model        | 0/4            | Planned     |            |
 
 ### Phase 11: Cron Scheduler
