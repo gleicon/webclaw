@@ -69,6 +69,9 @@
             <option value="openrouter/anthropic/claude-sonnet-4-5">
               OpenRouter / claude-sonnet-4-5
             </option>
+            <option value="gemini-nano/local" title="Runs locally in Chrome 138+ — no API key needed. Enable via chrome://flags or an Origin Trial token.">
+              Chrome Built-in / Gemini Nano
+            </option>
           </select>
           <span id="stream-status" class="text-xs text-gray-500 ml-auto"></span>
         </div>
@@ -399,6 +402,10 @@
             const isFailed = failedProviders.includes(provider);
             const isPaused = pausedProviders.includes(provider);
 
+            const isGeminiNano = provider === "gemini-nano";
+            const isUnavailable =
+              isGeminiNano && !availableProviders.includes("gemini-nano");
+
             if (isFailed) {
               option.disabled = true;
               option.textContent =
@@ -408,6 +415,10 @@
               option.disabled = true;
               option.textContent = "[Paused] " + originalText;
               option.classList.add("text-yellow-600");
+            } else if (isUnavailable) {
+              option.disabled = false;
+              option.textContent = originalText + " — Chrome 138+ only";
+              option.classList.add("text-gray-500");
             } else {
               option.disabled = false;
               option.textContent = originalText;
@@ -1272,6 +1283,159 @@ Type <code>/help tool="file_read"</code> for tool-specific help.`;
                 });
             }
           });
+
+          // ── Browser AI section (Gemini Nano — no API key required) ──
+          (function buildBrowserAISection() {
+            const section = document.createElement("div");
+            section.className = "mt-4 p-3 bg-gray-800 rounded-lg";
+
+            const heading = document.createElement("h3");
+            heading.className = "text-xs font-semibold text-gray-300 mb-1";
+            heading.textContent = "Browser AI (No Key Required)";
+            section.appendChild(heading);
+
+            const desc = document.createElement("p");
+            desc.className = "text-xs text-gray-500 mb-3";
+            desc.textContent =
+              "Chrome 138+ can run Gemini Nano locally — no API key, no network. " +
+              "On other browsers the option stays in the model selector but is annotated. " +
+              "To enable: open Chrome, go to chrome://flags, search \"Prompt API\", set Enabled, then restart.";
+            section.appendChild(desc);
+
+            // Status row
+            const statusRow = document.createElement("div");
+            statusRow.className = "flex items-center gap-2 mb-3";
+
+            const statusLabel = document.createElement("span");
+            statusLabel.className = "text-xs text-gray-400 w-24 shrink-0";
+            statusLabel.textContent = "Gemini Nano";
+
+            const statusBadge = document.createElement("span");
+            statusBadge.id = "gemini-nano-status-badge";
+            statusBadge.className = "text-xs text-gray-500";
+            statusBadge.textContent = "Not checked";
+
+            const checkBtn = document.createElement("button");
+            checkBtn.className =
+              "ml-auto text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded px-2 py-1";
+            checkBtn.textContent = "Check";
+            checkBtn.addEventListener("click", function () {
+              checkBtn.disabled = true;
+              checkBtn.textContent = "…";
+              // Call the JS bridge in the worker — we check availability
+              // from the main thread using a direct LanguageModel call (Chrome exposes
+              // it on window too, not just in workers).
+              const lm = window.LanguageModel;
+              if (!lm) {
+                statusBadge.textContent = "Not available — Chrome 138+ required";
+                statusBadge.className = "text-xs text-red-400";
+                checkBtn.disabled = false;
+                checkBtn.textContent = "Check";
+                return;
+              }
+              lm.availability().then(function (avail) {
+                if (avail === "available") {
+                  statusBadge.textContent = "Ready";
+                  statusBadge.className = "text-xs text-green-400";
+                } else if (avail === "downloadable") {
+                  statusBadge.textContent = "Downloadable (~4 GB)";
+                  statusBadge.className = "text-xs text-yellow-400";
+                } else if (avail === "downloading") {
+                  statusBadge.textContent = "Downloading…";
+                  statusBadge.className = "text-xs text-yellow-400";
+                } else {
+                  statusBadge.textContent = "Unavailable — hardware/flag requirement not met";
+                  statusBadge.className = "text-xs text-red-400";
+                }
+                checkBtn.disabled = false;
+                checkBtn.textContent = "Check";
+              }).catch(function () {
+                statusBadge.textContent = "Check failed";
+                statusBadge.className = "text-xs text-red-400";
+                checkBtn.disabled = false;
+                checkBtn.textContent = "Check";
+              });
+            });
+
+            statusRow.appendChild(statusLabel);
+            statusRow.appendChild(statusBadge);
+            statusRow.appendChild(checkBtn);
+            section.appendChild(statusRow);
+
+            // Origin Trial token input
+            const otRow = document.createElement("div");
+            otRow.className = "flex items-center gap-2 mb-2";
+
+            const otLabel = document.createElement("label");
+            otLabel.className = "text-xs text-gray-400 w-24 shrink-0";
+            otLabel.textContent = "Origin Trial";
+
+            const otInput = document.createElement("input");
+            otInput.type = "password";
+            otInput.placeholder = "Paste Origin Trial token (optional)";
+            otInput.className =
+              "flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 focus:outline-none focus:border-indigo-500";
+            const savedToken = localStorage.getItem("webclaw_origin_trial_gemini_nano");
+            if (savedToken) {
+              otInput.placeholder = "Token saved (" + savedToken.length + " chars) — paste to update";
+            }
+
+            const otSaveBtn = document.createElement("button");
+            otSaveBtn.className =
+              "text-xs bg-indigo-700 hover:bg-indigo-600 text-white rounded px-2 py-1 shrink-0";
+            otSaveBtn.textContent = "Save";
+            otSaveBtn.addEventListener("click", function () {
+              const val = otInput.value.trim();
+              if (!val) return;
+              localStorage.setItem("webclaw_origin_trial_gemini_nano", val);
+              // Inject into page meta tag so Chrome recognises it
+              let metaOT = document.querySelector('meta[name="origin-trial"]');
+              if (!metaOT) {
+                metaOT = document.createElement("meta");
+                metaOT.name = "origin-trial";
+                document.head.appendChild(metaOT);
+              }
+              metaOT.content = val;
+              otInput.value = "";
+              otInput.placeholder = "Token saved (" + val.length + " chars) — paste to update";
+            });
+
+            otRow.appendChild(otLabel);
+            otRow.appendChild(otInput);
+            otRow.appendChild(otSaveBtn);
+            section.appendChild(otRow);
+
+            const otHint = document.createElement("p");
+            otHint.className = "text-xs text-gray-600";
+
+            const otHintPre = document.createTextNode("Get a token at ");
+            const otHintLink = document.createElement("a");
+            otHintLink.href = "https://developer.chrome.com/origintrials/#/trials/active";
+            otHintLink.target = "_blank";
+            otHintLink.rel = "noopener";
+            otHintLink.className = "text-indigo-400 hover:text-indigo-300";
+            otHintLink.textContent = "Chrome Origin Trials →";
+            const otHintPost = document.createTextNode(
+              ' — register your domain for the "Prompt API for Gemini Nano" trial.'
+            );
+            otHint.appendChild(otHintPre);
+            otHint.appendChild(otHintLink);
+            otHint.appendChild(otHintPost);
+            section.appendChild(otHint);
+
+            // Inject any previously saved token into meta on load
+            if (savedToken) {
+              let metaOT = document.querySelector('meta[name="origin-trial"]');
+              if (!metaOT) {
+                metaOT = document.createElement("meta");
+                metaOT.name = "origin-trial";
+                document.head.appendChild(metaOT);
+              }
+              metaOT.content = savedToken;
+            }
+
+            apiKeysContainer.appendChild(section);
+          })();
 
           // Function to refresh saved keys list
           function refreshSavedKeysList() {

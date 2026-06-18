@@ -34,8 +34,8 @@ func TestProviderHealthTracking(t *testing.T) {
 	t.Log("\n[STEP 1] Creating Router with providers...")
 
 	config := &provider.Config{
-		AnthropicAPIKey: "***REMOVED***",
-		OpenAIAPIKey:    "***REMOVED***",
+		AnthropicAPIKey: "sk-ant-PLACEHOLDER-USE-ENV-VAR",
+		OpenAIAPIKey:    "sk-PLACEHOLDER-USE-ENV-VAR",
 	}
 
 	router := provider.NewRouter(config)

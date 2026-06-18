@@ -203,7 +203,7 @@ func TestOpenAIStreamChoiceParsing(t *testing.T) {
 		},
 		{
 			name: "tool_calls delta with arguments",
-			json: `{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"query\\":\\"test\\"}"}}]}}`,
+			json: `{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"query\":\"test\"}"}}]}}`,
 			expected: openAIStreamChoice{
 				Index: 0,
 				Delta: openAIMessage{

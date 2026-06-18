@@ -39,8 +39,8 @@ This test validates the provider failover system with exponential backoff retry 
 
 ### Credentials Required
 ```bash
-ANTHROPIC_API_KEY=***REMOVED***
-OPENAI_API_KEY=***REMOVED***
+ANTHROPIC_API_KEY=sk-ant-PLACEHOLDER-USE-ENV-VAR
+OPENAI_API_KEY=sk-PLACEHOLDER-USE-ENV-VAR
 ```
 
 ### How to Run

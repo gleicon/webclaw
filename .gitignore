@@ -2,13 +2,37 @@
 node_modules/
 .pnpm-store/
 
-# Build outputs
-dist-bundle/
+# Build outputs — Go WASM
 dist/
-*.log
+*.wasm
+*.wasm.br
+webclaw
 
-# Environment files
+# Build outputs — Vite bundle
+dist-bundle/
+dist-singlefile/
+
+# Compiled CSS (generated from src/styles/main.css by `make css`)
+static/main.css
+
+# Go toolchain file copied by `make build`
+static/wasm_exec.js
+
+# Deployment artifacts
+webclaw-deploy/
+webclaw-vps.zip
+*.zip
+
+# Compiled bridge binary (built by bridge-release workflow)
+bridge
+
+# Auto-generated project map
+.project/
+
+# Environment files (never commit real keys)
 .env
+.env.test
+.env.test.template
 .env.local
 .env.*.local
 
@@ -27,16 +51,13 @@ Thumbs.db
 *.temp
 .cache/
 
-# Test results
+# Test results (playwright/e2e run artifacts)
+test/test-results/
+test/playwright-report/
 test-results/
 playwright-report/
 
-# Go build artifacts
-*.wasm
-*.wasm.br
-webclaw
-
-# Coverage
+# Go coverage
 coverage/
 .nyc_output/
 
@@ -44,3 +65,4 @@ coverage/
 *.pid
 *.seed
 *.pid.lock
+*.log

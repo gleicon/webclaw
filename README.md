@@ -1,199 +1,205 @@
-# WebClaw Static
+# WebClaw
 
-WebClaw AI agent as a zero-dependency static website bundle. Runs entirely in the browser with WebAssembly.
+AI agent that runs entirely in your browser via WebAssembly. No server required. API keys stay in your browser, encrypted at rest.
 
-## Quick Start
+## Try it
 
-### Option 1: npx (no install)
+### Fastest: Docker (no build step)
 
 ```bash
-npx webclaw-static serve
-# Opens at http://localhost:8080
+# Build image — compiles Go WASM + Vite bundle inside the container
+make docker-build
+
+# Serve at http://localhost:8080
+make docker-run
 ```
 
-### Option 2: npm install
+### From source (dev mode)
+
+Prerequisites: Go 1.25+, Node 20+, brotli CLI.
 
 ```bash
-npm install -g webclaw-static
-webclaw-static serve --open
-```
-
-### Option 3: Download
-
-Download the latest release:
-
-- [webclaw-v1.0.0.zip](https://github.com/gleicon/webclaw/releases) - Multi-file bundle (best for servers)
-- [webclaw-v1.0.0-singlefile.zip](https://github.com/gleicon/webclaw/releases) - Single-folder distribution
-- [webclaw-v1.0.0-ultimate.html](https://github.com/gleicon/webclaw/releases) - Standalone HTML file
-
-Extract and open `index.html` (or `webclaw.html`) in any modern browser.
-
-### Option 4: Docker
-
-```bash
-docker run -p 8080:80 gleicon/webclaw:latest
-```
-
-Then open http://localhost:8080
-
-## Features
-
-- **Zero dependencies**: No Node.js, no build step, no npm install required
-- **Offline capable**: Works without internet once loaded
-- **AI Providers**: Anthropic Claude, OpenAI GPT, OpenRouter
-- **Secure**: API keys encrypted in browser storage
-- **Tools**: Web search, web fetch, memory management, file operations (79+ bash commands)
-- **File size**: ~1MB total (920KB compressed)
-
-## Usage
-
-1. Open WebClaw in browser
-2. Go to Settings tab
-3. Enter your API key for at least one provider (Anthropic, OpenAI, or OpenRouter)
-4. Return to Chat tab and start conversing
-
-## CLI Commands
-
-```bash
-# Serve the multi-file bundle (optimized)
-webclaw-static serve
-
-# Serve on custom port
-webclaw-static serve --port=3000
-
-# Serve and open browser automatically
-webclaw-static serve --open
-
-# Serve single-file version
-webclaw-static serve --singlefile
-
-# Serve ultimate standalone version
-webclaw-static serve --ultimate
-
-# Open WebClaw in browser (file:// or localhost)
-webclaw-static open
-
-# Show help
-webclaw-static --help
-```
-
-## File Sizes
-
-| Format      | Size   | Use Case                              |
-| ----------- | ------ | ------------------------------------- |
-| Multi-file  | ~920KB | Web server hosting (best performance) |
-| Single-file | ~1MB   | Folder distribution, file sharing     |
-| Ultimate    | ~1.3MB | Email attachment, single file sharing |
-
-## Browser Compatibility
-
-- Chrome 90+
-- Firefox 90+
-- Safari 15+
-- Edge 90+
-
-Requires WebAssembly and IndexedDB support.
-
-## Security
-
-- API keys encrypted at rest using Web Crypto API (AES-256-GCM)
-- All processing happens client-side
-- No data sent to external servers (except AI provider APIs)
-- Keys never exist as plaintext in JavaScript - only in WASM linear memory
-
-## Distribution Channels
-
-### npm Registry
-
-```bash
-# Run without installing
-npx webclaw-static serve
-
-# Install globally
-npm install -g webclaw-static
-```
-
-Package: `webclaw-static`
-
-### GitHub Releases
-
-Download pre-built bundles from the [releases page](https://github.com/gleicon/webclaw/releases).
-
-Releases are automatically created when pushing a tag:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-### Docker Hub
-
-```bash
-# Run latest
-docker run -p 8080:80 gleicon/webclaw:latest
-
-# Run specific version
-docker run -p 8080:80 gleicon/webclaw:1.0.0
-```
-
-Image: `gleicon/webclaw`
-
-## Building from Source
-
-```bash
-# Clone repository
 git clone https://github.com/gleicon/webclaw.git
 cd webclaw
 
-# Install dependencies
 npm install
 
-# Build all variants
-npm run build:all
+# Compile WASM + CSS (re-run after Go or Tailwind changes)
+make build
+cp dist/webclaw.wasm static/webclaw.wasm
 
-# Output:
-# - dist-bundle/ (multi-file, optimized)
-# - dist-singlefile/ (single-file and ultimate HTML)
+# Start the Go dev server
+make serve           # http://localhost:8080
 ```
 
-## Development
+The Go devserver (`make serve`) is the primary dev entry point — it handles WASM MIME types and serves everything from `static/`. Do **not** use `npm run dev` for WASM work.
+
+## First use
+
+1. Open **Settings → API Keys**
+2. Enter an API key for at least one provider (Anthropic, OpenAI, or OpenRouter)
+   — **or** use Chrome 138+ with Gemini Nano enabled (no key needed, see below)
+3. Switch to the **Chat** tab and start a conversation
+
+## Providers
+
+| Provider | Key required | Notes |
+|---|---|---|
+| Anthropic | Yes | Claude models |
+| OpenAI | Yes | GPT models |
+| OpenRouter | Yes | 100+ models via one key |
+| Chrome Built-in / Gemini Nano | No | Chrome 138+, local inference, ~4 GB model download |
+
+### Chrome Built-in AI (Gemini Nano)
+
+Runs on-device — no API key, no network after first model download.
+
+**Enable it:**
+1. Open Chrome, navigate to `chrome://flags`
+2. Search **Prompt API**, set to **Enabled**
+3. Restart Chrome
+
+The model selector shows **"Chrome Built-in / Gemini Nano — Chrome 138+ only"** on non-Chrome browsers so the option is always visible as a hint.
+
+**Origin Trial token** (optional, for public deployments): Settings → Browser AI → paste your token from the Chrome Origin Trials portal. WebClaw stores it in `localStorage` and injects it at page load.
+
+## Embed in your own site
+
+Drop a chat widget into any page with a single script tag:
+
+```html
+<script src="/static/embed.js"></script>
+<script>
+  webclaw.init({
+    wasmUrl:      '/static/webclaw.wasm',   // required
+    workerUrl:    '/static/worker.js',      // required
+    systemPrompt: 'You are a support agent for Acme Corp.',
+    proxyUrl:     '/api/ai-proxy',          // server-side proxy — no raw key in browser
+    model:        'gemini-nano/local',      // default; any provider/model works
+    position:     'bottom-right',          // or 'bottom-left'
+    theme:        { primaryColor: '#6366f1' },
+  });
+
+  // Update context as the user navigates (SPA support)
+  webclaw.setContext({ user: 'alice', page: '/billing' });
+</script>
+```
+
+The widget uses Shadow DOM for CSS isolation from the host page. Use `proxyUrl` in production so API keys stay server-side.
+
+## Building
 
 ```bash
-# Start dev server
-npm run dev
+make build          # CSS + compile Go WASM + brotli compress
+make css            # CSS only (after adding new Tailwind classes)
+```
 
-# Build and preview
+After `make build`, copy the binary if you want the dev server to serve it:
+
+```bash
+cp dist/webclaw.wasm static/webclaw.wasm
+```
+
+### Full Vite bundle (for static hosting)
+
+```bash
+npm run build       # outputs to dist-bundle/
+```
+
+The Vite build copies WASM, worker, vendor, and embed files automatically. `dist-bundle/` can be served from any static host or CDN.
+
+## Testing
+
+```bash
+make test           # Go unit tests — no browser needed, fast
+make test-wasm      # WASM-tagged provider tests via Node (requires node in PATH)
+make test-all       # both
+```
+
+Run tests before `make build` to catch logic errors without a full WASM compile cycle.
+
+## Docker
+
+The Dockerfile does a complete build inside the container:
+
+```
+Stage 1: golang:1.26-alpine + Node
+  → GOOS=js GOARCH=wasm go build
+  → brotli compress WASM
+  → npm run build (Vite bundle)
+
+Stage 2: nginx:alpine
+  → serves dist-bundle/ on port 80
+```
+
+```bash
+make docker-build               # builds image tagged webclaw:latest
+make docker-run                 # serves on http://localhost:8080
+docker run -p 3000:80 webclaw:latest   # custom port
+```
+
+If `golang:1.26-alpine` is not available, update the `FROM` line in `Dockerfile` to match your installed Go version (must be ≥ 1.25).
+
+## Deploying
+
+### Static hosting (Netlify, Vercel, S3 + CloudFront, etc.)
+
+```bash
+make build
+cp dist/webclaw.wasm static/webclaw.wasm
 npm run build
-npm run preview
+# upload dist-bundle/ to your host
+```
 
-# Build single-file version
-npm run build:singlefile
+Set these response headers for WASM files:
 
-# Build ultimate version (WASM inlined)
-npm run build:singlefile:ultimate
+| File pattern | Content-Type | Content-Encoding |
+|---|---|---|
+| `*.wasm` | `application/wasm` | — |
+| `*.wasm.br` | `application/wasm` | `br` |
+
+`deploy/nginx.conf` in this repo is a ready-to-use nginx configuration.
+
+### Docker / self-hosted
+
+```bash
+make docker-build
+docker tag webclaw:latest your-registry/webclaw:v1.0
+docker push your-registry/webclaw:v1.0
 ```
 
 ## Architecture
 
-WebClaw consists of three main components:
+```
+index.html + static/main.css       ← UI (Tailwind, vanilla JS)
+       │
+       ├── main thread WASM         ← config, keystore, OAuth JS bridge
+       │   static/webclaw.wasm
+       │
+       └── Web Worker               ← agent loop, LLM streaming
+           static/worker.js
+           └── worker WASM instance ← same binary, second instance
+```
 
-1. **Go Core (WASM)**: Compiled from Go to WebAssembly using TinyGo
-2. **JavaScript Host**: Thin layer providing browser APIs to WASM
-3. **Web Worker**: Handles streaming LLM responses without blocking UI
+Both contexts load the same WASM binary. `console.log` calls from Go appear **twice** in the browser console — this is expected, not a bug.
 
-All components run in the browser - no server required.
+The full agent loop (tool calls, memory, summarization) runs in the Web Worker so the UI stays responsive during long responses.
 
-## Contributing
+## Security
 
-Contributions welcome! Please open an issue or pull request on GitHub.
+- API keys encrypted in IndexedDB with Web Crypto (AES-256-GCM)
+- Keys only exist as plaintext inside WASM linear memory — never in JS
+- OAuth uses PKCE — no client secret stored anywhere
+- `embed.js` accepts a `proxyUrl` instead of a raw key, keeping secrets server-side
 
-## License
+## Browser support
 
-MIT License - see LICENSE file for details.
+Requires WebAssembly and IndexedDB.
 
-## Links
-
-- Repository: https://github.com/gleicon/webclaw
-- Issues: https://github.com/gleicon/webclaw/issues
-- npm: https://www.npmjs.com/package/webclaw-static
-- Docker Hub: https://hub.docker.com/r/gleicon/webclaw
+| Browser | Chat | Gemini Nano |
+|---|---|---|
+| Chrome 90+ | ✓ | — |
+| Chrome 138+ | ✓ | ✓ (enable via flags) |
+| Firefox 90+ | ✓ | — |
+| Safari 15+ | ✓ | — |
+| Edge 90+ | ✓ | — |

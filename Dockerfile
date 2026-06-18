@@ -1,117 +1,45 @@
-# Multi-stage build for minimal size
-FROM node:20-alpine AS builder
+# Stage 1: build Go WASM + Vite bundle
+# go.mod requires Go 1.25+. Update this tag if golang:1.26-alpine is unavailable.
+FROM golang:1.26-alpine AS builder
+
+# Install Node.js, npm, brotli
+RUN apk add --no-cache nodejs npm brotli
 
 WORKDIR /app
 
-# Copy package files
+# Cache Go modules
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Cache npm packages
 COPY package*.json ./
 RUN npm ci
 
-# Copy source and build
+# Copy everything else
 COPY . .
+
+# 1. Compile Go → WASM
+RUN mkdir -p dist static && \
+    GOOS=js GOARCH=wasm go build -o dist/webclaw.wasm ./cmd/webclaw/
+
+# 2. Brotli-compress WASM (viteStaticCopy expects both files)
+RUN brotli --best -f dist/webclaw.wasm -o dist/webclaw.wasm.br
+
+# 3. Copy wasm_exec.js from Go toolchain
+RUN cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" static/wasm_exec.js
+
+# 4. Compile Tailwind CSS
+RUN npx tailwindcss -i src/styles/main.css -o static/main.css \
+      --content "index.html,src/**/*.{js,ts,jsx,tsx}"
+
+# 5. Vite bundle → dist-bundle/
 RUN npm run build
 
-# Production stage
+# Stage 2: serve with nginx
 FROM nginx:alpine
 
-# Copy built static files
 COPY --from=builder /app/dist-bundle /usr/share/nginx/html
-
-# Configure nginx for brotli and SPA routing
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Gzip compression \
-    gzip on; \
-    gzip_vary on; \
-    gzip_min_length 1024; \
-    gzip_proxied expired no-cache no-store private auth; \
-    gzip_types \
-        text/plain \
-        text/css \
-        text/xml \
-        text/javascript \
-        application/javascript \
-        application/json \
-        application/wasm; \
-    \
-    # Brotli compression support for WASM files \
-    location ~ \\.wasm\\.br$ { \
-        add_header Content-Encoding br; \
-        add_header Content-Type application/wasm; \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # WASM files \
-    location ~ \\.wasm$ { \
-        add_header Content-Type application/wasm; \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # Static assets with long cache \
-    location ~ \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ { \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # SPA routing - serve index.html for all routes \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-        add_header Cache-Control "public, max-age=0, must-revalidate"; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf 2>/dev/null || true
-
-# Write the config again
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Gzip compression \
-    gzip on; \
-    gzip_vary on; \
-    gzip_min_length 1024; \
-    gzip_proxied expired no-cache no-store private auth; \
-    gzip_types \
-        text/plain \
-        text/css \
-        text/xml \
-        text/javascript \
-        application/javascript \
-        application/json \
-        application/wasm; \
-    \
-    # Brotli compression support for WASM files \
-    location ~ \\.wasm\\.br$ { \
-        add_header Content-Encoding br; \
-        add_header Content-Type application/wasm; \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # WASM files \
-    location ~ \\.wasm$ { \
-        add_header Content-Type application/wasm; \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # Static assets with long cache \
-    location ~ \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ { \
-        add_header Cache-Control "public, max-age=31536000, immutable"; \
-    } \
-    \
-    # SPA routing - serve index.html for all routes \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-        add_header Cache-Control "public, max-age=0, must-revalidate"; \
-    } \
-}' > /etc/nginx/conf.d/webclaw.conf
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]

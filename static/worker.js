@@ -1,6 +1,44 @@
 // worker.js — Web Worker for running agent loop without blocking main thread
 // This worker loads the WASM module and handles streaming LLM communication
 
+// Gemini Nano bridge — wraps Chrome's built-in LanguageModel API into a
+// callback-friendly surface callable from Go via syscall/js.
+// Chunks from promptStreaming are cumulative — we slice each delta manually.
+self.webclaw = self.webclaw || {};
+self.webclaw.geminiNano = {
+    async streamPrompt(systemPrompt, historyJSON, userMsg, onToken, onDone, onError) {
+        let session = null;
+        try {
+            if (typeof LanguageModel === 'undefined') {
+                onError('Chrome LanguageModel API not available — enable via Origin Trial or chrome://flags');
+                return;
+            }
+
+            let history = [];
+            try { history = JSON.parse(historyJSON); } catch (_) {}
+
+            const opts = {};
+            if (systemPrompt) opts.systemPrompt = systemPrompt;
+            if (history.length > 0) opts.initialPrompts = history;
+
+            session = await LanguageModel.create(opts);
+
+            let prevLen = 0;
+            const stream = session.promptStreaming(userMsg);
+            for await (const chunk of stream) {
+                const delta = chunk.slice(prevLen);
+                prevLen = chunk.length;
+                if (delta) onToken(delta);
+            }
+            onDone();
+        } catch (e) {
+            onError(e.message || String(e));
+        } finally {
+            if (session) { try { session.destroy(); } catch (_) {} }
+        }
+    }
+};
+
 let wasmModule = null;
 let wasmInstance = null;
 let goRuntime = null;

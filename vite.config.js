@@ -1,9 +1,27 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import { readFileSync } from "fs";
 import compression from "vite-plugin-compression";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+
+// Serve node_modules vendor files in dev mode (vite-plugin-static-copy only runs at build time)
+function serveVendorInDev() {
+  return {
+    name: "serve-vendor-in-dev",
+    configureServer(server) {
+      server.middlewares.use("/vendor/browser.js", (_req, res) => {
+        const vendorPath = resolve(
+          __dirname,
+          "node_modules/just-bash/dist/bundle/browser.js"
+        );
+        res.setHeader("Content-Type", "application/javascript");
+        res.end(readFileSync(vendorPath));
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -76,6 +94,9 @@ export default defineConfig({
 
   // Plugins
   plugins: [
+    // Serve just-bash vendor file in dev mode (static-copy only runs at build time)
+    serveVendorInDev(),
+
     // Copy static files (WASM, worker.js) to dist
     viteStaticCopy({
       targets: [
@@ -101,6 +122,10 @@ export default defineConfig({
         },
         {
           src: "static/webclaw-host.js",
+          dest: "static",
+        },
+        {
+          src: "static/embed.js",
           dest: "static",
         },
         {

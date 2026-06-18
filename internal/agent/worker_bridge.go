@@ -204,7 +204,7 @@ func handleStartStream(payload js.Value) {
 	js.Global().Get("console").Call("log", "webclaw: starting stream")
 
 	// Extract parameters from payload
-	var providerName, model string
+	var providerName, model, proxyURL string
 	var messages []Message
 
 	if !payload.IsUndefined() && !payload.IsNull() {
@@ -213,6 +213,9 @@ func handleStartStream(payload js.Value) {
 		}
 		if modelVal := payload.Get("model"); !modelVal.IsUndefined() {
 			model = modelVal.String()
+		}
+		if proxyVal := payload.Get("proxyUrl"); !proxyVal.IsUndefined() && !proxyVal.IsNull() {
+			proxyURL = proxyVal.String()
 		}
 		// Extract messages array from payload
 		if messagesVal := payload.Get("messages"); !messagesVal.IsUndefined() && !messagesVal.IsNull() {
@@ -244,6 +247,15 @@ func handleStartStream(payload js.Value) {
 			// Update the global loop with the provider/model from this stream request
 			loop.SetProviderName(providerName)
 			loop.SetModel(model)
+
+			// Register proxy provider if operator supplied a proxyUrl.
+			// The proxy is OpenAI-compatible; auth is handled server-side.
+			if proxyURL != "" && loop.router != nil {
+				loop.router.RegisterProvider("proxy", provider.NewOpenAIProviderWithProxy(proxyURL))
+				if providerName == "" {
+					loop.SetProviderName("proxy")
+				}
+			}
 
 			// If provider not registered, try to load key from keystore and register it (SYNCHRONOUSLY)
 			if loop.router != nil && !loop.router.HasProvider(providerName) {

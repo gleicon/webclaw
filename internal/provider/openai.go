@@ -36,6 +36,14 @@ func NewOpenAIProviderWithOrg(apiKey, orgID string) *OpenAIProvider {
 	return p
 }
 
+// NewOpenAIProviderWithProxy creates an OpenAI-compatible provider using a custom base URL.
+// The proxy is expected to handle authentication — no API key is sent.
+func NewOpenAIProviderWithProxy(proxyURL string) *OpenAIProvider {
+	return &OpenAIProvider{
+		baseURL: proxyURL,
+	}
+}
+
 // Name returns the provider identifier
 func (p *OpenAIProvider) Name() string {
 	return "openai"

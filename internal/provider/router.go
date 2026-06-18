@@ -31,6 +31,9 @@ func NewRouter(config *Config) *Router {
 		fallbacks: make(map[string]fallbackConfig),
 	}
 
+	// Gemini Nano is always registered — availability is checked at runtime via JS.
+	r.providers["gemini-nano"] = NewProviderChain(NewGeminiNanoProvider(), "local")
+
 	// Register providers based on available API keys
 	if config.AnthropicAPIKey != "" {
 		anthropicProv := NewAnthropicProvider(config.AnthropicAPIKey)
@@ -264,10 +267,23 @@ func (r *Router) Embed(ctx context.Context, modelID string, input string) ([]flo
 	return route.Provider.Embed(ctx, input)
 }
 
-// AvailableProviders returns a list of registered provider names
+// ConditionalProvider is implemented by providers whose availability depends on
+// runtime conditions (e.g. browser API support). AvailableProviders skips any
+// provider that returns false.
+type ConditionalProvider interface {
+	IsAvailable() bool
+}
+
+// AvailableProviders returns registered provider names that are currently available.
+// Providers implementing ConditionalProvider are only included if IsAvailable() is true.
 func (r *Router) AvailableProviders() []string {
 	names := make([]string, 0, len(r.providers))
-	for name := range r.providers {
+	for name, chain := range r.providers {
+		if cp, ok := chain.primary.(ConditionalProvider); ok {
+			if !cp.IsAvailable() {
+				continue
+			}
+		}
 		names = append(names, name)
 	}
 	return names
