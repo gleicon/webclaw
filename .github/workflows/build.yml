@@ -1,106 +1,34 @@
-name: Build and Release
+name: CI
 
 on:
   push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
+    branches: [main]
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build static bundle
-      run: npm run build
-    
-    - name: Verify build output
-      run: |
-        ls -la dist-bundle/
-        test -f dist-bundle/index.html || exit 1
-        echo "✓ Build verified"
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: webclaw-static-bundle
-        path: dist-bundle/
-        retention-days: 30
+      - uses: actions/checkout@v4
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: webclaw-static-bundle
-        path: dist-bundle/
-    
-    - name: Create release archives
-      run: |
-        cd dist-bundle
-        zip -r ../webclaw-static-${GITHUB_REF_NAME}.zip .
-        tar -czf ../webclaw-static-${GITHUB_REF_NAME}.tar.gz .
-        cd ..
-        ls -la *.zip *.tar.gz
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          webclaw-static-*.zip
-          webclaw-static-*.tar.gz
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        registry-url: 'https://registry.npmjs.org'
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: webclaw-static-bundle
-        path: dist-bundle/
-    
-    - name: Copy dist to package
-      run: |
-        cp -r dist-bundle/* .
-        rm -rf dist-bundle/
-    
-    - name: Publish to npm
-      run: npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Go unit tests
+        run: go test ./internal/agent/... ./internal/tools/...
+
+      - name: WASM provider tests (via Node)
+        run: |
+          GOROOT=$(go env GOROOT)
+          GOOS=js GOARCH=wasm PATH="$GOROOT/lib/wasm:$PATH" \
+            go test ./internal/provider/...
