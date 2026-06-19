@@ -204,7 +204,7 @@
         
         try {
             const result = await WebAssembly.instantiateStreaming(
-                fetch("dist/webclaw.wasm"),
+                fetch("static/webclaw.wasm"),
                 go.importObject
             );
             go.run(result.instance);
@@ -233,7 +233,7 @@
                 };
                 
                 // Fetch WASM binary to pass to worker
-                fetch('dist/webclaw.wasm')
+                fetch('static/webclaw.wasm')
                     .then(r => r.arrayBuffer())
                     .then(wasmBuffer => {
                         console.log('[host] Sending INIT_WASM to worker...');

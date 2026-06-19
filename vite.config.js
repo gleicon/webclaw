@@ -101,12 +101,12 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: "dist/webclaw.wasm",
-          dest: "",
+          src: "static/webclaw.wasm",
+          dest: "static",
         },
         {
           src: "dist/webclaw.wasm.br",
-          dest: "",
+          dest: "static",
         },
         {
           src: "static/worker.js",
