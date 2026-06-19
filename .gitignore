@@ -29,6 +29,9 @@ bridge
 # Auto-generated project map
 .project/
 
+# Development planning artifacts (local only)
+.planning/
+
 # Environment files (never commit real keys)
 .env
 .env.test

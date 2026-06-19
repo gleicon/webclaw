@@ -89,4 +89,5 @@ Requires WebAssembly and IndexedDB.
 
 ---
 
-[Getting started guide](docs/getting-started.md) — local dev, testing, production deployment.
+[Getting started guide](docs/getting-started.md) — local dev, testing, production deployment.  
+[Security model](docs/security.md) — data locality, encryption details, instance isolation.
